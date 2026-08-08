@@ -285,11 +285,13 @@ class MainActivity : ComponentActivity() {
                 }
                 val navigateToStoreDetail = { pack: com.whyy.snapnotes.data.StorePack ->
                     backStack.add(Screen.StoreDetail(pack))
+                    Unit
                 }
                 val navigateToLocalStorage = {
                     if (backStack.lastOrNull() != Screen.LocalStorage) {
                         backStack.add(Screen.LocalStorage)
                     }
+                    Unit
                 }
                 // 注入给 Activity 侧的导出流程入口（已命名后用它打开选目录模式）。
                 navigateToFileManagerEntry = navigateToFileManager
