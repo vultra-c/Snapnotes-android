@@ -23,25 +23,41 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 1. 执行 Release 统一打包命令
+    - name: Decode Keystore from Secret
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.jks
+        # 如果项目结构是根目录直接有 app，用上面这行
+        # 如果 keystore 需要放在根目录，改成：echo "..." | base64 -d > release.jks
+
     - name: Build Universal Release APK
       run: ./gradlew assembleRelease --no-daemon
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-    # 2. 提取并重命名产物（带上构建时间和 Commit Hash）
     - name: Prepare APK Artifact
       run: |
         BUILD_TIME=$(date +'%Y%m%d_%H%M')
         COMMIT_HASH=${GITHUB_SHA::7}
         mkdir -p build_output
         
-        # 将生成的 Release APK 复制并命名
-        cp app/build/outputs/apk/release/*.apk build_output/app-release-universal_${BUILD_TIME}_${COMMIT_HASH}.apk
-        echo "BUILD_TIME=${BUILD_TIME}" >> $GITHUB_ENV
+        # 自动查找生成的 APK（兼容不同项目结构）
+        APK_PATH=$(find . -name "*release*.apk" -not -path "*/intermediates/*" | head -n 1)
+        
+        if [ -z "$APK_PATH" ]; then
+          echo "错误：没有找到 release APK！"
+          find . -name "*.apk" || true
+          exit 1
+        fi
+        
+        cp "$APK_PATH" "build_output/SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
+        echo "APK 已准备好：build_output/SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
+        ls -lh build_output/
 
-    # 3. 上传构件
-    - name: Upload Release APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-release-universal-${{ env.BUILD_TIME }}
+        name: SnapNotes-Release-APK
         path: build_output/*.apk
-        retention-days: 7
+        retention-days: 30
