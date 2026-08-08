@@ -13,52 +13,20 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
 
-    # 预下载并安装 Gradle，绕过 Wrapper 的下载机制（Wrapper 独立下载常因网络问题失败）
-    - name: Download and install Gradle 9.6.1
-      run: |
-        GRADLE_VERSION=9.6.1
-        GRADLE_ZIP="gradle-${GRADLE_VERSION}-bin.zip"
-        
-        MIRRORS=(
-          "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
-          "https://downloads.gradle-dn.com/distributions/gradle-${GRADLE_VERSION}-bin.zip"
-        )
-        
-        DOWNLOAD_OK=false
-        for url in "${MIRRORS[@]}"; do
-          for i in 1 2 3; do
-            echo "📥 Attempt $i: Downloading from $url ..."
-            if wget -q --timeout=120 --tries=2 -O "/tmp/${GRADLE_ZIP}" "$url"; then
-              echo "✅ Download succeeded from $url (attempt $i)"
-              DOWNLOAD_OK=true
-              break 2
-            fi
-            echo "❌ Attempt $i failed for $url"
-            sleep 10
-          done
-        done
-        
-        if [ "$DOWNLOAD_OK" = false ]; then
-          echo "💥 All download attempts failed from all mirrors"
-          exit 1
-        fi
-        
-        echo "📦 Extracting Gradle..."
-        unzip -q "/tmp/${GRADLE_ZIP}" -d "$HOME"
-        echo "$HOME/gradle-${GRADLE_VERSION}/bin" >> "$GITHUB_PATH"
-        echo "✅ Gradle installed at $HOME/gradle-${GRADLE_VERSION}"
-
-    # 缓存 Gradle User Home（依赖 + 插件），避免每次构建都重新下载
+    # 使用官方 setup-gradle action：自动下载并缓存 Gradle 发行版 + 依赖
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
         cache-cleanup: on-success
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
     # 从 Secrets 还原签名文件 + properties
     - name: Setup Keystore for Signing
@@ -72,12 +40,12 @@ jobs:
         PROPS_EOF
         ls -l release.jks keystore.properties
 
-    # 构建 APK，带重试机制应对瞬时网络问题（插件/依赖下载失败时自动重试）
+    # 构建 APK，带重试机制应对瞬时网络问题
     - name: Build Universal Release APK
       run: |
         for i in 1 2 3; do
           echo "🔨 Build attempt $i ..."
-          if gradle assembleRelease --no-daemon --stacktrace; then
+          if ./gradlew assembleRelease --no-daemon --stacktrace; then
             echo "✅ Build succeeded on attempt $i"
             exit 0
           fi
@@ -85,7 +53,6 @@ jobs:
           if [ $i -lt 3 ]; then
             echo "⏳ Waiting 20s before retry..."
             sleep 20
-            # 清理可能损坏的配置缓存
             rm -rf .gradle/configuration-cache
           fi
         done
