@@ -103,7 +103,9 @@ fun HomeScreen(
     onStartPush: () -> Unit,
     onTroubleshoot: () -> Unit = {},
     onOpenAmadeusChat: () -> Unit = {},
-    onOpenAmadeusConfig: () -> Unit = {},
+    amadeusEnabled: Boolean = false,
+    amadeusReady: Boolean = false,
+    amadeusSummary: String = "",
     editorSubjects: List<com.whyy.snapnotes.ui.viewmodel.EditorSubject> = emptyList(),
     formulaRenderer: FormulaPngRenderer? = null,
     onAddSubject: () -> Unit = {},
@@ -117,6 +119,7 @@ fun HomeScreen(
     onPushFile: () -> Unit = {},
     onCreateFolder: (String) -> Unit = {},
     onOpenBandFiles: () -> Unit = {},
+    onOpenLocalStorage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
@@ -143,9 +146,7 @@ fun HomeScreen(
                 scrollBehavior = scrollBehavior,
                 actions = {
                     MoreMenu(
-                        onCreateFolder = { showFolderDialog = true },
-                        onOpenAmadeusChat = onOpenAmadeusChat,
-                        onOpenAmadeusConfig = onOpenAmadeusConfig
+                        onCreateFolder = { showFolderDialog = true }
                     )
                 }
             )
@@ -161,12 +162,24 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Spacer(Modifier.height(4.dp))
-            // 连接状态卡片（全宽）。Amadeus 配置已移至右上角「更多」菜单。
-            ConnectionStatusCard(
-                connectionState = connectionState,
-                onTroubleshoot = onTroubleshoot,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // 连接状态卡片与 Amadeus 卡片并排
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ConnectionStatusCard(
+                    connectionState = connectionState,
+                    onTroubleshoot = onTroubleshoot,
+                    modifier = Modifier.weight(1f)
+                )
+                com.whyy.snapnotes.ui.components.AmadeusConfigCard(
+                    enabled = amadeusEnabled,
+                    ready = amadeusReady,
+                    summary = amadeusSummary,
+                    onClick = onOpenAmadeusChat,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             StorageRingCard(
                 storageInfo = storageInfo,
@@ -175,44 +188,75 @@ fun HomeScreen(
                 isConnected = connectionState.isConnected
             )
 
-            // 手环文件管理入口
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                onClick = onOpenBandFiles,
-                showIndication = true,
-                pressFeedbackType = PressFeedbackType.Tilt
+            // 手环文件管理入口 + 本地存储库入口（并排）
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Card(
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenBandFiles,
+                    showIndication = true,
+                    pressFeedbackType = PressFeedbackType.Tilt
                 ) {
-                    Icon(
-                        imageVector = MiuixIcons.File,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "手环文件管理",
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onSurface
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.File,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
                         )
-                        Text(
-                            text = "浏览手环上的文件，创建文件夹、导入考点",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "手环文件管理",
+                                style = MiuixTheme.textStyles.title4,
+                                fontWeight = FontWeight.Medium,
+                                color = MiuixTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "浏览手环文件",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
                     }
-                    Icon(
-                        imageVector = MiuixIcons.Notes,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                }
+
+                Card(
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenLocalStorage,
+                    showIndication = true,
+                    pressFeedbackType = PressFeedbackType.Tilt
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Notes,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "本地存储库",
+                                style = MiuixTheme.textStyles.title4,
+                                fontWeight = FontWeight.Medium,
+                                color = MiuixTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "管理本地考点",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                    }
                 }
             }
 

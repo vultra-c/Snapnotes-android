@@ -70,12 +70,15 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.File
+import top.yukonga.miuix.kmp.icon.extended.Home
+import top.yukonga.miuix.kmp.icon.extended.Store
+import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.VerticalSplit
-import top.yukonga.miuix.kmp.icon.extended.Notes
 import com.whyy.snapnotes.ui.screens.StoreScreen
+import com.whyy.snapnotes.ui.screens.StoreDetailScreen
+import com.whyy.snapnotes.ui.screens.LocalStorageScreen
 import com.whyy.snapnotes.data.StoreSubject
+import com.whyy.snapnotes.data.StorePack
 
 sealed interface Screen : NavKey {
     data object HomePager : Screen
@@ -88,6 +91,8 @@ sealed interface Screen : NavKey {
     data object AmadeusConfig : Screen
     data object AmadeusChat : Screen
     data object AmadeusContext : Screen
+    data class StoreDetail(val pack: com.whyy.snapnotes.data.StorePack) : Screen
+    data object LocalStorage : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -213,6 +218,8 @@ class MainActivity : ComponentActivity() {
                 val bandTreeState by viewModel.bandTreeState.collectAsState()
                 val amadeusModels by viewModel.amadeusModels.collectAsState()
                 val amadeusModelsLoading by viewModel.amadeusModelsLoading.collectAsState()
+                val showFolderSelection by viewModel.showFolderSelection.collectAsState()
+                val latestBandFolderId by viewModel.latestBandFolderId.collectAsState()
 
                 // 「启用 Amadeus」开启 → 请求 Doze 电池优化白名单（后台/锁屏跑 LLM 网络的前提）。
                 LaunchedEffect(Unit) {
@@ -276,6 +283,14 @@ class MainActivity : ComponentActivity() {
                         backStack.add(Screen.BandFileTree)
                     }
                 }
+                val navigateToStoreDetail = { pack: com.whyy.snapnotes.data.StorePack ->
+                    backStack.add(Screen.StoreDetail(pack))
+                }
+                val navigateToLocalStorage = {
+                    if (backStack.lastOrNull() != Screen.LocalStorage) {
+                        backStack.add(Screen.LocalStorage)
+                    }
+                }
                 // 注入给 Activity 侧的导出流程入口（已命名后用它打开选目录模式）。
                 navigateToFileManagerEntry = navigateToFileManager
 
@@ -314,7 +329,7 @@ class MainActivity : ComponentActivity() {
                                             viewModel.openHome()
                                             scope.launch { pagerState.animateScrollToPage(0) }
                                         },
-                                        icon = MiuixIcons.VerticalSplit,
+                                        icon = MiuixIcons.Home,
                                         label = "主页"
                                     )
                                     NavigationBarItem(
@@ -323,7 +338,7 @@ class MainActivity : ComponentActivity() {
                                             viewModel.openStore()
                                             scope.launch { pagerState.animateScrollToPage(1) }
                                         },
-                                        icon = MiuixIcons.Notes,
+                                        icon = MiuixIcons.Store,
                                         label = "商店"
                                     )
                                     NavigationBarItem(
@@ -332,7 +347,7 @@ class MainActivity : ComponentActivity() {
                                             viewModel.openHistory()
                                             scope.launch { pagerState.animateScrollToPage(2) }
                                         },
-                                        icon = MiuixIcons.File,
+                                        icon = MiuixIcons.Recent,
                                         label = "历史"
                                     )
                                     NavigationBarItem(
@@ -378,7 +393,11 @@ class MainActivity : ComponentActivity() {
                                                     onStartPush = viewModel::startPushFromSelected,
                                                     onTroubleshoot = navigateToTroubleshoot,
                                                     onOpenAmadeusChat = navigateToAmadeusChat,
-                                                    onOpenAmadeusConfig = navigateToAmadeus,
+                                                    amadeusEnabled = amadeus.enabled,
+                                                    amadeusReady = amadeus.isReady,
+                                                    amadeusSummary = if (!amadeus.enabled) "未启用"
+                                                        else if (amadeus.isReady) "已配置 · ${amadeus.model}"
+                                                        else "配置不完整",
                                                     editorSubjects = editorSubjects,
                                                     formulaRenderer = editorFormulaRenderer,
                                                     onAddSubject = viewModel::addSubject,
@@ -404,10 +423,12 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     onCreateFolder = viewModel::createFolder,
                                                     onOpenBandFiles = navigateToBandFileTree,
+                                                    onOpenLocalStorage = navigateToLocalStorage,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
                                                 1 -> StoreScreen(
+                                                    onPackClick = navigateToStoreDetail,
                                                     onCreateFolder = viewModel::createFolder,
                                                     onImportSubject = { subject ->
                                                         viewModel.importStoreSubject(subject)
@@ -521,6 +542,47 @@ class MainActivity : ComponentActivity() {
                                             onCreateFolder = viewModel::createBandFolder,
                                             onDeleteNode = viewModel::deleteBandNode,
                                             onRenameNode = viewModel::renameBandNode,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    entry<Screen.StoreDetail> { screenEntry ->
+                                        StoreDetailScreen(
+                                            pack = screenEntry.pack,
+                                            onBackClick = navigateBack,
+                                            onImportAll = {
+                                                viewModel.importStoreSubjects(screenEntry.pack.subjects)
+                                                navigateBack()
+                                            },
+                                            onImportSelected = { selected ->
+                                                viewModel.importStoreSubjects(selected)
+                                                navigateBack()
+                                            },
+                                            onImportSingle = { subject ->
+                                                viewModel.importStoreSubject(subject)
+                                            },
+                                            onCreateFolder = viewModel::createFolder,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    entry<Screen.LocalStorage> {
+                                        LaunchedEffect(Unit) { viewModel.refreshLocalStorage() }
+                                        val localFolders by viewModel.localFolders.collectAsState()
+                                        val localFiles by viewModel.localFiles.collectAsState()
+                                        val localCurrentPath by viewModel.localCurrentPath.collectAsState()
+                                        LocalStorageScreen(
+                                            currentPath = localCurrentPath,
+                                            folders = localFolders,
+                                            files = localFiles,
+                                            onBackClick = navigateBack,
+                                            onFolderClick = viewModel::navigateLocalFolder,
+                                            onCreateFolder = viewModel::createLocalFolder,
+                                            onImportToBand = { file ->
+                                                viewModel.onBuiltinFilePicked(file)
+                                                navigateBack()
+                                            },
+                                            onDeleteFile = viewModel::deleteLocalFile,
+                                            onRenameFile = viewModel::renameLocalFile,
+                                            onRefresh = viewModel::refreshLocalStorage,
                                             modifier = Modifier.fillMaxSize()
                                         )
                                     }
@@ -683,6 +745,14 @@ class MainActivity : ComponentActivity() {
                                     fileName
                                 )
                             }
+                        )
+
+                        com.whyy.snapnotes.ui.components.FolderSelectionDialog(
+                            show = showFolderSelection,
+                            treeState = bandTreeState,
+                            defaultFolderId = latestBandFolderId,
+                            onConfirm = viewModel::confirmFolderSelection,
+                            onDismiss = viewModel::cancelFolderSelection
                         )
                     }
                 } // Box 结束（Scaffold + 对话框）

@@ -79,6 +79,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  */
 @Composable
 fun StoreScreen(
+    onPackClick: (StorePack) -> Unit = {},
     onCreateFolder: (String) -> Unit = {},
     onImportSubject: (StoreSubject) -> Unit = {},
     onImportSubjects: (List<StoreSubject>) -> Unit = {},
@@ -86,7 +87,6 @@ fun StoreScreen(
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
     var showFolderDialog by remember { mutableStateOf(false) }
-    var detailPack by remember { mutableStateOf<StorePack?>(null) }
 
     if (showFolderDialog) {
         com.whyy.snapnotes.ui.components.FolderCreationDialog(
@@ -96,25 +96,6 @@ fun StoreScreen(
                 onCreateFolder(name)
             },
             onDismiss = { showFolderDialog = false }
-        )
-    }
-
-    detailPack?.let { pack ->
-        StorePackDetailDialog(
-            pack = pack,
-            onDismiss = { detailPack = null },
-            onImportAll = {
-                detailPack = null
-                onImportSubjects(pack.subjects)
-            },
-            onImportSelected = { selected ->
-                detailPack = null
-                onImportSubjects(selected)
-            },
-            onImportSingle = { subject ->
-                detailPack = null
-                onImportSubject(subject)
-            }
         )
     }
 
@@ -201,7 +182,7 @@ fun StoreScreen(
                     rowPacks.forEach { pack ->
                         StorePackCard(
                             pack = pack,
-                            onClick = { detailPack = pack },
+                            onClick = { onPackClick(pack) },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -326,222 +307,6 @@ private fun StorePackCard(
                 style = MiuixTheme.textStyles.footnote2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary
             )
-        }
-    }
-}
-
-/**
- * 知识点包详情对话框。
- * 支持一键导入全部科目，或勾选部分科目导入。
- */
-@Composable
-private fun StorePackDetailDialog(
-    pack: StorePack,
-    onDismiss: () -> Unit,
-    onImportAll: () -> Unit,
-    onImportSelected: (List<StoreSubject>) -> Unit,
-    onImportSingle: (StoreSubject) -> Unit
-) {
-    val selected = remember { mutableStateMapOf<String, Boolean>() }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surface)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
-                // 标题栏
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = pack.name,
-                        style = MiuixTheme.textStyles.title2,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = MiuixIcons.Close,
-                            contentDescription = "关闭",
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    text = pack.description,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                )
-
-                Spacer(Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "${pack.subjects.size} 科目",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "${pack.totalEntries} 条知识点",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    if (pack.isFree) {
-                        Text(
-                            text = "免费",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // 一键导入全部
-                Button(
-                    onClick = onImportAll,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColorsPrimary()
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Download,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(
-                        text = "一键导入全部 ${pack.totalEntries} 条",
-                        color = MiuixTheme.colorScheme.onPrimary
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Text(
-                    text = "或选择科目导入",
-                    style = MiuixTheme.textStyles.title4,
-                    fontWeight = FontWeight.Medium,
-                    color = MiuixTheme.colorScheme.onSurface
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                // 科目列表（可滚动）
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 280.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    pack.subjects.forEach { subject ->
-                        val isSelected = selected[subject.name] == true
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    if (isSelected) {
-                                        selected.remove(subject.name)
-                                    } else {
-                                        selected[subject.name] = true
-                                    }
-                                }
-                                .padding(vertical = 10.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            // 选择圆圈
-                            Box(
-                                modifier = Modifier
-                                    .size(22.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isSelected) MiuixTheme.colorScheme.primary
-                                        else Color.Transparent
-                                    )
-                                    .border(
-                                        width = 2.dp,
-                                        color = if (isSelected) MiuixTheme.colorScheme.primary
-                                        else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = MiuixIcons.Ok,
-                                        contentDescription = null,
-                                        tint = MiuixTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                            }
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = subject.name,
-                                    style = MiuixTheme.textStyles.body2,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MiuixTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "${subject.entries.size} 条知识点",
-                                    style = MiuixTheme.textStyles.footnote2,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                )
-                            }
-
-                            // 单科导入按钮
-                            Icon(
-                                imageVector = MiuixIcons.Download,
-                                contentDescription = "导入此科目",
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clickable { onImportSingle(subject) }
-                            )
-                        }
-                    }
-                }
-
-                // 导入选中按钮
-                val selectedCount = selected.count { it.value }
-                if (selectedCount > 0) {
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            val picked = pack.subjects.filter { selected[it.name] == true }
-                            onImportSelected(picked)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColorsPrimary()
-                    ) {
-                        Text(
-                            text = "导入选中 $selectedCount 个科目",
-                            color = MiuixTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            }
         }
     }
 }

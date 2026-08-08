@@ -95,6 +95,22 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private var pendingImportFolderId: String? = null
     private var pendingImportFolderName: String? = null
 
+    /** 推送前文件夹选择对话框状态。 */
+    private val _showFolderSelection = MutableStateFlow(false)
+    val showFolderSelection = _showFolderSelection.asStateFlow()
+
+    /** 手环端最新创建的文件夹 ID（用于默认选中）。null 表示无文件夹，默认主页。 */
+    private val _latestBandFolderId = MutableStateFlow<String?>(null)
+    val latestBandFolderId = _latestBandFolderId.asStateFlow()
+
+    /* ──────────── 本地存储库 ──────────── */
+    private val _localCurrentPath = MutableStateFlow("")
+    val localCurrentPath = _localCurrentPath.asStateFlow()
+    private val _localFolders = MutableStateFlow<List<com.whyy.snapnotes.ui.screens.LocalFolder>>(emptyList())
+    val localFolders = _localFolders.asStateFlow()
+    private val _localFiles = MutableStateFlow<List<com.whyy.snapnotes.ui.screens.LocalFile>>(emptyList())
+    val localFiles = _localFiles.asStateFlow()
+
     /** 是否使用应用内文件管理器导入；关掉则回退系统文件选择器。默认开启，与参考项目一致。 */
     private val _useBuiltinFileManager =
         MutableStateFlow(prefs.getBoolean(useBuiltinFileManagerKey, true))
@@ -1397,13 +1413,34 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             _showFirstSyncConfirm.value = true
             return
         }
-        viewModelScope.launch { doPush(uri) }
+        // 推送前先同步手环文件树，再弹出文件夹选择对话框
+        refreshBandTree()
+        _showFolderSelection.value = true
+    }
+
+    /** 用户在文件夹选择对话框中确认目标文件夹后触发实际推送。 */
+    fun confirmFolderSelection(folderId: String?) {
+        _showFolderSelection.value = false
+        pendingImportFolderId = folderId
+        pendingPushUri?.let { uri ->
+            viewModelScope.launch { doPush(uri, folderId) }
+        }
+    }
+
+    /** 用户取消文件夹选择。 */
+    fun cancelFolderSelection() {
+        _showFolderSelection.value = false
+        pendingPushUri = null
     }
 
     fun confirmFirstSync() {
         prefs.edit().putBoolean(firstSyncConfirmedKey, true).apply()
         _showFirstSyncConfirm.value = false
-        pendingPushUri?.let { uri -> viewModelScope.launch { doPush(uri) } }
+        // 首次确认后同样走文件夹选择流程
+        pendingPushUri?.let { uri ->
+            refreshBandTree()
+            _showFolderSelection.value = true
+        }
     }
 
     fun cancelFirstSyncConfirm() {
@@ -1579,7 +1616,7 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private suspend fun doPush(uri: Uri) {
+    private suspend fun doPush(uri: Uri, folderId: String? = null) {
         val fileInfo = withContext(Dispatchers.IO) { getFileInfo(uri) }
         _selectedFile.value = fileInfo
         pendingPushUri = uri
@@ -1604,7 +1641,7 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             _pushState.update { it.copy(statusText = "准备发送") }
 
             val activePusher = pusher ?: throw IllegalStateException("通信层未初始化")
-            activePusher.pushFile(bytes, fileInfo.fileName)
+            activePusher.pushFile(bytes, fileInfo.fileName, folderId)
         } catch (e: Exception) {
             val message = e.message ?: "未知错误"
             Log.e("SnapNotesViewModel", "push fail", e)
@@ -1880,6 +1917,8 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             val result = mgr.createFolder(trimmed, parentId)
             if (result.success) {
                 _snackbarMessage.value = "已创建文件夹：$trimmed"
+                // 记录最新创建的文件夹 ID，用于推送时默认选中
+                result.folderId?.let { _latestBandFolderId.value = it }
                 refreshBandTree()
             } else {
                 _snackbarMessage.value = "创建文件夹失败：${result.error ?: "未知错误"}"
@@ -1923,6 +1962,102 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             } else {
                 _snackbarMessage.value = "重命名失败"
             }
+        }
+    }
+
+    /* ──────────── 本地存储库管理方法 ──────────── */
+
+    /** 本地存储根目录：app filesDir 下的 snapnotes_local。 */
+    private val localRootDir: java.io.File by lazy {
+        java.io.File(getApplication<Application>().filesDir, "snapnotes_local").apply { mkdirs() }
+    }
+
+    /** 刷新本地存储库当前目录内容。 */
+    fun refreshLocalStorage() {
+        val path = _localCurrentPath.value.ifBlank { localRootDir.absolutePath }
+        val dir = java.io.File(path)
+        if (!dir.exists() || !dir.isDirectory) {
+            _localCurrentPath.value = localRootDir.absolutePath
+            refreshLocalStorage()
+            return
+        }
+        val folders = mutableListOf<com.whyy.snapnotes.ui.screens.LocalFolder>()
+        val files = mutableListOf<com.whyy.snapnotes.ui.screens.LocalFile>()
+        dir.listFiles()?.forEach { f ->
+            if (f.isDirectory) {
+                folders.add(com.whyy.snapnotes.ui.screens.LocalFolder(f.name, f.absolutePath))
+            } else if (f.isFile && (f.name.endsWith(".json") || f.name.endsWith(".JSON"))) {
+                files.add(com.whyy.snapnotes.ui.screens.LocalFile(
+                    name = f.name,
+                    path = f.absolutePath,
+                    size = f.length(),
+                    lastModified = f.lastModified()
+                ))
+            }
+        }
+        folders.sortBy { it.name.lowercase() }
+        files.sortBy { it.name.lowercase() }
+        _localFolders.value = folders
+        _localFiles.value = files
+    }
+
+    /** 进入指定本地文件夹（或回到根目录）。 */
+    fun navigateLocalFolder(path: String) {
+        val dir = java.io.File(path)
+        if (dir.exists() && dir.isDirectory) {
+            _localCurrentPath.value = dir.absolutePath
+            refreshLocalStorage()
+        }
+    }
+
+    /** 在当前本地目录下创建文件夹。 */
+    fun createLocalFolder(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) {
+            _snackbarMessage.value = "文件夹名称不能为空"
+            return
+        }
+        val parent = java.io.File(_localCurrentPath.value.ifBlank { localRootDir.absolutePath })
+        val newDir = java.io.File(parent, trimmed)
+        if (newDir.exists()) {
+            _snackbarMessage.value = "文件夹已存在"
+            return
+        }
+        if (newDir.mkdirs()) {
+            _snackbarMessage.value = "已创建文件夹：$trimmed"
+            refreshLocalStorage()
+        } else {
+            _snackbarMessage.value = "创建文件夹失败"
+        }
+    }
+
+    /** 删除本地文件或文件夹。 */
+    fun deleteLocalFile(file: java.io.File) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                if (file.isDirectory) file.deleteRecursively() else file.delete()
+            }
+            _snackbarMessage.value = if (ok) "已删除" else "删除失败"
+            refreshLocalStorage()
+        }
+    }
+
+    /** 重命名本地文件或文件夹。 */
+    fun renameLocalFile(file: java.io.File, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) {
+            _snackbarMessage.value = "名称不能为空"
+            return
+        }
+        val target = java.io.File(file.parentFile, trimmed)
+        if (target.exists()) {
+            _snackbarMessage.value = "名称已存在"
+            return
+        }
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { file.renameTo(target) }
+            _snackbarMessage.value = if (ok) "已重命名" else "重命名失败"
+            refreshLocalStorage()
         }
     }
 

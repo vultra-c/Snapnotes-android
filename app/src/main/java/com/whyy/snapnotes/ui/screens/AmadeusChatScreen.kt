@@ -151,6 +151,9 @@ fun AmadeusChatScreen(
                     IconButton(onClick = { showClearConfirm = true }, modifier = Modifier.padding(end = 6.dp)) {
                         Icon(imageVector = MiuixIcons.Delete, contentDescription = "清空对话")
                     }
+                    com.whyy.snapnotes.ui.components.MoreMenu(
+                        onOpenAmadeusConfig = onOpenConfig
+                    )
                 }
             )
         },

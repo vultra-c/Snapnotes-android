@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.vector.ImageVector
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -22,19 +23,46 @@ import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 /**
  * 可复用的「更多」菜单按钮：显示 More 图标，点击弹出下拉菜单。
  *
- * 菜单项：
- * - 创建文件夹
- * - Amadeus 对话（手机端与 AI 直接对话，支持上传文件生成 JSON）
- * - Amadeus 设置（配置 API Key / Model / Base URL）
+ * 菜单项按需显示（传入 null 则不显示对应项）：
+ * - 创建文件夹（[onCreateFolder] 非 null 时显示）
+ * - Amadeus 对话（[onOpenAmadeusChat] 非 null 时显示）
+ * - Amadeus 设置（[onOpenAmadeusConfig] 非 null 时显示）
  */
 @Composable
 fun MoreMenu(
-    onCreateFolder: () -> Unit,
-    onOpenAmadeusChat: () -> Unit = {},
-    onOpenAmadeusConfig: () -> Unit = {},
+    onCreateFolder: (() -> Unit)? = null,
+    onOpenAmadeusChat: (() -> Unit)? = null,
+    onOpenAmadeusConfig: (() -> Unit)? = null,
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier
 ) {
     var showPopup by remember { mutableStateOf(false) }
+
+    // 构建菜单项列表：仅包含回调非 null 的项
+    data class MenuItem(val text: String, val icon: ImageVector, val onClick: () -> Unit)
+    val items = remember(onCreateFolder, onOpenAmadeusChat, onOpenAmadeusConfig) {
+        buildList {
+            onCreateFolder?.let {
+                add(MenuItem("创建文件夹", MiuixIcons.Folder) {
+                    showPopup = false
+                    it()
+                })
+            }
+            onOpenAmadeusChat?.let {
+                add(MenuItem("Amadeus 对话", MiuixIcons.Notes) {
+                    showPopup = false
+                    it()
+                })
+            }
+            onOpenAmadeusConfig?.let {
+                add(MenuItem("Amadeus 设置", MiuixIcons.Settings) {
+                    showPopup = false
+                    it()
+                })
+            }
+        }
+    }
+
+    if (items.isEmpty()) return
 
     androidx.compose.foundation.layout.Box(modifier = modifier) {
         IconButton(onClick = { showPopup = true }) {
@@ -50,63 +78,24 @@ fun MoreMenu(
             onDismissRequest = { showPopup = false }
         ) {
             ListPopupColumn {
-                DropdownImpl(
-                    item = DropdownItem(
-                        text = "创建文件夹",
-                        icon = { m ->
-                            Icon(
-                                imageVector = MiuixIcons.Folder,
-                                contentDescription = null,
-                                modifier = m
-                            )
-                        }
-                    ),
-                    optionSize = 3,
-                    isSelected = false,
-                    index = 0,
-                    onSelectedIndexChange = {
-                        showPopup = false
-                        onCreateFolder()
-                    }
-                )
-                DropdownImpl(
-                    item = DropdownItem(
-                        text = "Amadeus 对话",
-                        icon = { m ->
-                            Icon(
-                                imageVector = MiuixIcons.Notes,
-                                contentDescription = null,
-                                modifier = m
-                            )
-                        }
-                    ),
-                    optionSize = 3,
-                    isSelected = false,
-                    index = 1,
-                    onSelectedIndexChange = {
-                        showPopup = false
-                        onOpenAmadeusChat()
-                    }
-                )
-                DropdownImpl(
-                    item = DropdownItem(
-                        text = "Amadeus 设置",
-                        icon = { m ->
-                            Icon(
-                                imageVector = MiuixIcons.Settings,
-                                contentDescription = null,
-                                modifier = m
-                            )
-                        }
-                    ),
-                    optionSize = 3,
-                    isSelected = false,
-                    index = 2,
-                    onSelectedIndexChange = {
-                        showPopup = false
-                        onOpenAmadeusConfig()
-                    }
-                )
+                items.forEachIndexed { index, item ->
+                    DropdownImpl(
+                        item = DropdownItem(
+                            text = item.text,
+                            icon = { m ->
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = null,
+                                    modifier = m
+                                )
+                            }
+                        ),
+                        optionSize = items.size,
+                        isSelected = false,
+                        index = index,
+                        onSelectedIndexChange = { item.onClick() }
+                    )
+                }
             }
         }
     }
