@@ -1,11 +1,9 @@
-name: Build Android APK
+name: Build Release Android APK
 
 on:
   push:
-    branches: [ "main", "master" ] # 当推送到 main 或 master 分支时触发
-  pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # 支持在 GitHub 页面手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,11 +23,25 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon
+    # 1. 执行 Release 统一打包命令
+    - name: Build Universal Release APK
+      run: ./gradlew assembleRelease --no-daemon
 
-    - name: Upload APK Artifact
+    # 2. 提取并重命名产物（带上构建时间和 Commit Hash）
+    - name: Prepare APK Artifact
+      run: |
+        BUILD_TIME=$(date +'%Y%m%d_%H%M')
+        COMMIT_HASH=${GITHUB_SHA::7}
+        mkdir -p build_output
+        
+        # 将生成的 Release APK 复制并命名
+        cp app/build/outputs/apk/release/*.apk build_output/app-release-universal_${BUILD_TIME}_${COMMIT_HASH}.apk
+        echo "BUILD_TIME=${BUILD_TIME}" >> $GITHUB_ENV
+
+    # 3. 上传构件
+    - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: app-release-universal-${{ env.BUILD_TIME }}
+        path: build_output/*.apk
+        retention-days: 7
