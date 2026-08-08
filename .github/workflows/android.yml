@@ -23,18 +23,25 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Decode Keystore from Secret
+    # 从 Secrets 还原签名文件 + properties（最关键步骤）
+    - name: Setup Keystore for Signing
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.jks
-        # 如果项目结构是根目录直接有 app，用上面这行
-        # 如果 keystore 需要放在根目录，改成：echo "..." | base64 -d > release.jks
+        # 还原 jks 文件到项目根目录
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
+        
+        # 动态生成 keystore.properties（不提交到仓库）
+        cat > keystore.properties << EOF
+        storeFile=release.jks
+        storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+        keyAlias=${{ secrets.KEY_ALIAS }}
+        keyPassword=${{ secrets.KEY_PASSWORD }}
+        EOF
+        
+        echo "Keystore 和 properties 已准备完成"
+        ls -l release.jks keystore.properties
 
     - name: Build Universal Release APK
       run: ./gradlew assembleRelease --no-daemon
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     - name: Prepare APK Artifact
       run: |
@@ -42,18 +49,24 @@ jobs:
         COMMIT_HASH=${GITHUB_SHA::7}
         mkdir -p build_output
         
-        # 自动查找生成的 APK（兼容不同项目结构）
-        APK_PATH=$(find . -name "*release*.apk" -not -path "*/intermediates/*" | head -n 1)
+        # 自动查找 release APK（兼容不同输出路径）
+        APK_PATH=$(find . -path "*/outputs/apk/release/*.apk" | head -n 1)
         
         if [ -z "$APK_PATH" ]; then
-          echo "错误：没有找到 release APK！"
+          echo "❌ 未找到 release APK，尝试查找所有 apk："
           find . -name "*.apk" || true
           exit 1
         fi
         
-        cp "$APK_PATH" "build_output/SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
-        echo "APK 已准备好：build_output/SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
+        FINAL_NAME="SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
+        cp "$APK_PATH" "build_output/$FINAL_NAME"
+        
+        echo "✅ APK 已准备好：$FINAL_NAME"
         ls -lh build_output/
+        
+        # 可选：验证签名
+        echo "=== 签名信息 ==="
+        $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "build_output/$FINAL_NAME" || true
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
