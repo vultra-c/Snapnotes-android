@@ -1,9 +1,10 @@
 *.iml
-.gradle
+.gradle/
 /local.properties
 /.idea
 .DS_Store
 /build
+/app/build
 /captures
 .externalNativeBuild
 .cxx
@@ -15,7 +16,7 @@ local.properties
 *.ap_
 *.dex
 
-# 签名相关（绝对不能提交）
+# 签名相关（CI 从 Secrets 生成，不提交到仓库）
 keystore.properties
 *.jks
 *.keystore

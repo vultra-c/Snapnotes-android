@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
  * 三大 API：NodeApi（发现/拉起快应用/检测安装）、AuthApi（申请 DEVICE_MANAGER）、MessageApi（收发 byte[]）。
  * 所有方法返回 [CompletableDeferred] 供协程层 `.await()` 同步化。
  *
- * 对标参考工程 com.bandbbs.ebook-android/logic/Interconn.kt；唯一差异：openApp 拉起页改 `/pages/index`。
+ * 对标参考工程 com.bandbbs.ebook-android/logic/Interconn.kt；唯一差异：openApp 拉起页改 `/pages/import`。
  */
 open class Interconn(context: Context) {
     val nodeApi: NodeApi = getNodeApi(context)
@@ -79,11 +79,7 @@ open class Interconn(context: Context) {
         }
     }
 
-    /**
-     * 申请/校验 DEVICE_MANAGER 权限（控制类操作必需）。
-     * 先 checkPermissions 查询已授权状态；对未授权的权限调 requestPermission 并等待结果，
-     * 确保后续 isWearAppInstalled / launchWearApp / sendMessage 等操作不会因权限缺失而失败。
-     */
+    /** 申请/校验 DEVICE_MANAGER 权限（控制类操作必需）。 */
     fun auth(): CompletableDeferred<Unit> = CompletableDeferred<Unit>().apply {
         val node = currentNode
         if (node == null) {
@@ -92,45 +88,26 @@ open class Interconn(context: Context) {
         }
         val permissions = arrayOf<Permission?>(Permission.DEVICE_MANAGER)
         authApi.checkPermissions(node.id, permissions).addOnSuccessListener { results ->
-            // 收集未授权的权限
-            val ungranted = mutableListOf<Permission>()
             for ((index, granted) in results.withIndex()) {
                 if (!granted) {
-                    permissions[index]?.let { ungranted.add(it) }
+                    authApi.requestPermission(node.id, permissions[index])
+                        .addOnFailureListener { Log.e("Auth", "auth fail", it) }
                 }
             }
-
-            if (ungranted.isEmpty()) {
-                // 全部已授权，直接完成
-                Log.d("Auth", "all permissions already granted")
-                complete(Unit)
-            } else {
-                // 申请未授权的权限，等待申请结果后再完成（避免 fire-and-forget 导致后续操作因权限未就绪而失败）
-                Log.d("Auth", "requesting ${ungranted.size} ungranted permissions")
-                authApi.requestPermission(node.id, *ungranted.toTypedArray())
-                    .addOnSuccessListener { grantedPermissions ->
-                        Log.d("Auth", "permissions granted: ${grantedPermissions?.size ?: 0}")
-                        complete(Unit)
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("Auth", "requestPermission fail", e)
-                        completeExceptionally(Exception("权限授权失败，请在小米运动健康中授权"))
-                    }
-            }
+            complete(Unit)
         }.addOnFailureListener {
-            Log.e("Auth", "checkPermissions fail", it)
             completeExceptionally(Exception("获取权限失败！"))
         }
     }
 
-    /** 拉起手环端闪念小抄快应用到主页（manifest router 注册的 /pages/index），连上后自动同步文件树。 */
+    /** 拉起手环端闪念小抄快应用到导入页（manifest router 注册的 /pages/import）。 */
     fun openApp(): CompletableDeferred<Unit> = CompletableDeferred<Unit>().apply {
         val node = currentNode
         if (node == null) {
             completeExceptionally(Exception("设备未连接！"))
             return@apply
         }
-        nodeApi.launchWearApp(node.id, "/pages/index").addOnSuccessListener {
+        nodeApi.launchWearApp(node.id, "/pages/import").addOnSuccessListener {
             Log.d("OpenApp", "success")
             complete(Unit)
         }.addOnFailureListener {

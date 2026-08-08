@@ -107,80 +107,119 @@ fun EditorScreen(
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Spacer(Modifier.height(4.dp))
-
-            Button(
-                onClick = onLoadFile,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(interactionSource = null, indication = SinkFeedback()),
-                colors = ButtonDefaults.buttonColors()
-            ) {
-                Icon(imageVector = MiuixIcons.File, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("加载现有 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
-            }
-
-            SmallTitle(text = "科目列表", modifier = Modifier.padding(top = 4.dp))
-
-            if (subjects.isEmpty()) {
-                EmptyPlaceholderCard(
-                    text = "还没有任何科目，点击下方按钮添加第一个科目",
-                    icon = MiuixIcons.Edit
-                )
-            }
-
-            subjects.forEachIndexed { subjectIndex, subject ->
-                SubjectCard(
-                    subject = subject,
-                    subjectIndex = subjectIndex,
-                    formulaRenderer = formulaRenderer,
-                    onRemoveSubject = { onRemoveSubject(subjectIndex) },
-                    onUpdateSubjectName = { onUpdateSubjectName(subjectIndex, it) },
-                    onAddEntry = { onAddEntry(subjectIndex) },
-                    onRemoveEntry = { entryIndex -> onRemoveEntry(subjectIndex, entryIndex) },
-                    onUpdateEntry = { entryIndex, entry -> onUpdateEntry(subjectIndex, entryIndex, entry) }
-                )
-            }
-
-            Button(
-                onClick = onAddSubject,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(interactionSource = null, indication = SinkFeedback()),
-                colors = ButtonDefaults.buttonColors()
-            ) {
-                Icon(imageVector = MiuixIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("添加科目", color = MiuixTheme.colorScheme.onSecondaryVariant)
-            }
-
-            Button(
-                onClick = onExportToFile,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(interactionSource = null, indication = SinkFeedback()),
-                colors = ButtonDefaults.buttonColors()
-            ) {
-                Icon(imageVector = MiuixIcons.Download, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("导出 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
-            }
-
-            Button(
-                onClick = onPushFile,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(interactionSource = null, indication = SinkFeedback()),
-                colors = ButtonDefaults.buttonColorsPrimary()
-            ) {
-                Icon(imageVector = MiuixIcons.Send, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("推送 JSON 文件到手环", color = MiuixTheme.colorScheme.onPrimary)
-            }
-
-            Spacer(Modifier.height(8.dp))
+            EditorContent(
+                subjects = subjects,
+                formulaRenderer = formulaRenderer,
+                onAddSubject = onAddSubject,
+                onRemoveSubject = onRemoveSubject,
+                onUpdateSubjectName = onUpdateSubjectName,
+                onAddEntry = onAddEntry,
+                onRemoveEntry = onRemoveEntry,
+                onUpdateEntry = onUpdateEntry,
+                onLoadFile = onLoadFile,
+                onExportToFile = onExportToFile,
+                onPushFile = onPushFile
+            )
         }
+    }
+}
+
+/**
+ * 编辑器内容区：包含加载文件、科目列表、导出、推送等操作。
+ * 可独立嵌入其他页面的滚动列表中（如合并到主页）。
+ */
+@Composable
+fun EditorContent(
+    subjects: List<EditorSubject>,
+    formulaRenderer: FormulaPngRenderer?,
+    onAddSubject: () -> Unit,
+    onRemoveSubject: (Int) -> Unit,
+    onUpdateSubjectName: (Int, String) -> Unit,
+    onAddEntry: (Int) -> Unit,
+    onRemoveEntry: (Int, Int) -> Unit,
+    onUpdateEntry: (Int, Int, EditorEntry) -> Unit,
+    onLoadFile: () -> Unit,
+    onExportToFile: () -> Unit,
+    onPushFile: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Spacer(Modifier.height(4.dp))
+
+        Button(
+            onClick = onLoadFile,
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressable(interactionSource = null, indication = SinkFeedback()),
+            colors = ButtonDefaults.buttonColors()
+        ) {
+            Icon(imageVector = MiuixIcons.File, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("加载现有 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
+        }
+
+        SmallTitle(text = "科目列表", modifier = Modifier.padding(top = 4.dp))
+
+        if (subjects.isEmpty()) {
+            EmptyPlaceholderCard(
+                text = "还没有任何科目，点击下方按钮添加第一个科目",
+                icon = MiuixIcons.Edit
+            )
+        }
+
+        subjects.forEachIndexed { subjectIndex, subject ->
+            SubjectCard(
+                subject = subject,
+                subjectIndex = subjectIndex,
+                formulaRenderer = formulaRenderer,
+                onRemoveSubject = { onRemoveSubject(subjectIndex) },
+                onUpdateSubjectName = { onUpdateSubjectName(subjectIndex, it) },
+                onAddEntry = { onAddEntry(subjectIndex) },
+                onRemoveEntry = { entryIndex -> onRemoveEntry(subjectIndex, entryIndex) },
+                onUpdateEntry = { entryIndex, entry -> onUpdateEntry(subjectIndex, entryIndex, entry) }
+            )
+        }
+
+        Button(
+            onClick = onAddSubject,
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressable(interactionSource = null, indication = SinkFeedback()),
+            colors = ButtonDefaults.buttonColors()
+        ) {
+            Icon(imageVector = MiuixIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("添加科目", color = MiuixTheme.colorScheme.onSecondaryVariant)
+        }
+
+        Button(
+            onClick = onExportToFile,
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressable(interactionSource = null, indication = SinkFeedback()),
+            colors = ButtonDefaults.buttonColors()
+        ) {
+            Icon(imageVector = MiuixIcons.Download, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("导出 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
+        }
+
+        Button(
+            onClick = onPushFile,
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressable(interactionSource = null, indication = SinkFeedback()),
+            colors = ButtonDefaults.buttonColorsPrimary()
+        ) {
+            Icon(imageVector = MiuixIcons.Send, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("推送 JSON 文件到手环", color = MiuixTheme.colorScheme.onPrimary)
+        }
+
+        Spacer(Modifier.height(8.dp))
     }
 }
 

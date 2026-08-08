@@ -49,13 +49,10 @@ import com.whyy.snapnotes.ui.components.FirstSyncConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryBatchDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.VersionIncompatibleDialog
-import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
-import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
-import com.whyy.snapnotes.ui.screens.BandFileManagerScreen
-import com.whyy.snapnotes.ui.screens.EditorScreen
 import com.whyy.snapnotes.ui.screens.BuiltinFileManagerScreen
 import com.whyy.snapnotes.ui.screens.AboutScreen
 import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
+import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
 import com.whyy.snapnotes.ui.screens.HistoryScreen
 import com.whyy.snapnotes.ui.screens.HomeScreen
 import com.whyy.snapnotes.ui.screens.ProgressScreen
@@ -71,10 +68,12 @@ import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.VerticalSplit
+import top.yukonga.miuix.kmp.icon.extended.Notes
+import com.whyy.snapnotes.ui.screens.StoreScreen
+import com.whyy.snapnotes.data.StoreSubject
 
 sealed interface Screen : NavKey {
     data object HomePager : Screen
@@ -85,7 +84,6 @@ sealed interface Screen : NavKey {
     data object Troubleshoot : Screen
     data object AmadeusConfig : Screen
     data object AmadeusContext : Screen
-    data object BandFileManager : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -208,7 +206,6 @@ class MainActivity : ComponentActivity() {
                 val troubleshootState by viewModel.troubleshootState.collectAsState()
                 val amadeus by viewModel.amadeus.collectAsState()
                 val amadeusLastCall by viewModel.amadeusLastCall.collectAsState()
-                val bandTree by viewModel.bandTree.collectAsState()
 
                 // 「启用 Amadeus」开启 → 请求 Doze 电池优化白名单（后台/锁屏跑 LLM 网络的前提）。
                 LaunchedEffect(Unit) {
@@ -262,11 +259,6 @@ class MainActivity : ComponentActivity() {
                         backStack.add(Screen.AmadeusContext)
                     }
                 }
-                val navigateToBandFileManager = {
-                    if (backStack.lastOrNull() != Screen.BandFileManager) {
-                        backStack.add(Screen.BandFileManager)
-                    }
-                }
                 // 注入给 Activity 侧的导出流程入口（已命名后用它打开选目录模式）。
                 navigateToFileManagerEntry = navigateToFileManager
 
@@ -279,10 +271,11 @@ class MainActivity : ComponentActivity() {
                             pagerState.animateScrollToPage(0)
                         }
                         AppScreen.Editor -> {
+                            // 编辑器已合并到主页：导航到主页并滚动到知识点管理区域。
                             if (backStack.lastOrNull() !is Screen.HomePager) {
                                 navigateToHome()
                             }
-                            pagerState.animateScrollToPage(1)
+                            pagerState.animateScrollToPage(0)
                         }
                         else -> Unit
                     }
@@ -310,11 +303,11 @@ class MainActivity : ComponentActivity() {
                                     NavigationBarItem(
                                         selected = pagerState.currentPage == 1,
                                         onClick = {
-                                            viewModel.openEditor()
+                                            viewModel.openStore()
                                             scope.launch { pagerState.animateScrollToPage(1) }
                                         },
-                                        icon = MiuixIcons.Edit,
-                                        label = "编辑"
+                                        icon = MiuixIcons.Notes,
+                                        label = "商店"
                                     )
                                     NavigationBarItem(
                                         selected = pagerState.currentPage == 2,
@@ -349,7 +342,7 @@ class MainActivity : ComponentActivity() {
                                         HorizontalPager(
                                             state = pagerState,
                                             modifier = Modifier.fillMaxSize(),
-                                            beyondViewportPageCount = 1,
+                                            beyondViewportPageCount = 2,
                                             key = { it }
                                         ) { page ->
                                             when (page) {
@@ -376,12 +369,7 @@ class MainActivity : ComponentActivity() {
                                                         else -> "配置不完整"
                                                     },
                                                     onOpenAmadeus = navigateToAmadeus,
-                                                    onOpenBandFiles = navigateToBandFileManager,
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
-
-                                                1 -> EditorScreen(
-                                                    subjects = editorSubjects,
+                                                    editorSubjects = editorSubjects,
                                                     formulaRenderer = editorFormulaRenderer,
                                                     onAddSubject = viewModel::addSubject,
                                                     onRemoveSubject = viewModel::removeSubject,
@@ -396,15 +384,22 @@ class MainActivity : ComponentActivity() {
                                                         )
                                                     },
                                                     onExportToFile = {
-                                                        // 导出到用户指定目录：先命名，再用内置文件管理器选目录写入。
                                                         startExportFlow()
                                                     },
                                                     onPushFile = {
-                                                        // 推送当前编辑内容生成的 JSON，走与主页一致的主推送链路。
                                                         viewModel.pushFromString(
                                                             viewModel.getEditorJsonString(),
                                                             "自定义知识点.json"
                                                         )
+                                                    },
+                                                    onCreateFolder = viewModel::createFolder,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+
+                                                1 -> StoreScreen(
+                                                    onCreateFolder = viewModel::createFolder,
+                                                    onImportSubject = { subject ->
+                                                        viewModel.importStoreSubject(subject)
                                                     },
                                                     modifier = Modifier.fillMaxSize()
                                                 )
@@ -414,7 +409,8 @@ class MainActivity : ComponentActivity() {
                                                     onRepush = viewModel::repushRecord,
                                                     onDeleteRequest = viewModel::requestHistoryDelete,
                                                     onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
-                                                    onEditRecord = viewModel::openEditorFromCache,  // 新增这一行
+                                                    onEditRecord = viewModel::openEditorFromCache,
+                                                    onCreateFolder = viewModel::createFolder,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
@@ -427,7 +423,6 @@ class MainActivity : ComponentActivity() {
                                                     onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
                                                     lastExportDirSummary = lastExportDirSummary,
                                                     onPickExportDir = {
-                                                        // 设置页点「导出目录」：以内置文件管理器浏览目录（选目录模式，不写文件）。
                                                         pendingFileManagerForEditor = false
                                                         pendingExportSelection = false
                                                         pendingPickDirBrowse = true
@@ -435,6 +430,7 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     onOpenAbout = navigateToAbout,
                                                     onResetFirstSyncConfirm = viewModel::resetFirstSyncConfirm,
+                                                    onCreateFolder = viewModel::createFolder,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
                                             }
@@ -564,17 +560,6 @@ class MainActivity : ComponentActivity() {
                                                 viewModel.testSendAmadeus(text)
                                             },
                                             onExportLastReply = { viewModel.exportLastAmadeusReply() },
-                                            onBackClick = navigateBack,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.BandFileManager> {
-                                        BandFileManagerScreen(
-                                            state = bandTree,
-                                            onCreateFolder = { name -> viewModel.createBandFolder(name) },
-                                            onRenameNode = viewModel::renameBandNode,
-                                            onDeleteNode = viewModel::deleteBandNode,
-                                            onRefresh = viewModel::requestBandTree,
                                             onBackClick = navigateBack,
                                             modifier = Modifier.fillMaxSize()
                                         )

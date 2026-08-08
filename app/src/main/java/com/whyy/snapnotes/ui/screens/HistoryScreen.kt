@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
+import com.whyy.snapnotes.ui.components.MoreMenu
+import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
@@ -66,6 +68,7 @@ fun HistoryScreen(
     onDeleteRequest: (PushRecord) -> Unit,
     onBatchDeleteRequest: (List<PushRecord>) -> Unit,
     onEditRecord: (PushRecord) -> Unit,      // 新增：编辑历史记录
+    onCreateFolder: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
@@ -73,6 +76,18 @@ fun HistoryScreen(
 
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
+    var showFolderDialog by remember { mutableStateOf(false) }
+
+    if (showFolderDialog) {
+        FolderCreationDialog(
+            show = true,
+            onConfirm = { name ->
+                showFolderDialog = false
+                onCreateFolder(name)
+            },
+            onDismiss = { showFolderDialog = false }
+        )
+    }
 
     val selectAllState = when {
         records.isEmpty() -> ToggleableState.Off
@@ -125,6 +140,9 @@ fun HistoryScreen(
                             Icon(imageVector = MiuixIcons.Close, contentDescription = "退出多选")
                         }
                     } else {
+                        MoreMenu(
+                            onCreateFolder = { showFolderDialog = true }
+                        )
                         IconButton(onClick = { selectionMode = true }) {
                             Icon(imageVector = MiuixIcons.SelectAll, contentDescription = "多选")
                         }

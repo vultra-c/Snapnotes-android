@@ -203,71 +203,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private val _pushState = MutableStateFlow(PushState())
     val pushState = _pushState.asStateFlow()
 
-    /* ──────────── 手环文件树（BandFileManagerScreen 展示） ──────────── */
-    private val _bandTree = MutableStateFlow(BandTreeState())
-    val bandTree = _bandTree.asStateFlow()
-
-    /** 解析手环下发的 tree 数组为 [BandTreeNode] 列表，递归处理 children。 */
-    private fun parseBandTreeArray(array: JSONArray?): List<BandTreeNode> {
-        if (array == null) return emptyList()
-        val result = mutableListOf<BandTreeNode>()
-        for (i in 0 until array.length()) {
-            val obj = array.optJSONObject(i) ?: continue
-            val id = obj.optString("id", "")
-            val name = obj.optString("name", "")
-            val type = obj.optString("type", "content")
-            val childrenArray = obj.optJSONArray("children")
-            val children = parseBandTreeArray(childrenArray)
-            result.add(BandTreeNode(id = id, name = name, type = type, children = children))
-        }
-        return result
-    }
-
-    /** 请求手环端文件树：发 getTree，回包由 "tree" tag 监听器解析更新 _bandTree。 */
-    fun requestBandTree() {
-        viewModelScope.launch {
-            _bandTree.update { it.copy(isLoading = true) }
-            try {
-                connection?.sendMessage("""{"tag":"tree","action":"getTree"}""")?.await()
-            } catch (e: Exception) {
-                _bandTree.update { it.copy(isLoading = false, error = e.message) }
-            }
-        }
-    }
-
-    /** 在手环端指定父文件夹下创建新文件夹，成功后由回包触发刷新。 */
-    fun createBandFolder(name: String, parentId: String = "bt_root") {
-        viewModelScope.launch {
-            try {
-                connection?.sendMessage("""{"tag":"tree","action":"createFolder","name":"$name","parentId":"$parentId"}""")?.await()
-            } catch (e: Exception) {
-                Log.e("SnapNotesViewModel", "createBandFolder fail", e)
-            }
-        }
-    }
-
-    /** 删除手环端指定节点，成功后由回包触发刷新。 */
-    fun deleteBandNode(nodeId: String) {
-        viewModelScope.launch {
-            try {
-                connection?.sendMessage("""{"tag":"tree","action":"deleteNode","nodeId":"$nodeId"}""")?.await()
-            } catch (e: Exception) {
-                Log.e("SnapNotesViewModel", "deleteBandNode fail", e)
-            }
-        }
-    }
-
-    /** 重命名手环端指定节点，成功后由回包触发刷新。 */
-    fun renameBandNode(nodeId: String, newName: String) {
-        viewModelScope.launch {
-            try {
-                connection?.sendMessage("""{"tag":"tree","action":"renameNode","nodeId":"$nodeId","newName":"$newName"}""")?.await()
-            } catch (e: Exception) {
-                Log.e("SnapNotesViewModel", "renameBandNode fail", e)
-            }
-        }
-    }
-
     /* ──────────── 公式图片推送（startFormula 链路） ──────────── */
     /** 离屏渲染器（MainActivity 注入；用 Activity context 创建 Dialog+WebView）。 */
     private var formulaRenderer: FormulaPngRenderer? = null
@@ -322,6 +257,10 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         loadHistory()
+        // 编辑器已合并到主页：启动时检查是否有未提交的草稿，有则提示恢复。
+        _showDraftRestorePrompt.value = runCatching {
+            editorDraftFile.exists() && editorDraftFile.readText().isNotBlank()
+        }.getOrDefault(false)
         // 编辑器草稿自动保存：内容变化后防抖落盘（有内容才写，避免空草稿覆盖旧稿）。
         viewModelScope.launch {
             var saveJob: Job? = null
@@ -513,6 +452,36 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         _screen.value = AppScreen.History
     }
 
+    fun openStore() {
+        // 商店页是底部导航的一部分，不需要切换 AppScreen
+    }
+
+    /**
+     * 从商店导入科目知识点到编辑器并推送到手环。
+     * 将商店的 StoreSubject 转为编辑器格式，同时直接生成 JSON 推送。
+     */
+    fun importStoreSubject(subject: com.whyy.snapnotes.data.StoreSubject) {
+        viewModelScope.launch {
+            val json = buildString {
+                append("{")
+                append("\"${subject.name}\":[")
+                subject.entries.forEachIndexed { index, entry ->
+                    if (index > 0) append(",")
+                    append("{")
+                    append("\"id\":\"${entry.id}\",")
+                    append("\"title\":\"${entry.title.replace("\"", "\\\"")}\",")
+                    append("\"desc\":\"${entry.desc.replace("\"", "\\\"")}\",")
+                    append("\"raw\":\"\",")
+                    append("\"points\":[]")
+                    append("}")
+                }
+                append("]")
+                append("}")
+            }
+            pushFromString(json, "商店_${subject.name}.json")
+        }
+    }
+
     fun setAppearanceMode(mode: AppearanceMode) {
         _appearanceMode.value = mode
         prefs.edit().putString(appearanceModeKey, mode.name).apply()
@@ -680,8 +649,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             markConnectionFailed("连接已断开")
             // 断开后旧存储数据已无意义，清掉避免圆环显示陈旧值。
             _storageInfo.value = null
-            // 断开后手环文件树已无意义，清掉避免展示陈旧数据。
-            _bandTree.value = BandTreeState()
             // 断开后待命无意义：停前台服务避免空耗 + 无效通知。释放 active 网络申请防泄漏。
             amadeusChat?.releaseActiveNetwork()
             if (!_pushState.value.isTransferring) {
@@ -689,42 +656,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             }
             scheduleAutoReconnect()
         }
-
-        // 注册 "tree" tag 监听器：解析手环下发的文件树消息。
-        // 手环端 interconnTree.js 在 BLE 连接打开后自动推送 treeData，
-        // 并响应 getTree/createFolder/deleteNode/renameNode 请求回包。
-        conn.addListener("tree") { payload ->
-            try {
-                val json = JSONObject(payload)
-                val response = json.optString("response", "")
-                when (response) {
-                    "treeData" -> {
-                        val treeArray = json.optJSONArray("tree")
-                        val nodes = parseBandTreeArray(treeArray)
-                        _bandTree.update { it.copy(tree = nodes, isLoading = false, error = null) }
-                    }
-                    "folderCreated" -> {
-                        val success = json.optBoolean("success", true)
-                        if (success) requestBandTree()
-                    }
-                    "nodeDeleted" -> {
-                        val success = json.optBoolean("success", true)
-                        if (success) requestBandTree()
-                    }
-                    "nodeRenamed" -> {
-                        val success = json.optBoolean("success", true)
-                        if (success) requestBandTree()
-                    }
-                    else -> {
-                        // 未知响应，忽略
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("SnapNotesViewModel", "tree msg parse fail", e)
-            }
-        }
-        // 连接建立后自动请求一次文件树，保持手机端与手环同步。
-        conn.setOnConnected { requestBandTree() }
 
         // 启动即自动检测手环连接，主页实时反映状态。
         reconnect()
@@ -1089,6 +1020,7 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
                 val subjects = parseEditorSubjects(text)
                 _editorSubjects.value = subjects
                 _editorLoadError.value = null
+                _snackbarMessage.value = "已加载 ${subjects.size} 个科目到知识点管理"
                 _screen.value = AppScreen.Editor
             } catch (e: Exception) {
                 Log.e("SnapNotesViewModel", "open editor from file fail", e)
@@ -1796,6 +1728,46 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             out.write(buf, 0, n)
         }
         return out.toByteArray()
+    }
+
+    /* ──────────── 文件夹创建（更多菜单入口） ──────────── */
+
+    /** 应用专属知识库目录：文件夹创建的默认位置。 */
+    private val snapnotesFolderDir by lazy {
+        java.io.File(
+            getApplication<Application>().getExternalFilesDir(null)
+                ?: getApplication<Application>().filesDir,
+            "SnapNotes"
+        )
+    }
+
+    /**
+     * 在应用专属知识库目录下创建子文件夹。
+     * 已存在则提示；创建成功后通过 snackbar 反馈路径。
+     */
+    fun createFolder(folderName: String) {
+        val name = folderName.trim()
+        if (name.isBlank()) {
+            _snackbarMessage.value = "文件夹名称不能为空"
+            return
+        }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    if (!snapnotesFolderDir.exists()) snapnotesFolderDir.mkdirs()
+                    val folder = java.io.File(snapnotesFolderDir, name)
+                    if (folder.exists()) {
+                        "文件夹「$name」已存在"
+                    } else {
+                        folder.mkdirs()
+                        "已创建文件夹：$name"
+                    }
+                }.getOrElse { e ->
+                    "创建文件夹失败：${e.message ?: "未知错误"}"
+                }
+            }
+            _snackbarMessage.value = result
+        }
     }
 
 }

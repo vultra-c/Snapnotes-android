@@ -83,29 +83,8 @@ enum class AppScreen {
     Progress,
     Result,
     Editor,
-    History,
-    BandFileManager
+    History
 }
-
-/**
- * 手环端文件树节点。对应手环 dataManager.js 的 getFolderTreeForBluetooth() 返回结构。
- * - [type] 为 "folder" 时可包含 [children]；为 "content" 时是叶子文件节点。
- */
-data class BandTreeNode(
-    val id: String = "",
-    val name: String = "",
-    val type: String = "content", // "folder" or "content"
-    val children: List<BandTreeNode> = emptyList()
-)
-
-/**
- * 手环端文件树整体状态：tree 列表 + 加载/错误标记，供 BandFileManagerScreen 展示。
- */
-data class BandTreeState(
-    val tree: List<BandTreeNode> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
 
 /**
  * 一条「推送历史」记录。仅手机端记账，不反映手环实际内容。

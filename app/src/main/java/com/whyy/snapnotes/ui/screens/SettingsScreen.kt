@@ -4,8 +4,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.whyy.snapnotes.ui.components.FolderCreationDialog
+import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -36,9 +42,22 @@ fun SettingsScreen(
     onPickExportDir: () -> Unit,
     onOpenAbout: () -> Unit,
     onResetFirstSyncConfirm: () -> Unit,
+    onCreateFolder: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+    var showFolderDialog by remember { mutableStateOf(false) }
+
+    if (showFolderDialog) {
+        FolderCreationDialog(
+            show = true,
+            onConfirm = { name ->
+                showFolderDialog = false
+                onCreateFolder(name)
+            },
+            onDismiss = { showFolderDialog = false }
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -46,7 +65,12 @@ fun SettingsScreen(
             TopAppBar(
                 title = "设置",
                 largeTitle = "设置",
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    MoreMenu(
+                        onCreateFolder = { showFolderDialog = true }
+                    )
+                }
             )
         },
         popupHost = {}

@@ -32,12 +32,20 @@ import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.BandStorageInfoData
 import com.whyy.snapnotes.ui.components.AmadeusConfigCard
 import com.whyy.snapnotes.ui.components.FormulaTutorial
+import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
+import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.StorageRingCard
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
+import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import androidx.compose.foundation.basicMarquee
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
+import com.whyy.snapnotes.logic.FormulaPngRenderer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -54,7 +62,6 @@ import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -93,10 +100,34 @@ fun HomeScreen(
     amadeusReady: Boolean = false,
     amadeusSummary: String = "未启用",
     onOpenAmadeus: () -> Unit = {},
-    onOpenBandFiles: () -> Unit = {},
+    editorSubjects: List<com.whyy.snapnotes.ui.viewmodel.EditorSubject> = emptyList(),
+    formulaRenderer: FormulaPngRenderer? = null,
+    onAddSubject: () -> Unit = {},
+    onRemoveSubject: (Int) -> Unit = {},
+    onUpdateSubjectName: (Int, String) -> Unit = { _, _ -> },
+    onAddEntry: (Int) -> Unit = {},
+    onRemoveEntry: (Int, Int) -> Unit = { _, _ -> },
+    onUpdateEntry: (Int, Int, EditorEntry) -> Unit = { _, _, _ -> },
+    onLoadFile: () -> Unit = {},
+    onExportToFile: () -> Unit = {},
+    onPushFile: () -> Unit = {},
+    onCreateFolder: (String) -> Unit = {},
     modifier: Modifier = Modifier
-) {    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+) {
+    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
     val scrollState = rememberScrollState()
+    var showFolderDialog by remember { mutableStateOf(false) }
+
+    if (showFolderDialog) {
+        FolderCreationDialog(
+            show = true,
+            onConfirm = { name ->
+                showFolderDialog = false
+                onCreateFolder(name)
+            },
+            onDismiss = { showFolderDialog = false }
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -104,7 +135,12 @@ fun HomeScreen(
             TopAppBar(
                 title = "闪念小抄",
                 largeTitle = "闪念小抄",
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    MoreMenu(
+                        onCreateFolder = { showFolderDialog = true }
+                    )
+                }
             )
         },
         popupHost = {}
@@ -151,40 +187,6 @@ fun HomeScreen(
                 onRefresh = onRefreshStorage,
                 isConnected = connectionState.isConnected
             )
-
-            // 手环文件管理入口卡片
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onOpenBandFiles,
-                showIndication = true,
-                pressFeedbackType = PressFeedbackType.Tilt
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Folder,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "手环文件管理",
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "查看和管理手环上的文件夹与文件",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                    }
-                }
-            }
 
             if (selectedFile != null) {
                     Card(
@@ -262,6 +264,23 @@ fun HomeScreen(
             JsonFileTutorial(modifier = Modifier.fillMaxWidth())
 
             FormulaTutorial(modifier = Modifier.fillMaxWidth())
+
+            // ── 知识点管理（原编辑器页面内容合并到此） ──
+            SmallTitle(text = "知识点管理", modifier = Modifier.padding(top = 8.dp))
+
+            EditorContent(
+                subjects = editorSubjects,
+                formulaRenderer = formulaRenderer,
+                onAddSubject = onAddSubject,
+                onRemoveSubject = onRemoveSubject,
+                onUpdateSubjectName = onUpdateSubjectName,
+                onAddEntry = onAddEntry,
+                onRemoveEntry = onRemoveEntry,
+                onUpdateEntry = onUpdateEntry,
+                onLoadFile = onLoadFile,
+                onExportToFile = onExportToFile,
+                onPushFile = onPushFile
+            )
 
             Spacer(Modifier.height(8.dp))
         }

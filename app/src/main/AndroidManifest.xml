@@ -18,13 +18,6 @@
          广播 ACTION_STATE_CHANGED 所需，Android 12+ 才需授权。低于 12 不影响。 -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-    <!-- 包可见性：XMS Wearable SDK 需要通过 IPC 与小米穿戴/小米运动健康通信来发现手环设备。
-         Android 11+ (API 30+) 需显式声明 <queries>，否则 SDK 无法发现和连接设备。 -->
-    <queries>
-        <package android:name="com.xiaomi.wearable" />
-        <package android:name="com.mi.health" />
-    </queries>
-
     <!-- 内置文件管理器：Android 11+ 需所有文件访问权限才能枚举外部存储目录；
          Android 10 及以下回退到 READ_EXTERNAL_STORAGE。仅用于浏览并选择本地 JSON 文件。 -->
     <uses-permission
