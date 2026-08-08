@@ -8,12 +8,18 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# APK / AAB 产物
 *.apk
 *.aab
 *.ap_
 *.dex
+
+# 签名相关（绝对不能提交）
 keystore.properties
 *.jks
-!release.jks
+*.keystore
+
+# 其他
 /app/release/
 /app/release baselineProfiles/
