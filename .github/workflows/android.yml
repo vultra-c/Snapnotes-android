@@ -20,13 +20,11 @@ jobs:
         distribution: 'temurin'
 
     # 预下载并安装 Gradle，绕过 Wrapper 的下载机制（Wrapper 独立下载常因网络问题失败）
-    # 尝试多个镜像源，带重试
     - name: Download and install Gradle 9.6.1
       run: |
         GRADLE_VERSION=9.6.1
         GRADLE_ZIP="gradle-${GRADLE_VERSION}-bin.zip"
         
-        # 多个镜像源，按优先级尝试
         MIRRORS=(
           "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
           "https://downloads.gradle-dn.com/distributions/gradle-${GRADLE_VERSION}-bin.zip"
@@ -51,43 +49,48 @@ jobs:
           exit 1
         fi
         
-        # 解压到 $HOME
         echo "📦 Extracting Gradle..."
         unzip -q "/tmp/${GRADLE_ZIP}" -d "$HOME"
-        
-        # 添加到 PATH（后续步骤可直接用 gradle 命令）
         echo "$HOME/gradle-${GRADLE_VERSION}/bin" >> "$GITHUB_PATH"
-        
-        # 验证安装
         echo "✅ Gradle installed at $HOME/gradle-${GRADLE_VERSION}"
-        ls -la "$HOME/gradle-${GRADLE_VERSION}/bin/gradle"
 
-    # 使用官方 setup-gradle action：缓存 Gradle User Home，加速依赖下载
+    # 缓存 Gradle User Home（依赖 + 插件），避免每次构建都重新下载
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
         cache-cleanup: on-success
 
-    # 从 Secrets 还原签名文件 + properties（最关键步骤）
+    # 从 Secrets 还原签名文件 + properties
     - name: Setup Keystore for Signing
       run: |
-        # 还原 jks 文件到项目根目录
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
-        
-        # 动态生成 keystore.properties（不提交到仓库）
         cat > keystore.properties << 'PROPS_EOF'
         storeFile=release.jks
         storePassword=${{ secrets.KEYSTORE_PASSWORD }}
         keyAlias=${{ secrets.KEY_ALIAS }}
         keyPassword=${{ secrets.KEY_PASSWORD }}
         PROPS_EOF
-        
-        echo "Keystore 和 properties 已准备完成"
         ls -l release.jks keystore.properties
 
+    # 构建 APK，带重试机制应对瞬时网络问题（插件/依赖下载失败时自动重试）
     - name: Build Universal Release APK
-      # 直接使用 gradle 命令（已通过 PATH 注入），绕过 Wrapper 的下载机制
-      run: gradle assembleRelease --no-daemon --stacktrace
+      run: |
+        for i in 1 2 3; do
+          echo "🔨 Build attempt $i ..."
+          if gradle assembleRelease --no-daemon --stacktrace; then
+            echo "✅ Build succeeded on attempt $i"
+            exit 0
+          fi
+          echo "❌ Build attempt $i failed"
+          if [ $i -lt 3 ]; then
+            echo "⏳ Waiting 20s before retry..."
+            sleep 20
+            # 清理可能损坏的配置缓存
+            rm -rf .gradle/configuration-cache
+          fi
+        done
+        echo "💥 All build attempts failed"
+        exit 1
 
     - name: Prepare APK Artifact
       run: |
@@ -95,7 +98,6 @@ jobs:
         COMMIT_HASH=${GITHUB_SHA::7}
         mkdir -p build_output
         
-        # 自动查找 release APK（兼容不同输出路径）
         APK_PATH=$(find . -path "*/outputs/apk/release/*.apk" | head -n 1)
         
         if [ -z "$APK_PATH" ]; then
@@ -106,13 +108,8 @@ jobs:
         
         FINAL_NAME="SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
         cp "$APK_PATH" "build_output/$FINAL_NAME"
-        
         echo "✅ APK 已准备好：$FINAL_NAME"
         ls -lh build_output/
-        
-        # 可选：验证签名
-        echo "=== 签名信息 ==="
-        $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "build_output/$FINAL_NAME" || true
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
