@@ -1267,6 +1267,23 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
+     * 从本地存储库的文件直接发起推送（跳过"选择文件"步骤，直接进入文件夹选择 + 推送流程）。
+     *
+     * 与 [pushFromString] 类似，但输入是已存在的本地 [File]，不需要写缓存。
+     * 用于本地存储库页面"导入手环"按钮。
+     */
+    fun pushFromFile(file: java.io.File) {
+        val uri = Uri.fromFile(file)
+        _selectedFile.value = SelectedFileState(uri, file.name, file.length())
+        _pushState.value = PushState(
+            fileName = file.name,
+            fileSize = file.length(),
+            statusText = "等待中"
+        )
+        startPushFromUri(uri)
+    }
+
+    /**
      * 立即发起一次连接链路：destroy → connect → auth → getAppState → openApp → registerListener → init。
      * 全程更新 _connectionState；失败/超时/未装/不支持都落到 ConnectionErrorState。
      */

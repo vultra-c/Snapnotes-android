@@ -577,7 +577,7 @@ class MainActivity : ComponentActivity() {
                                             onFolderClick = viewModel::navigateLocalFolder,
                                             onCreateFolder = viewModel::createLocalFolder,
                                             onImportToBand = { file ->
-                                                viewModel.onBuiltinFilePicked(file)
+                                                viewModel.pushFromFile(file)
                                                 navigateBack()
                                             },
                                             onDeleteFile = viewModel::deleteLocalFile,
