@@ -33,20 +33,8 @@ data class StorePack(
 }
 
 /**
- * 商店全部知识点包。官方包与未来用户上传包统一在此列出，不做特殊对待。
- */
-val STORE_PACKS: List<StorePack> = listOf(
-    StorePack(
-        id = "official_high_school",
-        name = "高中知识点全集",
-        author = "SnapNotes",
-        description = "涵盖高中十大学科的核心知识点合集，包含语文、数学、英语、物理、化学、生物、历史、地理、政治、信息技术。",
-        subjects = BUILTIN_STORE_ITEMS
-    )
-)
-
-/**
  * 内置知识点包：10科目共159条，全部免费。
+ * 注意：必须定义在 STORE_PACKS 之前，因为 Kotlin 按声明顺序初始化顶层属性。
  */
 val BUILTIN_STORE_ITEMS = listOf(
     StoreSubject(
@@ -258,4 +246,17 @@ val BUILTIN_STORE_ITEMS = listOf(
             StoreEntry(id = 16, title = "Python 综合应用", desc = "requests爬虫初阶/pandas数据处理入门/Flask Web极简"),
         )
     ),
+)
+
+/**
+ * 商店全部知识点包。官方包与未来用户上传包统一在此列出，不做特殊对待。
+ */
+val STORE_PACKS: List<StorePack> = listOf(
+    StorePack(
+        id = "official_high_school",
+        name = "高中知识点全集",
+        author = "SnapNotes",
+        description = "涵盖高中十大学科的核心知识点合集，包含语文、数学、英语、物理、化学、生物、历史、地理、政治、信息技术。",
+        subjects = BUILTIN_STORE_ITEMS
+    )
 )
