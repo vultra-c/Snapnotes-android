@@ -14,6 +14,6 @@ local.properties
 *.dex
 keystore.properties
 *.jks
-!xmswearable.jks
+!release.jks
 /app/release/
 /app/release baselineProfiles/
