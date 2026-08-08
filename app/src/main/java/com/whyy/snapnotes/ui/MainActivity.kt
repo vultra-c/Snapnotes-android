@@ -53,6 +53,7 @@ import com.whyy.snapnotes.ui.screens.BuiltinFileManagerScreen
 import com.whyy.snapnotes.ui.screens.AboutScreen
 import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
 import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
+import com.whyy.snapnotes.ui.screens.BandFileTreeScreen
 import com.whyy.snapnotes.ui.screens.HistoryScreen
 import com.whyy.snapnotes.ui.screens.HomeScreen
 import com.whyy.snapnotes.ui.screens.ProgressScreen
@@ -80,6 +81,7 @@ sealed interface Screen : NavKey {
     data object Progress : Screen
     data object Result : Screen
     data object FileManager : Screen
+    data object BandFileTree : Screen
     data object About : Screen
     data object Troubleshoot : Screen
     data object AmadeusConfig : Screen
@@ -206,6 +208,9 @@ class MainActivity : ComponentActivity() {
                 val troubleshootState by viewModel.troubleshootState.collectAsState()
                 val amadeus by viewModel.amadeus.collectAsState()
                 val amadeusLastCall by viewModel.amadeusLastCall.collectAsState()
+                val bandTreeState by viewModel.bandTreeState.collectAsState()
+                val amadeusModels by viewModel.amadeusModels.collectAsState()
+                val amadeusModelsLoading by viewModel.amadeusModelsLoading.collectAsState()
 
                 // 「启用 Amadeus」开启 → 请求 Doze 电池优化白名单（后台/锁屏跑 LLM 网络的前提）。
                 LaunchedEffect(Unit) {
@@ -257,6 +262,11 @@ class MainActivity : ComponentActivity() {
                 val navigateToAmadeusContext = {
                     if (backStack.lastOrNull() != Screen.AmadeusContext) {
                         backStack.add(Screen.AmadeusContext)
+                    }
+                }
+                val navigateToBandFileTree = {
+                    if (backStack.lastOrNull() != Screen.BandFileTree) {
+                        backStack.add(Screen.BandFileTree)
                     }
                 }
                 // 注入给 Activity 侧的导出流程入口（已命名后用它打开选目录模式）。
@@ -393,6 +403,7 @@ class MainActivity : ComponentActivity() {
                                                         )
                                                     },
                                                     onCreateFolder = viewModel::createFolder,
+                                                    onOpenBandFiles = navigateToBandFileTree,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
@@ -497,6 +508,19 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                     }
+                                    entry<Screen.BandFileTree> {
+                                        // 进页面自动拉取手环文件树
+                                        LaunchedEffect(Unit) { viewModel.refreshBandTree() }
+                                        BandFileTreeScreen(
+                                            state = bandTreeState,
+                                            onBackClick = navigateBack,
+                                            onRefresh = viewModel::refreshBandTree,
+                                            onCreateFolder = viewModel::createBandFolder,
+                                            onDeleteNode = viewModel::deleteBandNode,
+                                            onRenameNode = viewModel::renameBandNode,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
                                     entry<Screen.About> {
                                         AboutScreen(
                                             onBackClick = navigateBack,
@@ -530,6 +554,9 @@ class MainActivity : ComponentActivity() {
                                             onModelChange = viewModel::setAmadeusModel,
                                             onBackClick = navigateBack,
                                             onOpenContext = navigateToAmadeusContext,
+                                            availableModels = amadeusModels,
+                                            modelsLoading = amadeusModelsLoading,
+                                            onFetchModels = viewModel::fetchAvailableModels,
                                             modifier = Modifier.fillMaxSize()
                                         )
                                     }

@@ -84,7 +84,16 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private var connection: InterHandshake? = null
     private var pusher: JsonFilePusher? = null
     private var amadeusChat: AmadeusChat? = null
+    private var bandFileTreeManager: com.whyy.snapnotes.logic.BandFileTreeManager? = null
     private var pendingPushUri: Uri? = null
+
+    /* ──────────── 手环文件树管理 ──────────── */
+    private val _bandTreeState = MutableStateFlow<BandTreeUiState>(BandTreeUiState.Loading)
+    val bandTreeState = _bandTreeState.asStateFlow()
+
+    /** 待导入到手环指定文件夹的 JSON（选择文件夹后触发推送）。 */
+    private var pendingImportFolderId: String? = null
+    private var pendingImportFolderName: String? = null
 
     /** 是否使用应用内文件管理器导入；关掉则回退系统文件选择器。默认开启，与参考项目一致。 */
     private val _useBuiltinFileManager =
@@ -666,6 +675,9 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         amadeusChat = AmadeusChat(getApplication(), conn, pusher!!, _amadeus, viewModelScope)
         // 把 AmadeusChat.lastCall 透传给 UI（上下文页回显最近一次调用状态）。
         viewModelScope.launch { amadeusChat!!.lastCall.collect { _amadeusLastCall.value = it } }
+
+        // 接入手环文件树管理通道：tag="tree" 入站分发，复用 pusher 的共享 BLE 串行锁。
+        bandFileTreeManager = com.whyy.snapnotes.logic.BandFileTreeManager(conn, pusher!!)
     }
 
     /* ──────────── Amadeus 上下文管理 / 最近调用状态（联「上下文管理菜单」） ──────────── */
@@ -1769,6 +1781,135 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             _snackbarMessage.value = result
         }
     }
+
+    /* ──────────── 手环文件树管理方法 ──────────── */
+
+    /** 拉取手环端文件树。 */
+    fun refreshBandTree() {
+        val mgr = bandFileTreeManager ?: run {
+            _bandTreeState.value = BandTreeUiState.Error("手环未连接")
+            return
+        }
+        _bandTreeState.value = BandTreeUiState.Loading
+        viewModelScope.launch {
+            val tree = mgr.requestTree()
+            _bandTreeState.value = BandTreeUiState.Ready(
+                tree.map { it.toUiNode() }
+            )
+        }
+    }
+
+    /** 在手环端创建文件夹。 */
+    fun createBandFolder(name: String, parentId: String) {
+        val mgr = bandFileTreeManager ?: run {
+            _snackbarMessage.value = "手环未连接"
+            return
+        }
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) {
+            _snackbarMessage.value = "文件夹名称不能为空"
+            return
+        }
+        viewModelScope.launch {
+            val folderId = mgr.createFolder(trimmed, parentId)
+            if (folderId != null) {
+                _snackbarMessage.value = "已创建文件夹：$trimmed"
+                refreshBandTree()
+            } else {
+                _snackbarMessage.value = "创建文件夹失败"
+            }
+        }
+    }
+
+    /** 删除手环端节点。 */
+    fun deleteBandNode(nodeId: String) {
+        val mgr = bandFileTreeManager ?: run {
+            _snackbarMessage.value = "手环未连接"
+            return
+        }
+        viewModelScope.launch {
+            val success = mgr.deleteNode(nodeId)
+            if (success) {
+                _snackbarMessage.value = "已删除"
+                refreshBandTree()
+            } else {
+                _snackbarMessage.value = "删除失败"
+            }
+        }
+    }
+
+    /** 重命名手环端节点。 */
+    fun renameBandNode(nodeId: String, newName: String) {
+        val mgr = bandFileTreeManager ?: run {
+            _snackbarMessage.value = "手环未连接"
+            return
+        }
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) {
+            _snackbarMessage.value = "名称不能为空"
+            return
+        }
+        viewModelScope.launch {
+            val success = mgr.renameNode(nodeId, trimmed)
+            if (success) {
+                _snackbarMessage.value = "已重命名"
+                refreshBandTree()
+            } else {
+                _snackbarMessage.value = "重命名失败"
+            }
+        }
+    }
+
+    /* ──────────── Amadeus 模型自动获取 ──────────── */
+
+    /** 模型获取状态：null=未发起，空list=获取中，非空=可用模型列表。 */
+    private val _amadeusModels = MutableStateFlow<List<String>?>(null)
+    val amadeusModels = _amadeusModels.asStateFlow()
+
+    private val _amadeusModelsLoading = MutableStateFlow(false)
+    val amadeusModelsLoading = _amadeusModelsLoading.asStateFlow()
+
+    /**
+     * 通过当前配置的 Base URL + API Key 获取可用模型列表。
+     * 调用 OpenAI 兼容的 GET /v1/models 接口。
+     */
+    fun fetchAvailableModels() {
+        val cfg = _amadeus.value
+        if (cfg.apiKey.isBlank()) {
+            _snackbarMessage.value = "请先填写 API Key"
+            return
+        }
+        val chat = amadeusChat ?: run {
+            _snackbarMessage.value = "服务未就绪"
+            return
+        }
+        _amadeusModelsLoading.value = true
+        _amadeusModels.value = emptyList()
+        viewModelScope.launch {
+            val models = chat.fetchAvailableModels(cfg)
+            _amadeusModels.value = models
+            _amadeusModelsLoading.value = false
+            if (models.isEmpty()) {
+                _snackbarMessage.value = "未获取到可用模型，请检查配置"
+            }
+        }
+    }
+
+    fun clearAmadeusModels() {
+        _amadeusModels.value = null
+        _amadeusModelsLoading.value = false
+    }
+
+    /** BandFileTreeNode → BandFileNode 转换。 */
+    private fun com.whyy.snapnotes.logic.BandFileTreeNode.toUiNode(): BandFileNode =
+        BandFileNode(
+            id = id,
+            name = name,
+            type = type,
+            children = children.map { it.toUiNode() }
+        )
+
+}
 
 }
 

@@ -617,4 +617,52 @@ class AmadeusChat(
             }
         }
     )
+
+    /**
+     * 获取可用模型列表（OpenAI 兼容 GET /v1/models）。
+     *
+     * 用当前配置的 baseUrl + apiKey 调用厂商的 /v1/models 接口，
+     * 返回模型 ID 列表（按字母序）。失败返回空列表。
+     *
+     * 与 [sprintRequestStream] 共用 [buildClient] 但不共享 BLE 通道（纯 HTTP），
+     * 不需要 sendMutex（不与推书/chat 竞争 BLE）。
+     */
+    suspend fun fetchAvailableModels(cfg: AmadeusConfig): List<String> = withContext(Dispatchers.IO) {
+        val baseUrl = cfg.baseUrl.trimEnd('/')
+        val url = if (baseUrl.isBlank()) {
+            "https://api.deepseek.com/v1/models"
+        } else {
+            "$baseUrl/v1/models"
+        }
+        try {
+            val client = buildClient(cfg)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer ${cfg.apiKey}")
+                .header("Accept", "application/json")
+                .get()
+                .build()
+
+            val resp = client.newCall(request).execute()
+            resp.use {
+                if (!it.isSuccessful) {
+                    val errBody = it.body?.string()?.take(300) ?: ""
+                    Log.e(TAG, "fetchAvailableModels HTTP ${it.code}: $errBody")
+                    return@use emptyList()
+                }
+                val bodyStr = it.body?.string() ?: return@use emptyList()
+                val obj = json.parseToJsonElement(bodyStr).jsonObject
+                val data = obj["data"] as? JsonArray ?: return@use emptyList()
+                val models = data.mapNotNull { item ->
+                    val itemObj = item.jsonObject
+                    itemObj["id"]?.jsonPrimitive?.contentOrNull
+                }.filter { it.isNotBlank() }.sorted()
+                Log.d(TAG, "fetchAvailableModels: ${models.size} models")
+                models
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchAvailableModels fail: ${e.message}", e)
+            emptyList()
+        }
+    }
 }
