@@ -228,7 +228,7 @@ fun HomeScreen(
                         )
                     }
                     Icon(
-                        imageVector = top.yukonga.miuix.kmp.icon.extended.ChevronForward,
+                        imageVector = MiuixIcons.Notes,
                         contentDescription = null,
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.size(20.dp)

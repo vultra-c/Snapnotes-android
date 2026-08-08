@@ -1911,8 +1911,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
 
 }
 
-}
-
 fun Long.toReadableBytes(): String {
     if (this < 0) return "未知大小"
     val units = arrayOf("B", "KB", "MB", "GB")

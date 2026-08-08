@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -39,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -372,8 +372,8 @@ private fun ShimmerLinearProgress(
                             Color.White.copy(alpha = 0.55f),
                             Color.Transparent
                         ),
-                        start = Offset(sweepCenter - sweepHalf, 0f),
-                        end = Offset(sweepCenter + sweepHalf, 0f)
+                        startX = sweepCenter - sweepHalf,
+                        endX = sweepCenter + sweepHalf
                     )
                     drawRoundRect(
                         brush = brush,

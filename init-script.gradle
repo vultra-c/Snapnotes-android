@@ -1,0 +1,14 @@
+beforeSettings { settings ->
+    settings.pluginManagement {
+        repositories {
+            mavenLocal()
+            maven { url = uri("file:///tmp/local-maven") }
+        }
+    }
+    settings.dependencyResolutionManagement {
+        repositories {
+            mavenLocal()
+            maven { url = uri("file:///tmp/local-maven") }
+        }
+    }
+}
