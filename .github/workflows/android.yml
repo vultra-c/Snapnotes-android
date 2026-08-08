@@ -18,7 +18,14 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: gradle
+
+    # 使用官方 setup-gradle action：自动下载并缓存 Gradle 发行版，避免每次构建都重新下载
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        # 使用 gradle-wrapper.properties 中指定的版本（默认行为）
+        gradle-version: wrapper
+        cache-cleanup: on-success
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
@@ -28,42 +35,42 @@ jobs:
       run: |
         # 还原 jks 文件到项目根目录
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
-
+        
         # 动态生成 keystore.properties（不提交到仓库）
-        cat > keystore.properties << EOF
+        cat > keystore.properties << 'PROPS_EOF'
         storeFile=release.jks
         storePassword=${{ secrets.KEYSTORE_PASSWORD }}
         keyAlias=${{ secrets.KEY_ALIAS }}
         keyPassword=${{ secrets.KEY_PASSWORD }}
-        EOF
-
+        PROPS_EOF
+        
         echo "Keystore 和 properties 已准备完成"
         ls -l release.jks keystore.properties
 
     - name: Build Universal Release APK
-      run: ./gradlew assembleRelease --no-daemon
+      run: ./gradlew assembleRelease --no-daemon --stacktrace
 
     - name: Prepare APK Artifact
       run: |
         BUILD_TIME=$(date +'%Y%m%d_%H%M')
         COMMIT_HASH=${GITHUB_SHA::7}
         mkdir -p build_output
-
+        
         # 自动查找 release APK（兼容不同输出路径）
         APK_PATH=$(find . -path "*/outputs/apk/release/*.apk" | head -n 1)
-
+        
         if [ -z "$APK_PATH" ]; then
           echo "❌ 未找到 release APK，尝试查找所有 apk："
           find . -name "*.apk" || true
           exit 1
         fi
-
+        
         FINAL_NAME="SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
         cp "$APK_PATH" "build_output/$FINAL_NAME"
-
+        
         echo "✅ APK 已准备好：$FINAL_NAME"
         ls -lh build_output/
-
+        
         # 可选：验证签名
         echo "=== 签名信息 ==="
         $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "build_output/$FINAL_NAME" || true
