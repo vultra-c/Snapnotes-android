@@ -1169,6 +1169,22 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    /** 从商店知识点导入到编辑器（不推送，仅加载到编辑器供用户编辑）。 */
+    fun loadEditorFromStoreSubject(subject: com.whyy.snapnotes.data.StoreSubject) {
+        val editorEntries = subject.entries.map { entry ->
+            EditorEntry(
+                id = entry.id.toString(),
+                title = entry.title,
+                desc = entry.desc,
+                raw = "",
+                points = emptyList(),
+                formulas = emptyList()
+            )
+        }
+        _editorSubjects.value = listOf(EditorSubject(name = subject.name, entries = editorEntries))
+        _screen.value = AppScreen.Editor
+    }
+
     fun addSubject() {
         _editorSubjects.update { it + EditorSubject(name = "新科目", entries = emptyList()) }
     }

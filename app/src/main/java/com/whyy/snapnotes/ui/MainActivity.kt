@@ -77,6 +77,7 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import com.whyy.snapnotes.ui.screens.StoreScreen
 import com.whyy.snapnotes.ui.screens.StoreDetailScreen
 import com.whyy.snapnotes.ui.screens.LocalStorageScreen
+import com.whyy.snapnotes.ui.screens.EditorScreen
 import com.whyy.snapnotes.data.StoreSubject
 import com.whyy.snapnotes.data.StorePack
 
@@ -93,6 +94,7 @@ sealed interface Screen : NavKey {
     data object AmadeusContext : Screen
     data class StoreDetail(val pack: com.whyy.snapnotes.data.StorePack) : Screen
     data object LocalStorage : Screen
+    data object Editor : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -293,6 +295,12 @@ class MainActivity : ComponentActivity() {
                     }
                     Unit
                 }
+                val navigateToEditor = {
+                    if (backStack.lastOrNull() != Screen.Editor) {
+                        backStack.add(Screen.Editor)
+                    }
+                    Unit
+                }
                 // 注入给 Activity 侧的导出流程入口（已命名后用它打开选目录模式）。
                 navigateToFileManagerEntry = navigateToFileManager
 
@@ -305,11 +313,8 @@ class MainActivity : ComponentActivity() {
                             pagerState.animateScrollToPage(0)
                         }
                         AppScreen.Editor -> {
-                            // 编辑器已合并到主页：导航到主页并滚动到知识点管理区域。
-                            if (backStack.lastOrNull() !is Screen.HomePager) {
-                                navigateToHome()
-                            }
-                            pagerState.animateScrollToPage(0)
+                            // 编辑器独立页面：导航到编辑器页面。
+                            navigateToEditor()
                         }
                         else -> Unit
                     }
@@ -400,32 +405,10 @@ class MainActivity : ComponentActivity() {
                                                     amadeusSummary = if (!amadeus.enabled) "未启用"
                                                         else if (amadeus.isReady) "已配置 · ${amadeus.model}"
                                                         else "配置不完整",
-                                                    editorSubjects = editorSubjects,
-                                                    formulaRenderer = editorFormulaRenderer,
-                                                    onAddSubject = viewModel::addSubject,
-                                                    onRemoveSubject = viewModel::removeSubject,
-                                                    onUpdateSubjectName = viewModel::updateSubjectName,
-                                                    onAddEntry = viewModel::addEntry,
-                                                    onRemoveEntry = viewModel::removeEntry,
-                                                    onUpdateEntry = viewModel::updateEntry,
-                                                    onLoadFile = {
-                                                        launchFilePicker(
-                                                            true,
-                                                            navigateToFileManager
-                                                        )
-                                                    },
-                                                    onExportToFile = {
-                                                        startExportFlow()
-                                                    },
-                                                    onPushFile = {
-                                                        viewModel.pushFromString(
-                                                            viewModel.getEditorJsonString(),
-                                                            "自定义知识点.json"
-                                                        )
-                                                    },
                                                     onCreateFolder = viewModel::createFolder,
                                                     onOpenBandFiles = navigateToBandFileTree,
                                                     onOpenLocalStorage = navigateToLocalStorage,
+                                                    onNavigateToEditor = navigateToEditor,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
@@ -562,6 +545,9 @@ class MainActivity : ComponentActivity() {
                                             onImportSingle = { subject ->
                                                 viewModel.importStoreSubject(subject)
                                             },
+                                            onEditSubject = { subject ->
+                                                viewModel.loadEditorFromStoreSubject(subject)
+                                            },
                                             onCreateFolder = viewModel::createFolder,
                                             modifier = Modifier.fillMaxSize()
                                         )
@@ -585,6 +571,32 @@ class MainActivity : ComponentActivity() {
                                             onDeleteFile = viewModel::deleteLocalFile,
                                             onRenameFile = viewModel::renameLocalFile,
                                             onRefresh = viewModel::refreshLocalStorage,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    }
+                                    entry<Screen.Editor> {
+                                        EditorScreen(
+                                            subjects = editorSubjects,
+                                            formulaRenderer = editorFormulaRenderer,
+                                            onAddSubject = viewModel::addSubject,
+                                            onRemoveSubject = viewModel::removeSubject,
+                                            onUpdateSubjectName = viewModel::updateSubjectName,
+                                            onAddEntry = viewModel::addEntry,
+                                            onRemoveEntry = viewModel::removeEntry,
+                                            onUpdateEntry = viewModel::updateEntry,
+                                            onLoadFile = {
+                                                launchFilePicker(true, navigateToFileManager)
+                                            },
+                                            onExportToFile = {
+                                                startExportFlow()
+                                            },
+                                            onPushFile = {
+                                                viewModel.pushFromString(
+                                                    viewModel.getEditorJsonString(),
+                                                    "自定义知识点.json"
+                                                )
+                                            },
+                                            onBackClick = navigateBack,
                                             modifier = Modifier.fillMaxSize()
                                         )
                                     }

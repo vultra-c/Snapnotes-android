@@ -136,7 +136,7 @@ fun AmadeusChatScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = "Amadeus 对话",
@@ -251,7 +251,7 @@ fun AmadeusChatScreen(
                 onFileClick = { showFileHintDialog = true },
                 canSend = canSend,
                 isLoading = isLoading,
-                modifier = Modifier.imePadding()
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     }

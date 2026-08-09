@@ -41,11 +41,9 @@ import com.whyy.snapnotes.ui.components.JsonFileTutorial
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.StorageRingCard
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
-import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import androidx.compose.foundation.basicMarquee
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
-import com.whyy.snapnotes.logic.FormulaPngRenderer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -65,7 +63,9 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Notes
@@ -74,6 +74,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.layout.IntrinsicSize
 
 private enum class ConnectionStage {
@@ -106,20 +107,10 @@ fun HomeScreen(
     amadeusEnabled: Boolean = false,
     amadeusReady: Boolean = false,
     amadeusSummary: String = "",
-    editorSubjects: List<com.whyy.snapnotes.ui.viewmodel.EditorSubject> = emptyList(),
-    formulaRenderer: FormulaPngRenderer? = null,
-    onAddSubject: () -> Unit = {},
-    onRemoveSubject: (Int) -> Unit = {},
-    onUpdateSubjectName: (Int, String) -> Unit = { _, _ -> },
-    onAddEntry: (Int) -> Unit = {},
-    onRemoveEntry: (Int, Int) -> Unit = { _, _ -> },
-    onUpdateEntry: (Int, Int, EditorEntry) -> Unit = { _, _, _ -> },
-    onLoadFile: () -> Unit = {},
-    onExportToFile: () -> Unit = {},
-    onPushFile: () -> Unit = {},
     onCreateFolder: (String) -> Unit = {},
     onOpenBandFiles: () -> Unit = {},
     onOpenLocalStorage: () -> Unit = {},
+    onNavigateToEditor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
@@ -339,22 +330,49 @@ fun HomeScreen(
 
             FormulaTutorial(modifier = Modifier.fillMaxWidth())
 
-            // ── 知识点管理（原编辑器页面内容合并到此） ──
+            // ── 知识点编辑器入口 ──
             SmallTitle(text = "知识点管理", modifier = Modifier.padding(top = 8.dp))
 
-            EditorContent(
-                subjects = editorSubjects,
-                formulaRenderer = formulaRenderer,
-                onAddSubject = onAddSubject,
-                onRemoveSubject = onRemoveSubject,
-                onUpdateSubjectName = onUpdateSubjectName,
-                onAddEntry = onAddEntry,
-                onRemoveEntry = onRemoveEntry,
-                onUpdateEntry = onUpdateEntry,
-                onLoadFile = onLoadFile,
-                onExportToFile = onExportToFile,
-                onPushFile = onPushFile
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onNavigateToEditor,
+                showIndication = true,
+                pressFeedbackType = PressFeedbackType.Tilt
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Edit,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "打开知识点编辑器",
+                            style = MiuixTheme.textStyles.title4,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "编辑科目、条目、公式，导入导出 JSON",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        )
+                    }
+                    Icon(
+                        imageVector = MiuixIcons.Back,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .size(18.dp)
+                            .rotate(180f)
+                    )
+                }
+            }
 
             Spacer(Modifier.height(8.dp))
         }

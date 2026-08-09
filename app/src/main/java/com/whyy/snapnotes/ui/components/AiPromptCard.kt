@@ -1,6 +1,8 @@
 package com.whyy.snapnotes.ui.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +40,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -61,6 +65,14 @@ fun AiPromptCard(modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     var copied by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
+    val addRotation by animateFloatAsState(
+        targetValue = if (expanded) 45f else 0f,
+        animationSpec = spring(
+            dampingRatio = 0.6f,
+            stiffness = 400f
+        ),
+        label = "addRotation"
+    )
 
     // 复制成功后 2 秒自动恢复按钮文字
     LaunchedEffect(copied) {
@@ -108,10 +120,13 @@ fun AiPromptCard(modifier: Modifier = Modifier) {
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                     )
                 }
-                Text(
-                    text = if (expanded) "▲" else "▼",
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = if (expanded) "收起" else "展开",
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(addRotation)
                 )
             }
 

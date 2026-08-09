@@ -105,6 +105,7 @@ fun StoreDetailScreen(
     onImportAll: () -> Unit,
     onImportSelected: (List<StoreSubject>) -> Unit,
     onImportSingle: (StoreSubject) -> Unit,
+    onEditSubject: (StoreSubject) -> Unit = {},
     onCreateFolder: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -228,7 +229,8 @@ fun StoreDetailScreen(
                             selectedSubjects[subject.name] = true
                         }
                     },
-                    onImport = { onImportSingle(subject) }
+                    onImport = { onImportSingle(subject) },
+                    onEdit = { onEditSubject(subject) }
                 )
             }
 
@@ -492,7 +494,8 @@ private fun SubjectCard(
     isSelected: Boolean,
     onToggleExpand: () -> Unit,
     onToggleSelect: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     // 展开/收起箭头旋转：收起指向右（▶），展开指向下（▼）
     val chevronRotation by animateFloatAsState(
@@ -570,6 +573,13 @@ private fun SubjectCard(
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                     )
                 }
+
+                // 编辑（跳转到编辑器）
+                TextButton(
+                    text = "编辑",
+                    onClick = onEdit,
+                    colors = ButtonDefaults.textButtonColors()
+                )
 
                 // 单科导入
                 TextButton(
