@@ -1,17 +1,27 @@
 package com.whyy.snapnotes.ui.screens
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
+import com.whyy.snapnotes.ui.liquid.LiquidGlassConfig
+import com.whyy.snapnotes.ui.liquid.LiquidGlassSlider
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -27,6 +37,7 @@ import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -36,6 +47,8 @@ fun SettingsScreen(
     onAppearanceModeChange: (AppearanceMode) -> Unit,
     dynamicColor: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
+    liquidGlassConfig: LiquidGlassConfig = LiquidGlassConfig(),
+    onLiquidGlassConfigChange: (LiquidGlassConfig) -> Unit = {},
     useBuiltinFileManager: Boolean,
     onUseBuiltinFileManagerChange: (Boolean) -> Unit,
     lastExportDirSummary: String?,
@@ -155,6 +168,68 @@ fun SettingsScreen(
                 }
             }
             item {
+                SmallTitle(text = "液态玻璃", modifier = Modifier.padding(top = 12.dp))
+                Card(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    insideMargin = PaddingValues(0.dp)
+                ) {
+                    BasicComponent(
+                        title = "启用液态玻璃效果",
+                        summary = "卡片与底部导航叠加毛玻璃与折射效果；按住拖动卡片会有反应",
+                        endActions = {
+                            Switch(
+                                checked = liquidGlassConfig.enabled,
+                                onCheckedChange = { enabled ->
+                                    onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = enabled))
+                                }
+                            )
+                        }
+                    )
+                    BasicComponent(
+                        title = "色散效果",
+                        summary = "折射边缘出现轻微彩虹色散（需 Android 13+）",
+                        endActions = {
+                            Switch(
+                                checked = liquidGlassConfig.chromaticAberration,
+                                onCheckedChange = { enabled ->
+                                    onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = enabled))
+                                }
+                            )
+                        }
+                    )
+                    BasicComponent(
+                        title = "拖动反馈",
+                        summary = "按住并拖动卡片时产生挤压与跟随效果",
+                        endActions = {
+                            Switch(
+                                checked = liquidGlassConfig.interactive,
+                                onCheckedChange = { enabled ->
+                                    onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = enabled))
+                                }
+                            )
+                        }
+                    )
+                    SliderSettingRow(
+                        title = "模糊强度",
+                        summary = "背景模糊半径，越大越朦胧",
+                        value = liquidGlassConfig.blurRadiusDp,
+                        range = 4f..24f,
+                        onValueChange = { value ->
+                            onLiquidGlassConfigChange(liquidGlassConfig.copy(blurRadiusDp = value))
+                        }
+                    )
+                    SliderSettingRow(
+                        title = "折射强度",
+                        summary = "背景折射位移，越大越夸张",
+                        value = liquidGlassConfig.refractionAmountDp,
+                        range = 4f..40f,
+                        onValueChange = { value ->
+                            onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = value))
+                        }
+                    )
+                }
+            }
+            item {
                 SmallTitle(text = "其他")
                 Card(
                     modifier = Modifier.padding(horizontal = 12.dp),
@@ -189,5 +264,42 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SliderSettingRow(
+    title: String,
+    summary: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = summary,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+        LiquidGlassSlider(
+            value = { value },
+            onValueChange = onValueChange,
+            valueRange = range,
+            modifier = Modifier.weight(1.2f)
+        )
     }
 }

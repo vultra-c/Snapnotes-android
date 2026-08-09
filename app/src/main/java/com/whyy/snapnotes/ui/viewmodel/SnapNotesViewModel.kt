@@ -25,6 +25,7 @@ import com.whyy.snapnotes.logic.JsonFilePusher
 import com.whyy.snapnotes.logic.RawToLatexConverter
 import com.whyy.snapnotes.notifications.ForegroundTransferService
 import com.xiaomi.xms.wearable.node.Node
+import com.whyy.snapnotes.ui.liquid.LiquidGlassConfig
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -74,6 +75,12 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private val useBuiltinFileManagerKey = "use_builtin_file_manager"
     private val lastExportDirKey = "last_export_dir"
     private val dynamicColorKey = "dynamic_color"
+    private val liquidGlassEnabledKey = "liquid_glass_enabled"
+    private val liquidGlassBlurKey = "liquid_glass_blur"
+    private val liquidGlassRefractionAmountKey = "liquid_glass_refraction_amount"
+    private val liquidGlassRefractionHeightKey = "liquid_glass_refraction_height"
+    private val liquidGlassChromaticKey = "liquid_glass_chromatic"
+    private val liquidGlassInteractiveKey = "liquid_glass_interactive"
     private val amadeusEnabledKey = "amadeus_enabled"
     private val amadeusBaseUrlKey = "amadeus_baseurl"
     private val amadeusApiKeyKey = "amadeus_api_key"
@@ -184,6 +191,19 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     /** 是否启用动态取色（按系统壁纸生成整套配色）；与主题模式正交，默认关闭。 */
     private val _dynamicColor = MutableStateFlow(prefs.getBoolean(dynamicColorKey, false))
     val dynamicColor = _dynamicColor.asStateFlow()
+
+    /** 液态玻璃效果配置（AndroidLiquidGlass 风格）；默认关闭，避免低端机与高刷新率场景卡顿。 */
+    private val _liquidGlassConfig = MutableStateFlow(
+        LiquidGlassConfig(
+            enabled = prefs.getBoolean(liquidGlassEnabledKey, false),
+            blurRadiusDp = prefs.getFloat(liquidGlassBlurKey, 8f),
+            refractionAmountDp = prefs.getFloat(liquidGlassRefractionAmountKey, 16f),
+            refractionHeightDp = prefs.getFloat(liquidGlassRefractionHeightKey, 10f),
+            chromaticAberration = prefs.getBoolean(liquidGlassChromaticKey, false),
+            interactive = prefs.getBoolean(liquidGlassInteractiveKey, true)
+        )
+    )
+    val liquidGlassConfig = _liquidGlassConfig.asStateFlow()
 
     private val _screen = MutableStateFlow(AppScreen.Home)
     val screen = _screen.asStateFlow()
@@ -554,6 +574,18 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     fun setDynamicColor(enabled: Boolean) {
         prefs.edit().putBoolean(dynamicColorKey, enabled).apply()
         _dynamicColor.value = enabled
+    }
+
+    fun setLiquidGlassConfig(config: LiquidGlassConfig) {
+        _liquidGlassConfig.value = config
+        prefs.edit()
+            .putBoolean(liquidGlassEnabledKey, config.enabled)
+            .putFloat(liquidGlassBlurKey, config.blurRadiusDp)
+            .putFloat(liquidGlassRefractionAmountKey, config.refractionAmountDp)
+            .putFloat(liquidGlassRefractionHeightKey, config.refractionHeightDp)
+            .putBoolean(liquidGlassChromaticKey, config.chromaticAberration)
+            .putBoolean(liquidGlassInteractiveKey, config.interactive)
+            .apply()
     }
 
     /* ──────────── Amadeus（手环端 AI 聊天助手）手机端配置 ────────────

@@ -15,7 +15,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,6 +39,7 @@ import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.StorageRingCard
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
 import androidx.compose.foundation.basicMarquee
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
@@ -51,8 +51,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -71,11 +69,9 @@ import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 import androidx.compose.ui.draw.rotate
-import androidx.compose.foundation.layout.IntrinsicSize
 
 private enum class ConnectionStage {
     Idle,
@@ -184,11 +180,10 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.weight(1f),
                     onClick = onOpenBandFiles,
-                    showIndication = true,
-                    pressFeedbackType = PressFeedbackType.Tilt
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -217,11 +212,10 @@ fun HomeScreen(
                     }
                 }
 
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.weight(1f),
                     onClick = onOpenLocalStorage,
-                    showIndication = true,
-                    pressFeedbackType = PressFeedbackType.Tilt
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -252,12 +246,10 @@ fun HomeScreen(
             }
 
             if (selectedFile != null) {
-                    Card(
+                    LiquidGlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(0.dp),
                         onClick = onPickFile,
-                        showIndication = true,
-                        pressFeedbackType = PressFeedbackType.Tilt
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         BasicComponent(
                             title = selectedFile.fileName,
@@ -276,11 +268,10 @@ fun HomeScreen(
                         )
                     }
             } else {
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = onPickFile,
-                    showIndication = true,
-                    pressFeedbackType = PressFeedbackType.Tilt
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -333,11 +324,10 @@ fun HomeScreen(
             // ── 知识点编辑器入口 ──
             SmallTitle(text = "知识点管理", modifier = Modifier.padding(top = 8.dp))
 
-            Card(
+            LiquidGlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = onNavigateToEditor,
-                showIndication = true,
-                pressFeedbackType = PressFeedbackType.Tilt
+                containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -386,10 +376,10 @@ private fun ConnectionStatusCard(
     modifier: Modifier = Modifier
 ) {
     val stage = connectionState.stage()
-    val colors = when (stage) {
-        ConnectionStage.Connected -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.primaryContainer)
-        ConnectionStage.Error -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.errorContainer)
-        else -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+    val cardColor = when (stage) {
+        ConnectionStage.Connected -> MiuixTheme.colorScheme.primaryContainer
+        ConnectionStage.Error -> MiuixTheme.colorScheme.errorContainer
+        else -> MiuixTheme.colorScheme.surfaceContainer
     }
     val titleColor = when (stage) {
         ConnectionStage.Connected -> MiuixTheme.colorScheme.onPrimaryContainer
@@ -405,7 +395,7 @@ private fun ConnectionStatusCard(
     // 仅在失败态允许整卡点击进排查页；其它态（连接中/已连/空闲）不可点。
     val cardClick: (() -> Unit)? = if (stage == ConnectionStage.Error) onTroubleshoot else null
 
-    Card(
+    LiquidGlassCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
@@ -417,9 +407,8 @@ private fun ConnectionStatusCard(
                     )
                 } else Modifier
             ),
-        colors = colors,
-        pressFeedbackType = PressFeedbackType.Tilt,
-        showIndication = false
+        onClick = null,
+        containerColor = cardColor
     ) {
         AnimatedContent(
             targetState = stage,

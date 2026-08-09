@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
@@ -79,6 +81,13 @@ import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Store
 import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.whyy.snapnotes.ui.liquid.LiquidGlassBackground
+import com.whyy.snapnotes.ui.liquid.LiquidGlassNavTab
+import com.whyy.snapnotes.ui.liquid.LiquidGlassNavigationBar
+import com.whyy.snapnotes.ui.liquid.LocalLiquidGlassBackdrop
+import com.whyy.snapnotes.ui.liquid.LocalLiquidGlassConfig
 import com.whyy.snapnotes.ui.screens.StoreScreen
 import com.whyy.snapnotes.ui.screens.StoreDetailScreen
 import com.whyy.snapnotes.ui.screens.LocalStorageScreen
@@ -202,6 +211,8 @@ class MainActivity : ComponentActivity() {
                 appearanceMode = appearanceMode,
                 dynamicColor = dynamicColor
             ) {
+                val liquidGlassConfig by viewModel.liquidGlassConfig.collectAsState()
+                val liquidGlassBackdrop = rememberLayerBackdrop()
                 val screen by viewModel.screen.collectAsState()
                 val connectionState by viewModel.connectionState.collectAsState()
                 val selectedFile by viewModel.selectedFile.collectAsState()
@@ -327,51 +338,58 @@ class MainActivity : ComponentActivity() {
 
                 val showBottomBar = currentScreen is Screen.HomePager
 
+                CompositionLocalProvider(
+                    LocalLiquidGlassBackdrop provides liquidGlassBackdrop,
+                    LocalLiquidGlassConfig provides liquidGlassConfig
+                ) {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    LiquidGlassBackground(
+                        backdrop = liquidGlassBackdrop,
+                        backgroundColor = MiuixTheme.colorScheme.background,
+                        accentColor = MiuixTheme.colorScheme.primary,
+                        secondaryColor = MiuixTheme.colorScheme.primaryContainer
+                    )
                     Scaffold(
                         snackbarHost = {
                             top.yukonga.miuix.kmp.basic.SnackbarHost(state = snackbarHostState)
                         },
                         bottomBar = {
                             if (showBottomBar) {
-                                NavigationBar {
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 0,
-                                        onClick = {
-                                            viewModel.openHome()
-                                            scope.launch { pagerState.animateScrollToPage(0) }
-                                        },
-                                        icon = MiuixIcons.Home,
-                                        label = "主页"
-                                    )
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 1,
-                                        onClick = {
-                                            viewModel.openStore()
-                                            scope.launch { pagerState.animateScrollToPage(1) }
-                                        },
-                                        icon = MiuixIcons.Store,
-                                        label = "商店"
-                                    )
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 2,
-                                        onClick = {
-                                            viewModel.openHistory()
-                                            scope.launch { pagerState.animateScrollToPage(2) }
-                                        },
-                                        icon = MiuixIcons.Recent,
-                                        label = "历史"
-                                    )
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 3,
-                                        onClick = {
-                                            viewModel.openSettings()
-                                            scope.launch { pagerState.animateScrollToPage(3) }
-                                        },
-                                        icon = MiuixIcons.Settings,
-                                        label = "设置"
-                                    )
-                                }
+                                LiquidGlassNavigationBar(
+                                    selectedTabIndex = { pagerState.currentPage },
+                                    onTabSelected = { index ->
+                                        when (index) {
+                                            0 -> {
+                                                viewModel.openHome()
+                                                scope.launch { pagerState.animateScrollToPage(0) }
+                                            }
+
+                                            1 -> {
+                                                viewModel.openStore()
+                                                scope.launch { pagerState.animateScrollToPage(1) }
+                                            }
+
+                                            2 -> {
+                                                viewModel.openHistory()
+                                                scope.launch { pagerState.animateScrollToPage(2) }
+                                            }
+
+                                            3 -> {
+                                                viewModel.openSettings()
+                                                scope.launch { pagerState.animateScrollToPage(3) }
+                                            }
+                                        }
+                                    },
+                                    tabs = listOf(
+                                        LiquidGlassNavTab(MiuixIcons.Home, "主页"),
+                                        LiquidGlassNavTab(MiuixIcons.Store, "商店"),
+                                        LiquidGlassNavTab(MiuixIcons.Recent, "历史"),
+                                        LiquidGlassNavTab(MiuixIcons.Settings, "设置")
+                                    ),
+                                    containerColor = MiuixTheme.colorScheme.surfaceContainer,
+                                    accentColor = MiuixTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(28.dp)
+                                )
                             }
                         } ,
                     ) { paddingValues ->
@@ -450,6 +468,8 @@ class MainActivity : ComponentActivity() {
                                                     onAppearanceModeChange = viewModel::setAppearanceMode,
                                                     dynamicColor = dynamicColor,
                                                     onDynamicColorChange = viewModel::setDynamicColor,
+                                                    liquidGlassConfig = liquidGlassConfig,
+                                                    onLiquidGlassConfigChange = viewModel::setLiquidGlassConfig,
                                                     useBuiltinFileManager = useBuiltinFileManager,
                                                     onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
                                                     lastExportDirSummary = lastExportDirSummary,
@@ -806,6 +826,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 } // Box 结束（Scaffold + 对话框）
+                } // CompositionLocalProvider 结束
             }
         }
     }

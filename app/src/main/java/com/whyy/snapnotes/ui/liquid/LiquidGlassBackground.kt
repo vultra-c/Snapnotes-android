@@ -1,0 +1,60 @@
+package com.whyy.snapnotes.ui.liquid
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+
+@Composable
+fun LiquidGlassBackground(
+    backdrop: Backdrop,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color,
+    accentColor: Color,
+    secondaryColor: Color
+) {
+    Box(
+        modifier
+            .fillMaxSize()
+            .layerBackdrop(backdrop)
+            .drawBehind {
+                drawRect(backgroundColor)
+                drawRadialBlob(
+                    center = Offset(size.width * 0.08f, size.height * 0.14f),
+                    radius = size.maxDimension * 0.55f,
+                    color = accentColor.copy(alpha = 0.30f)
+                )
+                drawRadialBlob(
+                    center = Offset(size.width * 0.92f, size.height * 0.30f),
+                    radius = size.maxDimension * 0.45f,
+                    color = secondaryColor.copy(alpha = 0.26f)
+                )
+                drawRadialBlob(
+                    center = Offset(size.width * 0.45f, size.height * 0.95f),
+                    radius = size.maxDimension * 0.6f,
+                    color = accentColor.copy(alpha = 0.18f)
+                )
+            }
+    )
+}
+
+private fun DrawScope.drawRadialBlob(
+    center: Offset,
+    radius: Float,
+    color: Color
+) {
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(color, Color.Transparent),
+            center = center,
+            radius = radius
+        )
+    )
+}
