@@ -2,6 +2,7 @@ package com.whyy.snapnotes.data
 
 import android.content.Context
 import android.util.Log
+import com.whyy.snapnotes.R
 import org.json.JSONObject
 
 /**
@@ -60,9 +61,8 @@ private fun loadBuiltinStoreItems(): List<StoreSubject> {
         return emptyList()
     }
     return try {
-        val text = ctx.resources.openRawResource(
-            ctx.resources.getIdentifier("builtin_knowledge", "raw", ctx.packageName)
-        ).bufferedReader().use { it.readText() }
+        val text = ctx.resources.openRawResource(R.raw.builtin_knowledge)
+            .bufferedReader().use { it.readText() }
         val root = JSONObject(text)
         val subjects = mutableListOf<StoreSubject>()
         val keys = root.keys()
