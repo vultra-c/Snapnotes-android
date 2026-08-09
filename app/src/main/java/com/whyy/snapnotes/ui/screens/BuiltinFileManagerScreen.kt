@@ -72,7 +72,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import com.whyy.snapnotes.ui.components.CustomBackIcon
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Folder
@@ -310,7 +310,7 @@ private fun FileManagerPermissionPage(
                 largeTitle = "内置文件管理器",
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.padding(start = 6.dp)) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                        CustomBackIcon(contentDescription = "返回")
                     }
                 }
             )
@@ -496,7 +496,7 @@ private fun FileManagerPage(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = navigateBack, modifier = Modifier.padding(start = 6.dp)) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                        CustomBackIcon(contentDescription = "返回")
                     }
                 },
                 actions = {

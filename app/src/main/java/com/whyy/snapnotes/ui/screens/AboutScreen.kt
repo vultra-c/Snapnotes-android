@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.R
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -47,8 +46,7 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import com.whyy.snapnotes.ui.components.CustomBackIcon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -99,7 +97,7 @@ fun AboutScreen(
                     largeTitle = "关于",
                     navigationIcon = {
                         IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                            Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                            CustomBackIcon(contentDescription = "返回")
                         }
                     }
                 )

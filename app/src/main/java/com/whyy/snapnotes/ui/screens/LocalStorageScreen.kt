@@ -60,7 +60,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
+import com.whyy.snapnotes.ui.components.CustomBackIcon
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Edit
@@ -171,7 +171,7 @@ fun LocalStorageScreen(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                        CustomBackIcon(contentDescription = "返回")
                     }
                 },
                 actions = {
@@ -385,10 +385,8 @@ private fun BreadcrumbBar(
             } else {
                 segments.forEachIndexed { index, segment ->
                     if (index > 0) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
+                        CustomBackIcon(
                             contentDescription = null,
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             modifier = Modifier.size(12.dp).rotate(180f)
                         )
                     }
@@ -455,10 +453,8 @@ private fun FolderItemCard(
                     )
                 },
                 endActions = {
-                    Icon(
-                        imageVector = MiuixIcons.Back,
+                    CustomBackIcon(
                         contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.size(16.dp).rotate(180f)
                     )
                 },

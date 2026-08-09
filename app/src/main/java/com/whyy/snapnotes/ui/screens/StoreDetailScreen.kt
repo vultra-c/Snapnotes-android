@@ -62,7 +62,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import com.whyy.snapnotes.ui.components.CustomBackIcon
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Info
@@ -156,7 +156,7 @@ fun StoreDetailScreen(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
+                        CustomBackIcon(contentDescription = "返回")
                     }
                 },
                 actions = {
@@ -589,10 +589,8 @@ private fun SubjectCard(
                 )
 
                 // 展开 / 收起箭头
-                Icon(
-                    imageVector = MiuixIcons.Back,
+                CustomBackIcon(
                     contentDescription = if (isExpanded) "收起" else "展开",
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier
                         .size(18.dp)
                         .rotate(chevronRotation)

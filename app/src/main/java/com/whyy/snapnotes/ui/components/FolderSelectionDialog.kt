@@ -55,7 +55,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import com.whyy.snapnotes.ui.components.CustomBackIcon
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Home
@@ -368,10 +368,8 @@ private fun SelectionRow(
                 onClick = onToggleExpand,
                 modifier = Modifier.size(28.dp)
             ) {
-                Icon(
-                    imageVector = MiuixIcons.Back,
+                CustomBackIcon(
                     contentDescription = if (isExpanded) "收起" else "展开",
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier
                         .size(16.dp)
                         .rotate(chevronRotation)

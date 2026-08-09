@@ -50,7 +50,7 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.More
+import com.whyy.snapnotes.ui.components.CustomMoreIcon
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.SelectAll
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
@@ -289,10 +289,8 @@ fun HistoryScreen(
                                 } else {
                                     Box {
                                         var repushMenuShow by remember { mutableStateOf(false) }
-                                        Icon(
-                                            imageVector = MiuixIcons.More,
+                                        CustomMoreIcon(
                                             contentDescription = "更多操作",
-                                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             modifier = Modifier
                                                 .size(20.dp)
                                                 .padding(2.dp)
