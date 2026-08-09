@@ -3,6 +3,7 @@ package com.kyant.backdrop
 
 sealed interface RuntimeShaderCache {
 
+    fun obtainRuntimeShader(key: String, string: String): RuntimeShader
 }
 
 internal class RuntimeShaderCacheImpl : RuntimeShaderCache {

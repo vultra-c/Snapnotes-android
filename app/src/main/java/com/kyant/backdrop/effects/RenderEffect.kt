@@ -19,6 +19,7 @@ fun BackdropEffectScope.effect(effect: RenderEffect) {
 @OptIn(ExperimentalContracts::class)
 fun BackdropEffectScope.runtimeShaderEffect(
     key: String,
+    shaderString: String,
     uniformShaderName: String,
     block: RuntimeShader.() -> Unit
 ) {

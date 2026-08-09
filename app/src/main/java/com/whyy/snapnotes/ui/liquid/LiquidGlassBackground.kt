@@ -9,12 +9,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 
 @Composable
 fun LiquidGlassBackground(
-    backdrop: Backdrop,
+    backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
     backgroundColor: Color,
     accentColor: Color,

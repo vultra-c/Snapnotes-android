@@ -13,8 +13,8 @@ import com.kyant.backdrop.asAndroidRuntimeShader
 internal fun RenderEffect?.chain(other: RenderEffect): RenderEffect {
     return if (this != null) {
         android.graphics.RenderEffect.createChainEffect(
-            other.asAndroidRenderEffect,
-            this.asAndroidRenderEffect
+            other.asAndroidRenderEffect(),
+            this.asAndroidRenderEffect()
         ).asComposeRenderEffect()
     } else {
         other
@@ -40,7 +40,7 @@ internal fun ColorFilterEffect(
     return if (renderEffect != null) {
         android.graphics.RenderEffect.createColorFilterEffect(
             colorFilter.asAndroidColorFilter(),
-            renderEffect.asAndroidRenderEffect
+            renderEffect.asAndroidRenderEffect()
         ).asComposeRenderEffect()
     } else {
         android.graphics.RenderEffect.createColorFilterEffect(
