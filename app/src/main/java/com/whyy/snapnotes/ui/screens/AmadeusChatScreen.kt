@@ -252,7 +252,7 @@ fun AmadeusChatScreen(
                 onFileClick = { showFileHintDialog = true },
                 canSend = canSend,
                 isLoading = isLoading,
-                modifier = Modifier.navigationBarsPadding().imePadding()
+                modifier = Modifier.imePadding().navigationBarsPadding()
             )
         }
     }

@@ -194,9 +194,7 @@ fun ProgressScreen(
                                 (fadeOut(spring(stiffness = Spring.StiffnessMediumLow)) +
                                         scaleOut(targetScale = 0.5f))
                     },
-                    label = "StatusIcon",
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
+                    label = "StatusIcon"
                 ) { kind ->
                     when (kind) {
                         ProgressStatusKind.Transferring -> CircularProgressIndicator(
