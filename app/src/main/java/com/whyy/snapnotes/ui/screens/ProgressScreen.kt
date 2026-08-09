@@ -195,7 +195,8 @@ fun ProgressScreen(
                                         scaleOut(targetScale = 0.5f))
                     },
                     label = "StatusIcon",
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
                 ) { kind ->
                     when (kind) {
                         ProgressStatusKind.Transferring -> CircularProgressIndicator(
