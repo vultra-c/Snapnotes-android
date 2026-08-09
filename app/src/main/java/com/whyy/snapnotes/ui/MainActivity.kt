@@ -37,6 +37,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import androidx.navigation3.ui.NavDisplayTransitionEffects
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import com.whyy.snapnotes.App
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
@@ -713,7 +718,31 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         finish()
                                     }
-                                }
+                                },
+                                transitionSpec = {
+                                    slideInHorizontally(
+                                        animationSpec = tween(350),
+                                        initialOffsetX = { it }
+                                    ) togetherWith slideOutHorizontally(
+                                        animationSpec = tween(350),
+                                        targetOffsetX = { -it / 3 }
+                                    )
+                                },
+                                popTransitionSpec = {
+                                    slideInHorizontally(
+                                        animationSpec = tween(350),
+                                        initialOffsetX = { -it / 3 }
+                                    ) togetherWith slideOutHorizontally(
+                                        animationSpec = tween(350),
+                                        targetOffsetX = { it }
+                                    )
+                                },
+                                transitionEffects = NavDisplayTransitionEffects(
+                                    enableCornerClip = true,
+                                    dimAmount = 0.5f,
+                                    blockInputDuringTransition = true,
+                                    popDirectionFollowsSwipeEdge = false
+                                )
                             )
                         }
                         FirstSyncConfirmDialog(
