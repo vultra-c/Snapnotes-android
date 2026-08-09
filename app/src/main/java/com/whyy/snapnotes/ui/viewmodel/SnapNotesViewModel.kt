@@ -1528,6 +1528,16 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             if (plans.isEmpty()) {
                 formulaPhaseActive = false
                 pendingFormulaPlans = emptyList()
+                _pushState.update {
+                    it.copy(
+                        progress = 1.0,
+                        statusText = "传输完成",
+                        isTransferring = false,
+                        isFinished = true,
+                        isSuccess = true,
+                        errorMessage = null
+                    )
+                }
                 _screen.value = AppScreen.Result
                 return@launch
             }
