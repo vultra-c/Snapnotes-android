@@ -494,6 +494,17 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
                 obj.put("id", entry.id)
                 obj.put("title", entry.title)
                 if (entry.desc.isNotBlank()) obj.put("desc", entry.desc)
+                if (entry.raw.isNotBlank()) obj.put("raw", entry.raw)
+                if (entry.points.isNotEmpty()) {
+                    val pa = org.json.JSONArray()
+                    entry.points.forEach { pa.put(it) }
+                    obj.put("points", pa)
+                }
+                if (entry.formulas.isNotEmpty()) {
+                    val fa = org.json.JSONArray()
+                    entry.formulas.forEach { fa.put(it) }
+                    obj.put("formulas", fa)
+                }
                 arr.put(obj)
             }
             root.put(subject.name, arr)
@@ -516,6 +527,17 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
                     obj.put("id", entry.id)
                     obj.put("title", entry.title)
                     if (entry.desc.isNotBlank()) obj.put("desc", entry.desc)
+                    if (entry.raw.isNotBlank()) obj.put("raw", entry.raw)
+                    if (entry.points.isNotEmpty()) {
+                        val pa = org.json.JSONArray()
+                        entry.points.forEach { pa.put(it) }
+                        obj.put("points", pa)
+                    }
+                    if (entry.formulas.isNotEmpty()) {
+                        val fa = org.json.JSONArray()
+                        entry.formulas.forEach { fa.put(it) }
+                        obj.put("formulas", fa)
+                    }
                     arr.put(obj)
                 }
                 root.put(subject.name, arr)
@@ -1163,9 +1185,9 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
                 id = entry.id.toString(),
                 title = entry.title,
                 desc = entry.desc,
-                raw = "",
-                points = emptyList(),
-                formulas = emptyList()
+                raw = entry.raw,
+                points = entry.points,
+                formulas = entry.formulas
             )
         }
         _editorSubjects.value = listOf(EditorSubject(name = subject.name, entries = editorEntries))
