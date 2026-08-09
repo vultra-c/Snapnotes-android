@@ -487,23 +487,17 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun importStoreSubject(subject: com.whyy.snapnotes.data.StoreSubject) {
         viewModelScope.launch {
-            val json = buildString {
-                append("{")
-                append("\"${subject.name}\":[")
-                subject.entries.forEachIndexed { index, entry ->
-                    if (index > 0) append(",")
-                    append("{")
-                    append("\"id\":\"${entry.id}\",")
-                    append("\"title\":\"${entry.title.replace("\"", "\\\"")}\",")
-                    append("\"desc\":\"${entry.desc.replace("\"", "\\\"")}\",")
-                    append("\"raw\":\"\",")
-                    append("\"points\":[]")
-                    append("}")
-                }
-                append("]")
-                append("}")
+            val root = org.json.JSONObject()
+            val arr = org.json.JSONArray()
+            subject.entries.forEach { entry ->
+                val obj = org.json.JSONObject()
+                obj.put("id", entry.id)
+                obj.put("title", entry.title)
+                if (entry.desc.isNotBlank()) obj.put("desc", entry.desc)
+                arr.put(obj)
             }
-            pushFromString(json, "商店_${subject.name}.json")
+            root.put(subject.name, arr)
+            pushFromString(root.toString(), "商店_${subject.name}.json")
         }
     }
 
@@ -514,26 +508,19 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
         viewModelScope.launch {
-            val json = buildString {
-                append("{")
-                subjects.forEachIndexed { sIndex, subject ->
-                    if (sIndex > 0) append(",")
-                    append("\"${subject.name}\":[")
-                    subject.entries.forEachIndexed { index, entry ->
-                        if (index > 0) append(",")
-                        append("{")
-                        append("\"id\":\"${entry.id}\",")
-                        append("\"title\":\"${entry.title.replace("\"", "\\\"")}\",")
-                        append("\"desc\":\"${entry.desc.replace("\"", "\\\"")}\",")
-                        append("\"raw\":\"\",")
-                        append("\"points\":[]")
-                        append("}")
-                    }
-                    append("]")
+            val root = org.json.JSONObject()
+            subjects.forEach { subject ->
+                val arr = org.json.JSONArray()
+                subject.entries.forEach { entry ->
+                    val obj = org.json.JSONObject()
+                    obj.put("id", entry.id)
+                    obj.put("title", entry.title)
+                    if (entry.desc.isNotBlank()) obj.put("desc", entry.desc)
+                    arr.put(obj)
                 }
-                append("}")
+                root.put(subject.name, arr)
             }
-            pushFromString(json, "商店_批量导入.json")
+            pushFromString(root.toString(), "商店_批量导入.json")
         }
     }
 

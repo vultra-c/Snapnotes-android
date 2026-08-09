@@ -408,7 +408,10 @@ class MainActivity : ComponentActivity() {
                                                     onCreateFolder = viewModel::createFolder,
                                                     onOpenBandFiles = navigateToBandFileTree,
                                                     onOpenLocalStorage = navigateToLocalStorage,
-                                                    onNavigateToEditor = navigateToEditor,
+                                                    onNavigateToEditor = {
+                                                        viewModel.openEditor()
+                                                        navigateToEditor()
+                                                    },
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
@@ -429,7 +432,10 @@ class MainActivity : ComponentActivity() {
                                                     onRepush = viewModel::repushRecord,
                                                     onDeleteRequest = viewModel::requestHistoryDelete,
                                                     onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
-                                                    onEditRecord = viewModel::openEditorFromCache,
+                                                    onEditRecord = { record ->
+                                                        viewModel.openEditorFromCache(record)
+                                                        navigateToEditor()
+                                                    },
                                                     onCreateFolder = viewModel::createFolder,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
@@ -547,6 +553,7 @@ class MainActivity : ComponentActivity() {
                                             },
                                             onEditSubject = { subject ->
                                                 viewModel.loadEditorFromStoreSubject(subject)
+                                                navigateToEditor()
                                             },
                                             onCreateFolder = viewModel::createFolder,
                                             modifier = Modifier.fillMaxSize()
