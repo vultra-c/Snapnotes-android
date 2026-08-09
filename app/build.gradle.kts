@@ -10,7 +10,11 @@ plugins {
 
 android {
     namespace = "com.whyy.snapnotes"
-    compileSdk = 35
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.whyy.snapnotes"
