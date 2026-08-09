@@ -63,7 +63,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import com.whyy.snapnotes.ui.components.CustomBackIcon
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.File
@@ -363,11 +363,13 @@ fun HomeScreen(
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                     }
-                    CustomBackIcon(
+                    Icon(
+                        imageVector = MiuixIcons.Back,
                         contentDescription = null,
                         modifier = Modifier
                             .size(18.dp)
-                            .rotate(180f)
+                            .rotate(180f),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
                     )
                 }
             }

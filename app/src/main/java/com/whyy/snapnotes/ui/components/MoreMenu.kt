@@ -15,7 +15,7 @@ import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Folder
-import com.whyy.snapnotes.ui.components.CustomMoreIcon
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
@@ -66,7 +66,8 @@ fun MoreMenu(
 
     androidx.compose.foundation.layout.Box(modifier = modifier) {
         IconButton(onClick = { showPopup = true }) {
-            CustomMoreIcon(
+            Icon(
+                imageVector = MiuixIcons.More,
                 contentDescription = "更多"
             )
         }

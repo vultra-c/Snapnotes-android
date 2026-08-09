@@ -55,7 +55,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import com.whyy.snapnotes.ui.components.CustomBackIcon
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Home
@@ -352,13 +352,13 @@ private fun SelectionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = (depth * 16).dp)
             .clip(RoundedCornerShape(12.dp))
             .background(
                 if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
                 else Color.Transparent
             )
             .clickable { onSelect() }
+            .padding(start = (depth * 16).dp)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -368,11 +368,13 @@ private fun SelectionRow(
                 onClick = onToggleExpand,
                 modifier = Modifier.size(28.dp)
             ) {
-                CustomBackIcon(
+                Icon(
+                    imageVector = MiuixIcons.Back,
                     contentDescription = if (isExpanded) "收起" else "展开",
                     modifier = Modifier
                         .size(16.dp)
-                        .rotate(chevronRotation)
+                        .rotate(chevronRotation),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
                 )
             }
         } else {
@@ -453,9 +455,7 @@ private fun FolderNodeRow(
     val subFolders = remember(node) { node.children.filter { it.isFolder } }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize()
+        modifier = Modifier.fillMaxWidth()
     ) {
         SelectionRow(
             name = node.name,

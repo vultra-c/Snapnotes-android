@@ -62,7 +62,7 @@ import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import com.whyy.snapnotes.ui.components.CustomBackIcon
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Edit
@@ -100,7 +100,7 @@ fun EditorScreen(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                        CustomBackIcon(contentDescription = "返回")
+                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
                     }
                 }
             )
@@ -387,6 +387,19 @@ private fun EntryCard(
                 )
             }
 
+            // 简介字段始终可见，方便快速编辑
+            TextField(
+                value = e.desc,
+                onValueChange = { onUpdateEntry(e.copy(desc = it)) },
+                label = "简介",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp),
+                singleLine = false,
+                minLines = 1,
+                maxLines = 3
+            )
+
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(spring(dampingRatio = Spring.DampingRatioNoBouncy)) + fadeIn(),
@@ -414,15 +427,6 @@ private fun EntryCard(
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
-                    TextField(
-                        value = e.desc,
-                        onValueChange = { onUpdateEntry(e.copy(desc = it)) },
-                        label = "简介",
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = false,
-                        minLines = 2,
-                        maxLines = 4
-                    )
                     TextField(
                         value = e.raw,
                         onValueChange = { onUpdateEntry(e.copy(raw = it)) },

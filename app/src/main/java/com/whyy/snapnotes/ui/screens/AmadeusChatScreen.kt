@@ -33,7 +33,6 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
-import com.whyy.snapnotes.ui.components.CustomBackIcon
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.*
@@ -145,7 +144,7 @@ fun AmadeusChatScreen(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                        CustomBackIcon(contentDescription = "返回")
+                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
                     }
                 },
                 actions = {

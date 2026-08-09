@@ -1,6 +1,7 @@
 package com.whyy.snapnotes.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -180,20 +181,9 @@ fun ProgressScreen(
                     .background(color = iconBg, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                AnimatedContent(
+                Crossfade(
                     targetState = statusKind,
-                    transitionSpec = {
-                        (fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
-                                scaleIn(
-                                    initialScale = 0.5f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessMedium
-                                    )
-                                )) togetherWith
-                                (fadeOut(spring(stiffness = Spring.StiffnessMediumLow)) +
-                                        scaleOut(targetScale = 0.5f))
-                    },
+                    animationSpec = tween(durationMillis = 400, easing = LinearEasing),
                     label = "StatusIcon"
                 ) { kind ->
                     when (kind) {

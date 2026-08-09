@@ -29,7 +29,7 @@ import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.icon.extended.Close
-import com.whyy.snapnotes.ui.components.CustomBackIcon
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -77,7 +77,8 @@ fun TroubleshootScreen(
                         onClick = onBackClick,
                         modifier = Modifier.padding(start = 6.dp)
                     ) {
-                        CustomBackIcon(
+                        Icon(
+                            imageVector = MiuixIcons.Back,
                             contentDescription = "返回"
                         )
                     }

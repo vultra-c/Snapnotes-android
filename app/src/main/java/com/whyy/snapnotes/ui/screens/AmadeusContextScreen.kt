@@ -47,7 +47,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import com.whyy.snapnotes.ui.components.CustomBackIcon
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -96,7 +96,7 @@ fun AmadeusContextScreen(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                        CustomBackIcon(contentDescription = "返回")
+                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
                     }
                 }
             )
