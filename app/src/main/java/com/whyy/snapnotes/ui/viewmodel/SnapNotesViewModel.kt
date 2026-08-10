@@ -600,7 +600,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     val experimentalInlineSearch = _experimentalInlineSearch.asStateFlow()
     fun setExperimentalPagesPreview(v: Boolean) { prefs.edit().putBoolean(experimentalPagesPreviewKey, v).apply(); _experimentalPagesPreview.value = v }
     fun setExperimentalInlineSearch(v: Boolean) { prefs.edit().putBoolean(experimentalInlineSearchKey, v).apply(); _experimentalInlineSearch.value = v }
-    }
 
     /* ──────────── Amadeus（手环端 AI 聊天助手）手机端配置 ────────────
      * 见根目录「手机端AI聊天适配说明.md」第五节：key/model/baseURL/代理/超时全在手机端。
