@@ -188,14 +188,26 @@ class BandFileTreeManager(
     }
 
     private fun handleNodeDeleted(obj: JsonObject) {
-        val success = obj["success"]?.jsonPrimitive?.contentOrNull?.toBoolean() ?: false
+        // 兼容 JSON boolean / string "true" / number 1 三种表示
+        val successEl = obj["success"]?.jsonPrimitive
+        val success = successEl?.let { p ->
+            p.booleanOrNull == true ||
+                p.contentOrNull?.equals("true", ignoreCase = true) == true ||
+                p.contentOrNull == "1"
+        } ?: false
         val error = obj["error"]?.jsonPrimitive?.contentOrNull
         Log.d(TAG, "nodeDeleted: success=$success error=$error")
         if (!nodeDeletedDeferred.isCompleted) nodeDeletedDeferred.complete(success)
     }
 
     private fun handleNodeRenamed(obj: JsonObject) {
-        val success = obj["success"]?.jsonPrimitive?.contentOrNull?.toBoolean() ?: false
+        // 兼容 JSON boolean / string "true" / number 1 三种表示
+        val successEl = obj["success"]?.jsonPrimitive
+        val success = successEl?.let { p ->
+            p.booleanOrNull == true ||
+                p.contentOrNull?.equals("true", ignoreCase = true) == true ||
+                p.contentOrNull == "1"
+        } ?: false
         val error = obj["error"]?.jsonPrimitive?.contentOrNull
         Log.d(TAG, "nodeRenamed: success=$success error=$error")
         if (!nodeRenamedDeferred.isCompleted) nodeRenamedDeferred.complete(success)
