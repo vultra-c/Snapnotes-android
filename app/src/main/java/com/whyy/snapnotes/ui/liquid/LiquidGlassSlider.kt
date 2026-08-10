@@ -1,6 +1,7 @@
 package com.whyy.snapnotes.ui.liquid
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -10,10 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,7 +67,7 @@ fun LiquidGlassSlider(
 
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val animationScope = rememberCoroutineScope()
-        var didDrag by remember { mutableStateOf(false) }
+        // 拖动/点击由下方全宽手势层驱动；DampedDragAnimation 只负责液态挤压反馈与拇指动画。
         val dampedDragAnimation = remember(animationScope) {
             DampedDragAnimation(
                 animationScope = animationScope,
@@ -77,28 +77,18 @@ fun LiquidGlassSlider(
                 initialScale = 1f,
                 pressedScale = 1.5f,
                 onDragStarted = {},
-                onDragStopped = {
-                    if (didDrag) {
-                        onValueChange(targetValue)
-                    }
-                },
-                onDrag = { _, dragAmount ->
-                    if (!didDrag) {
-                        didDrag = dragAmount.x != 0f
-                    }
-                    val delta = (valueRange.endInclusive - valueRange.start) * (dragAmount.x / trackWidth)
-                    onValueChange(
-                        if (isLtr) (targetValue + delta).coerceIn(valueRange)
-                        else (targetValue - delta).coerceIn(valueRange)
-                    )
-                }
+                onDragStopped = {},
+                onDrag = { _, _ -> }
             )
         }
+        // 外部值变化时同步拇指位置：经 rememberUpdatedState 始终读取最新 value，
+        // 避免 snapshotFlow 捕获到首次组合的旧闭包导致拇指不跟手。
+        val currentValue by rememberUpdatedState(value)
         LaunchedEffect(dampedDragAnimation) {
-            snapshotFlow { value() }
-                .collectLatest { value ->
-                    if (dampedDragAnimation.targetValue != value) {
-                        dampedDragAnimation.updateValue(value)
+            snapshotFlow { currentValue() }
+                .collectLatest { newValue ->
+                    if (dampedDragAnimation.targetValue != newValue) {
+                        dampedDragAnimation.updateValue(newValue)
                     }
                 }
         }
@@ -108,17 +98,6 @@ fun LiquidGlassSlider(
                 Modifier
                     .clip(androidx.compose.foundation.shape.CircleShape)
                     .background(trackColor)
-                    .pointerInput(animationScope) {
-                        detectTapGestures { position ->
-                            val delta = (valueRange.endInclusive - valueRange.start) * (position.x / trackWidth)
-                            val targetValue =
-                                (if (isLtr) valueRange.start + delta
-                                else valueRange.endInclusive - delta)
-                                    .coerceIn(valueRange)
-                            dampedDragAnimation.animateToValue(targetValue)
-                            onValueChange(targetValue)
-                        }
-                    }
                     .height(6f.dp)
                     .fillMaxWidth()
             )
@@ -138,6 +117,50 @@ fun LiquidGlassSlider(
             )
         }
 
+        // 全宽手势层（透明）：点击定位 + 水平拖动。拖动锁定水平方向，
+        // 垂直方向手势不被消费，仍由外层页面滚动处理（修复滑块被页面滑动抢走、无法调整的问题）。
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                .pointerInput(valueRange, trackWidth, isLtr) {
+                    detectTapGestures { position ->
+                        val ratio = (position.x / trackWidth).coerceIn(0f, 1f)
+                        val range = valueRange.endInclusive - valueRange.start
+                        val targetValue = if (isLtr) {
+                            valueRange.start + range * ratio
+                        } else {
+                            valueRange.endInclusive - range * ratio
+                        }
+                        dampedDragAnimation.animateToValue(targetValue)
+                        onValueChange(targetValue)
+                    }
+                }
+                .pointerInput(dampedDragAnimation, valueRange, trackWidth, isLtr) {
+                    var startValue = value()
+                    var totalDelta = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            startValue = currentValue()
+                            totalDelta = 0f
+                            dampedDragAnimation.press()
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDelta += dragAmount
+                            val range = valueRange.endInclusive - valueRange.start
+                            val target = (startValue + range * (totalDelta / trackWidth) * (if (isLtr) 1f else -1f))
+                                .coerceIn(valueRange)
+                            onValueChange(target)
+                            // 拖动时直接驱动拇指动画，保证即时跟手
+                            dampedDragAnimation.updateValue(target)
+                        },
+                        onDragEnd = { dampedDragAnimation.release() },
+                        onDragCancel = { dampedDragAnimation.release() }
+                    )
+                }
+        )
+
         Box(
             Modifier
                 .graphicsLayer {
@@ -145,13 +168,6 @@ fun LiquidGlassSlider(
                         (-size.width / 2f + trackWidth * dampedDragAnimation.progress)
                             .fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) * if (isLtr) 1f else -1f
                 }
-                .then(
-                    if (useGlass && config.interactive) {
-                        Modifier.then(dampedDragAnimation.modifier)
-                    } else {
-                        Modifier
-                    }
-                )
                 .then(
                     if (useGlass) {
                         Modifier.drawBackdrop(

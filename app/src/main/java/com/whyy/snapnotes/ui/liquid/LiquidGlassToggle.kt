@@ -2,6 +2,7 @@ package com.whyy.snapnotes.ui.liquid
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -13,8 +14,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +32,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.lerp
+import kotlin.math.abs
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
@@ -66,9 +70,16 @@ fun LiquidGlassToggle(
     val density = LocalDensity.current
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val dragWidth = with(density) { 20f.dp.toPx() }
+    val touchSlop = with(density) { 8f.dp.toPx() }
     val animationScope = rememberCoroutineScope()
     var didDrag by remember { mutableStateOf(false) }
+    var totalDrag by remember { mutableFloatStateOf(0f) }
     var fraction by remember { mutableFloatStateOf(if (checked) 1f else 0f) }
+    // DampedDragAnimation 挂在 remember 上，回调闭包只在首次组合创建。
+    // checked / onCheckedChange 必须经 rememberUpdatedState 读取最新值，
+    // 否则回调里拿到的永远是第一次组合的旧状态（表现为开关只能切换一次）。
+    val currentChecked by rememberUpdatedState(checked)
+    val currentOnCheckedChange by rememberUpdatedState(onCheckedChange)
     val dampedDragAnimation = remember(animationScope) {
         DampedDragAnimation(
             animationScope = animationScope,
@@ -80,17 +91,20 @@ fun LiquidGlassToggle(
             onDragStarted = {},
             onDragStopped = {
                 if (didDrag) {
-                    fraction = if (targetValue >= 0.5f) 1f else 0f
-                    onCheckedChange(fraction == 1f)
-                    didDrag = false
-                } else {
-                    fraction = if (checked) 0f else 1f
-                    onCheckedChange(fraction == 1f)
+                    // 拖动结束：按手指最终停留的位置吸附到最近的端点（读 fraction 而非 targetValue，
+                    // 避免微小的抖动被当成拖动后吸附回原值、导致开关“点了没反应”）。
+                    val snapped = if (fraction >= 0.5f) 1f else 0f
+                    fraction = snapped
+                    currentOnCheckedChange(snapped == 1f)
                 }
+                didDrag = false
+                totalDrag = 0f
             },
             onDrag = { _, dragAmount ->
-                if (!didDrag) {
-                    didDrag = dragAmount.x != 0f
+                totalDrag += dragAmount.x
+                // 超过触摸阈值才认定为拖动；纯点击（含轻微抖动）不进入拖动分支，交给下方点击切换。
+                if (!didDrag && abs(totalDrag) > touchSlop) {
+                    didDrag = true
                 }
                 val delta = dragAmount.x / dragWidth
                 fraction =
@@ -130,6 +144,16 @@ fun LiquidGlassToggle(
                         drawRect(lerp(trackColor, accentColor, fraction))
                     }
                     .size(64.dp, 28.dp)
+                    // 整条轨道可点击切换：轻点（未达到拖动阈值）直接翻转状态。
+                    // 点按滑块时这里与滑块的 onDragStopped 会同时收到事件，
+                    // 但拖动分支里 didDrag 为 false 时不再翻转，因此不会双触发。
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            val newChecked = !currentChecked
+                            fraction = if (newChecked) 1f else 0f
+                            currentOnCheckedChange(newChecked)
+                        }
+                    }
             )
 
             Box(

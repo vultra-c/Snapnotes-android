@@ -185,21 +185,24 @@ fun AmadeusConfigScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    BasicComponent(
-                        title = "Base URL",
-                        summary = config.baseUrl.ifBlank { "留空 = 走厂商默认" },
-                        onClick = { editingField = EditField.BaseUrl }
-                    )
-                    BasicComponent(
-                        title = "API Key",
-                        summary = if (config.apiKey.isNotBlank()) "已设置（点此修改）" else "未设置",
-                        onClick = { editingField = EditField.ApiKey }
-                    )
-                    BasicComponent(
-                        title = "Model",
-                        summary = config.model.ifBlank { "未设置" },
-                        onClick = { showModelPicker = true }
-                    )
+                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        BasicComponent(
+                            title = "Base URL",
+                            summary = config.baseUrl.ifBlank { "留空 = 走厂商默认" },
+                            onClick = { editingField = EditField.BaseUrl }
+                        )
+                        BasicComponent(
+                            title = "API Key",
+                            summary = if (config.apiKey.isNotBlank()) "已设置（点此修改）" else "未设置",
+                            onClick = { editingField = EditField.ApiKey }
+                        )
+                        BasicComponent(
+                            title = "Model",
+                            summary = config.model.ifBlank { "未设置" },
+                            onClick = { showModelPicker = true }
+                        )
+                    }
                 }
             }
             // 模型获取操作卡：用 primaryContainer 着色突出动作属性，左侧带 Refresh 徽标，

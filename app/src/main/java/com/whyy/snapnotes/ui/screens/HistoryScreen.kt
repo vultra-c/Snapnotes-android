@@ -52,7 +52,6 @@ import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.SelectAll
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -143,9 +142,6 @@ fun HistoryScreen(
                         MoreMenu(
                             onCreateFolder = { showFolderDialog = true }
                         )
-                        IconButton(onClick = { selectionMode = true }) {
-                            Icon(imageVector = MiuixIcons.SelectAll, contentDescription = "多选")
-                        }
                     }
                 }
             )

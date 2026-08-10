@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -93,14 +94,12 @@ fun TutorialCard(
                 )
             }
 
+            // 展开动画用较短的 tween 而非弹簧：液态玻璃卡片在尺寸变化时每一帧都要重绘
+            // 背景毛玻璃 + 折射，弹簧动画会拉长重绘时长导致明显掉帧，tween 更轻快平滑。
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
-                ) + fadeIn(),
-                exit = shrinkVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
-                ) + fadeOut()
+                enter = expandVertically(animationSpec = tween(220)) + fadeIn(tween(180)),
+                exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(tween(160))
             ) {
                 Column(
                     modifier = Modifier

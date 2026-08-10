@@ -168,18 +168,21 @@ fun AboutScreen(
                         modifier = Modifier.padding(horizontal = 12.dp),
                         containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
-                        BasicComponent(
-                            title = REF_PROJECT_NAME_ANDROID,
-                            onClick = { openUrl(REF_PROJECT_URL_ANDROID) }
-                        )
-                        BasicComponent(
-                            title = REF_PROJECT_NAME,
-                            onClick = { openUrl(REF_PROJECT_URL) }
-                        )
-                        BasicComponent(
-                            title = REF_PROJECT_LIQUID_GLASS,
-                            onClick = { openUrl(REF_PROJECT_LIQUID_GLASS_URL) }
-                        )
+                        // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            BasicComponent(
+                                title = REF_PROJECT_NAME_ANDROID,
+                                onClick = { openUrl(REF_PROJECT_URL_ANDROID) }
+                            )
+                            BasicComponent(
+                                title = REF_PROJECT_NAME,
+                                onClick = { openUrl(REF_PROJECT_URL) }
+                            )
+                            BasicComponent(
+                                title = REF_PROJECT_LIQUID_GLASS,
+                                onClick = { openUrl(REF_PROJECT_LIQUID_GLASS_URL) }
+                            )
+                        }
                     }
                 }
                 // ── 隐藏条目（彩蛋触发点） ──

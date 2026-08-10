@@ -78,9 +78,9 @@ import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Home
-import top.yukonga.miuix.kmp.icon.extended.Store
 import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.Store
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.whyy.snapnotes.ui.liquid.LiquidGlassBackground
@@ -381,10 +381,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     tabs = listOf(
-                                        LiquidGlassNavTab(MiuixIcons.Home, "主页"),
-                                        LiquidGlassNavTab(MiuixIcons.Store, "商店"),
-                                        LiquidGlassNavTab(MiuixIcons.Recent, "历史"),
-                                        LiquidGlassNavTab(MiuixIcons.Settings, "设置")
+                                        LiquidGlassNavTab(MiuixIcons.Light.Home, "主页"),
+                                        LiquidGlassNavTab(MiuixIcons.Light.Store, "商店"),
+                                        LiquidGlassNavTab(MiuixIcons.Light.Recent, "历史"),
+                                        LiquidGlassNavTab(MiuixIcons.Light.Settings, "设置")
                                     ),
                                     containerColor = MiuixTheme.colorScheme.surfaceContainer,
                                     accentColor = MiuixTheme.colorScheme.primary,

@@ -1,6 +1,7 @@
 package com.whyy.snapnotes.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -104,28 +105,31 @@ fun TroubleshootScreen(
                         .fillMaxWidth(),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    TroubleshootItem(
-                        title = "蓝牙已开启",
-                        result = state.bluetooth,
-                        failSummary = "请开启手机蓝牙后返回",
-                        checkingSummary = "正在检测蓝牙状态…",
-                        notGrantedHint = state.bluetoothPermissionGranted.not(),
-                        onGrantedHint = "需授权蓝牙权限才能检测，请允许权限后继续"
-                    )
-                    TroubleshootItem(
-                        title = "小米运动健康已连接手环",
-                        result = state.deviceConnected,
-                        failSummary = "请打开小米运动健康新建连接、确保后台运行并在其内连上设备",
-                        checkingSummary = "正在查找已连接的设备…",
-                        dependSummary = "需先开启蓝牙后才能检测"
-                    )
-                    TroubleshootItem(
-                        title = "手环已装闪念小抄",
-                        result = state.appInstalled,
-                        failSummary = "请先在手环上安装闪念小抄快应用",
-                        checkingSummary = "正在检测手环应用安装状态…",
-                        dependSummary = "需先连接手环后才能检测"
-                    )
+                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        TroubleshootItem(
+                            title = "蓝牙已开启",
+                            result = state.bluetooth,
+                            failSummary = "请开启手机蓝牙后返回",
+                            checkingSummary = "正在检测蓝牙状态…",
+                            notGrantedHint = state.bluetoothPermissionGranted.not(),
+                            onGrantedHint = "需授权蓝牙权限才能检测，请允许权限后继续"
+                        )
+                        TroubleshootItem(
+                            title = "小米运动健康已连接手环",
+                            result = state.deviceConnected,
+                            failSummary = "请打开小米运动健康新建连接、确保后台运行并在其内连上设备",
+                            checkingSummary = "正在查找已连接的设备…",
+                            dependSummary = "需先开启蓝牙后才能检测"
+                        )
+                        TroubleshootItem(
+                            title = "手环已装闪念小抄",
+                            result = state.appInstalled,
+                            failSummary = "请先在手环上安装闪念小抄快应用",
+                            checkingSummary = "正在检测手环应用安装状态…",
+                            dependSummary = "需先连接手环后才能检测"
+                        )
+                    }
                 }
             }
             item {

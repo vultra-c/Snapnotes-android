@@ -5,6 +5,7 @@ import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -258,6 +260,19 @@ private fun LiquidGlassNavigationBarGlass(
             Modifier
                 .graphicsLayer {
                     translationX = panelOffset
+                }
+                // 点击 Tab 直接切换页面（保留拖动与动画）：点击位置映射到 Tab 下标，
+                // 通过 currentIndex 走既有的动画 + onTabSelected 链路，与拖动松手行为一致。
+                .pointerInput(tabCount, tabWidth, isLtr) {
+                    detectTapGestures { position ->
+                        val rawIndex = (position.x / tabWidth).toInt()
+                        val tappedIndex =
+                            (if (isLtr) rawIndex else tabCount - 1 - rawIndex)
+                                .fastCoerceIn(0, tabCount - 1)
+                        if (tappedIndex != currentIndex) {
+                            currentIndex = tappedIndex
+                        }
+                    }
                 }
                 .drawBackdrop(
                     backdrop = backdrop,

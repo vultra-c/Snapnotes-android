@@ -103,25 +103,28 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    WindowDropdownPreference(
-                        title = "应用主题",
-                        summary = "选择浅色、深色或跟随系统",
-                        items = AppearanceMode.entries.map { it.label },
-                        selectedIndex = AppearanceMode.entries.indexOf(appearanceMode).coerceAtLeast(0),
-                        onSelectedIndexChange = { index ->
-                            onAppearanceModeChange(AppearanceMode.entries[index])
-                        }
-                    )
-                    BasicComponent(
-                        title = "动态取色",
-                        summary = "开启后按系统壁纸生成整套配色（Monet）",
-                        endActions = {
-                            LiquidGlassToggle(
-                                checked = dynamicColor,
-                                onCheckedChange = onDynamicColorChange
-                            )
-                        }
-                    )
+                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        WindowDropdownPreference(
+                            title = "应用主题",
+                            summary = "选择浅色、深色或跟随系统",
+                            items = AppearanceMode.entries.map { it.label },
+                            selectedIndex = AppearanceMode.entries.indexOf(appearanceMode).coerceAtLeast(0),
+                            onSelectedIndexChange = { index ->
+                                onAppearanceModeChange(AppearanceMode.entries[index])
+                            }
+                        )
+                        BasicComponent(
+                            title = "动态取色",
+                            summary = "开启后按系统壁纸生成整套配色（Monet）",
+                            endActions = {
+                                LiquidGlassToggle(
+                                    checked = dynamicColor,
+                                    onCheckedChange = onDynamicColorChange
+                                )
+                            }
+                        )
+                    }
                 }
             }
             item {
@@ -173,69 +176,72 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    BasicComponent(
-                        title = "启用液态玻璃效果",
-                        summary = "卡片与底部导航叠加毛玻璃与折射效果；按住拖动卡片会有反应",
-                        endActions = {
-                            LiquidGlassToggle(
-                                checked = liquidGlassConfig.enabled,
-                                onCheckedChange = { enabled ->
-                                    onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = enabled))
-                                }
-                            )
-                        }
-                    )
-                    BasicComponent(
-                        title = "色散效果",
-                        summary = "折射边缘出现轻微彩虹色散（需 Android 13+）",
-                        endActions = {
-                            LiquidGlassToggle(
-                                checked = liquidGlassConfig.chromaticAberration,
-                                onCheckedChange = { enabled ->
-                                    onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = enabled))
-                                }
-                            )
-                        }
-                    )
-                    BasicComponent(
-                        title = "拖动反馈",
-                        summary = "按住并拖动卡片时产生挤压与跟随效果",
-                        endActions = {
-                            LiquidGlassToggle(
-                                checked = liquidGlassConfig.interactive,
-                                onCheckedChange = { enabled ->
-                                    onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = enabled))
-                                }
-                            )
-                        }
-                    )
-                    SliderSettingRow(
-                        title = "模糊强度",
-                        summary = "背景模糊半径，越大越朦胧",
-                        value = liquidGlassConfig.blurRadiusDp,
-                        range = 4f..24f,
-                        onValueChange = { value ->
-                            onLiquidGlassConfigChange(liquidGlassConfig.copy(blurRadiusDp = value))
-                        }
-                    )
-                    SliderSettingRow(
-                        title = "折射强度",
-                        summary = "背景折射位移，越大越夸张",
-                        value = liquidGlassConfig.refractionAmountDp,
-                        range = 4f..40f,
-                        onValueChange = { value ->
-                            onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = value))
-                        }
-                    )
-                    SliderSettingRow(
-                        title = "折射高度",
-                        summary = "折射采样高度，影响透镜质感的纵深感",
-                        value = liquidGlassConfig.refractionHeightDp,
-                        range = 2f..24f,
-                        onValueChange = { value ->
-                            onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = value))
-                        }
-                    )
+                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        BasicComponent(
+                            title = "启用液态玻璃效果",
+                            summary = "卡片与底部导航叠加毛玻璃与折射效果；按住拖动卡片会有反应",
+                            endActions = {
+                                LiquidGlassToggle(
+                                    checked = liquidGlassConfig.enabled,
+                                    onCheckedChange = { enabled ->
+                                        onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = enabled))
+                                    }
+                                )
+                            }
+                        )
+                        BasicComponent(
+                            title = "色散效果",
+                            summary = "折射边缘出现轻微彩虹色散（需 Android 13+）",
+                            endActions = {
+                                LiquidGlassToggle(
+                                    checked = liquidGlassConfig.chromaticAberration,
+                                    onCheckedChange = { enabled ->
+                                        onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = enabled))
+                                    }
+                                )
+                            }
+                        )
+                        BasicComponent(
+                            title = "拖动反馈",
+                            summary = "按住并拖动卡片时产生挤压与跟随效果",
+                            endActions = {
+                                LiquidGlassToggle(
+                                    checked = liquidGlassConfig.interactive,
+                                    onCheckedChange = { enabled ->
+                                        onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = enabled))
+                                    }
+                                )
+                            }
+                        )
+                        SliderSettingRow(
+                            title = "模糊强度",
+                            summary = "背景模糊半径，越大越朦胧",
+                            value = liquidGlassConfig.blurRadiusDp,
+                            range = 4f..24f,
+                            onValueChange = { value ->
+                                onLiquidGlassConfigChange(liquidGlassConfig.copy(blurRadiusDp = value))
+                            }
+                        )
+                        SliderSettingRow(
+                            title = "折射强度",
+                            summary = "背景折射位移，越大越夸张",
+                            value = liquidGlassConfig.refractionAmountDp,
+                            range = 4f..40f,
+                            onValueChange = { value ->
+                                onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = value))
+                            }
+                        )
+                        SliderSettingRow(
+                            title = "折射高度",
+                            summary = "折射采样高度，影响透镜质感的纵深感",
+                            value = liquidGlassConfig.refractionHeightDp,
+                            range = 2f..24f,
+                            onValueChange = { value ->
+                                onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = value))
+                            }
+                        )
+                    }
                 }
             }
             item {
@@ -244,32 +250,35 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    BasicComponent(
-                        title = "重置首次同步确认",
-                        summary = "下次推送时重新显示 Vela 同步注意事项的倒计时确认弹窗",
-                        startAction = {
-                            top.yukonga.miuix.kmp.basic.Icon(
-                                imageVector = MiuixIcons.Reset,
-                                contentDescription = "重置",
-                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
-                        },
-                        onClick = onResetFirstSyncConfirm
-                    )
-                    BasicComponent(
-                        title = "关于",
-                        summary = "开发者信息、参考项目",
-                        startAction = {
-                            top.yukonga.miuix.kmp.basic.Icon(
-                                imageVector = MiuixIcons.Info,
-                                contentDescription = "关于",
-                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
-                        },
-                        onClick = onOpenAbout
-                    )
+                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        BasicComponent(
+                            title = "重置首次同步确认",
+                            summary = "下次推送时重新显示 Vela 同步注意事项的倒计时确认弹窗",
+                            startAction = {
+                                top.yukonga.miuix.kmp.basic.Icon(
+                                    imageVector = MiuixIcons.Reset,
+                                    contentDescription = "重置",
+                                    tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(end = 16.dp)
+                                )
+                            },
+                            onClick = onResetFirstSyncConfirm
+                        )
+                        BasicComponent(
+                            title = "关于",
+                            summary = "开发者信息、参考项目",
+                            startAction = {
+                                top.yukonga.miuix.kmp.basic.Icon(
+                                    imageVector = MiuixIcons.Info,
+                                    contentDescription = "关于",
+                                    tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(end = 16.dp)
+                                )
+                            },
+                            onClick = onOpenAbout
+                        )
+                    }
                 }
             }
         }

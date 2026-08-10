@@ -3,6 +3,7 @@ package com.whyy.snapnotes.ui.components
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -89,7 +90,8 @@ fun AiPromptCard(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                .animateContentSize()
+                // 液态玻璃卡片在尺寸变化时每帧重绘毛玻璃背景，用较短的 tween 避免展开掉帧
+                .animateContentSize(animationSpec = tween(220))
         ) {
             // ── 头部：图标 + 标题/副标题 + 展开箭头 ──
             Row(
