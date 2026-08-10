@@ -71,7 +71,7 @@ fun LiquidGlassButton(
     )
 
     if (useGlass && enabled) {
-        val backdrop = rootBackdrop
+        val backdrop = rootBackdrop!!
         val isInteractive = config.interactive
         val subtle = if (config.subtleMode) 0.42f else 1f
         Row(

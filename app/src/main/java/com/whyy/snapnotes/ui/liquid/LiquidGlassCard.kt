@@ -51,7 +51,7 @@ fun LiquidGlassCard(
     }
 
     if (useGlass) {
-        val backdrop = rootBackdrop
+        val backdrop = rootBackdrop!!
         val isInteractive = config.interactive
         // Keep visual tuning outside the effect builder so it is shared by the
         // backdrop highlight and the effect configuration.

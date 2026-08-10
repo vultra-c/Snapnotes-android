@@ -134,7 +134,7 @@ fun LiquidGlassToggle(
     }
 
     if (useGlass) {
-        val backdrop = rootBackdrop
+        val backdrop = rootBackdrop!!
         val trackBackdrop = rememberLayerBackdrop()
 
         Box(modifier, contentAlignment = Alignment.CenterStart) {

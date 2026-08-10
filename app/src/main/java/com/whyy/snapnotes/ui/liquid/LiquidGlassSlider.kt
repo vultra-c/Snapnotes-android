@@ -174,7 +174,7 @@ fun LiquidGlassSlider(
                     if (useGlass) {
                         Modifier.drawBackdrop(
                             backdrop = rememberCombinedBackdrop(
-                                rootBackdrop,
+                                rootBackdrop!!,
                                 rememberBackdrop(trackBackdrop) { drawBackdrop ->
                                     val progress = dampedDragAnimation.pressProgress
                                     val scaleX = lerp(2f / 3f, 1f, progress)

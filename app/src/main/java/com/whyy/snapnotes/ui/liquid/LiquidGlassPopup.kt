@@ -80,7 +80,7 @@ fun LiquidGlassPopupSurface(
                     .then(
                         if (useGlass) {
                             Modifier.drawBackdrop(
-                                backdrop = rootBackdrop,
+                                backdrop = rootBackdrop!!,
                                 shape = { shape },
                                 effects = {
                                     val subtle = if (config.subtleMode) 0.55f else 1f
