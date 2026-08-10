@@ -52,6 +52,10 @@ fun LiquidGlassCard(
     if (useGlass) {
         val backdrop = rootBackdrop
         val isInteractive = config.interactive
+        // Keep visual tuning outside the effect builder so it is shared by the
+        // backdrop highlight and the effect configuration.
+        val subtle = if (config.subtleMode) 0.42f else 1f
+        val highlightScale = if (config.subtleMode) 0.55f else 1f
         Box(
             modifier
                 .drawBackdrop(
@@ -59,8 +63,6 @@ fun LiquidGlassCard(
                     shape = { shape },
                     effects = {
                         // 柔和模式保留玻璃层次，但把折射/模糊压到阅读友好的范围。
-                        val subtle = if (config.subtleMode) 0.42f else 1f
-                        val highlightScale = if (config.subtleMode) 0.55f else 1f
                         vibrancy()
                         blur(config.blurRadiusDp.dp.toPx() * subtle)
                         lens(
