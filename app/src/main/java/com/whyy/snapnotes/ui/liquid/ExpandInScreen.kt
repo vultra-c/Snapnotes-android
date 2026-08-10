@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+
 package com.whyy.snapnotes.ui.liquid
 
 import androidx.activity.compose.BackHandler
@@ -22,7 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -141,7 +142,8 @@ fun ExpandInScreen(
                         .graphicsLayer {
                             this.alpha = scrimAlpha
                             renderEffect = if (useBlur && blurRadiusPx > 0.5f) {
-                                RenderEffect.createBlurEffect(
+                                androidx.compose.ui.graphics.BlurEffect(
+                                    null,
                                     blurRadiusPx,
                                     blurRadiusPx,
                                     androidx.compose.ui.graphics.TileMode.Decal
