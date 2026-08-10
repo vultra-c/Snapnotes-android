@@ -3,15 +3,12 @@ package com.whyy.snapnotes.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.EaseOutExpo
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -87,8 +85,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  *
  * 动画细节：
  * - 展开箭头使用 [animateFloatAsState] + [spring] 做弹性旋转；
- * - 条目列表使用 [AnimatedVisibility]（expand/shrink + fade）平滑展开收起；
- * - 卡片尺寸变化使用 [animateContentSize] 平滑过渡。
+ * - 条目列表在有界滚动容器中展示，避免长内容参与逐帧高度动画；
+ * - 卡片尺寸变化使用 [animateContentSize] 的短 tween 平滑过渡。
  *
  * @param pack 知识点包
  * @param onBackClick 返回上一页
@@ -482,7 +480,7 @@ private fun PackStat(text: String) {
 
 /**
  * 科目卡片：展示科目名、知识点条数、选择圆圈、单科导入按钮与展开箭头；
- * 展开后以 [AnimatedVisibility] 平滑展示该科目的全部条目。
+ * 展开后在有界滚动区域展示该科目的全部条目。
  *
  * 交互：
  * - 点击选择圆圈 → 切换选中；
@@ -500,6 +498,7 @@ private fun SubjectCard(
     onEdit: () -> Unit = {}
 ) {
     // 展开/收起箭头旋转：收起指向右（▶），展开指向下（▼）
+    val entriesScrollState = rememberScrollState()
     val chevronRotation by animateFloatAsState(
         targetValue = if (isExpanded) 270f else 180f,
         animationSpec = spring(
@@ -518,12 +517,7 @@ private fun SubjectCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                )
+                .animateContentSize(animationSpec = tween(220, easing = EaseOutExpo))
         ) {
             // ── 头部行 ──
             Row(
@@ -603,24 +597,15 @@ private fun SubjectCard(
             }
 
             // ── 展开的条目列表 ──
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                ) + fadeIn(),
-                exit = shrinkVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                ) + fadeOut()
-            ) {
+            // 不再使用 expandVertically：长列表在高度动画期间会被逐帧重测，
+            // 容易造成黑屏和掉帧。外层 animateContentSize 负责短促的高度过渡，
+            // 内容区域只布局一次并在需要时独立滚动。
+            if (isExpanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(entriesScrollState)
                         .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {

@@ -61,6 +61,7 @@ fun LiquidGlassToggle(
     modifier: Modifier = Modifier
 ) {
     val config = LocalLiquidGlassConfig.current
+    val subtle = if (config.subtleMode) 0.42f else 1f
     val rootBackdrop = LocalLiquidGlassBackdrop.current
     val useGlass = config.enabled && rootBackdrop != null && isRenderEffectSupported()
 
@@ -181,11 +182,11 @@ fun LiquidGlassToggle(
                         shape = { RoundedCornerShape(12.dp) },
                         effects = {
                             val progress = dampedDragAnimation.pressProgress
-                            blur(8f.dp.toPx() * (1f - progress))
+                            blur(8f.dp.toPx() * (1f - progress) * subtle)
                             lens(
-                                5f.dp.toPx() * progress,
-                                10f.dp.toPx() * progress,
-                                chromaticAberration = true
+                                5f.dp.toPx() * progress * subtle,
+                                10f.dp.toPx() * progress * subtle,
+                                chromaticAberration = config.chromaticAberration
                             )
                         },
                         highlight = {
@@ -193,7 +194,7 @@ fun LiquidGlassToggle(
                             Highlight.Ambient.copy(
                                 width = Highlight.Ambient.width / 1.5f,
                                 blurRadius = Highlight.Ambient.blurRadius / 1.5f,
-                                alpha = progress
+                                alpha = progress * if (config.subtleMode) 0.55f else 1f
                             )
                         },
                         shadow = {
@@ -206,7 +207,7 @@ fun LiquidGlassToggle(
                             val progress = dampedDragAnimation.pressProgress
                             InnerShadow(
                                 radius = 4f.dp * progress,
-                                alpha = progress
+                                alpha = progress * if (config.subtleMode) 0.7f else 1f
                             )
                         },
                         layerBlock = {

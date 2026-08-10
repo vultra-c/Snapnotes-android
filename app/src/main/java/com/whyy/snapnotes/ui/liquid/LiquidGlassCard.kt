@@ -58,7 +58,9 @@ fun LiquidGlassCard(
                     backdrop = backdrop,
                     shape = { shape },
                     effects = {
-                        val subtle = if (config.subtleMode) 0.55f else 1f
+                        // 柔和模式保留玻璃层次，但把折射/模糊压到阅读友好的范围。
+                        val subtle = if (config.subtleMode) 0.42f else 1f
+                        val highlightScale = if (config.subtleMode) 0.55f else 1f
                         vibrancy()
                         blur(config.blurRadiusDp.dp.toPx() * subtle)
                         lens(
@@ -99,7 +101,7 @@ fun LiquidGlassCard(
                     highlight = {
                         val progress = interactiveHighlight.pressProgress
                         if (progress > 0f) {
-                            Highlight.Default.copy(alpha = progress)
+                            Highlight.Default.copy(alpha = progress * highlightScale)
                         } else {
                             null
                         }
@@ -112,13 +114,18 @@ fun LiquidGlassCard(
                     },
                     innerShadow = {
                         val progress = interactiveHighlight.pressProgress
-                        InnerShadow(
-                            radius = 8f.dp * progress,
-                            alpha = progress
-                        )
+                        if (progress > 0f) {
+                            InnerShadow(
+                                radius = 6f.dp * progress,
+                                alpha = progress * 0.7f
+                            )
+                        } else {
+                            null
+                        }
                     },
                     onDrawSurface = {
-                        drawRect(containerColor.copy(alpha = 0.38f))
+                        // 更稳定的表面底色减少背景折射对正文对比度的干扰。
+                        drawRect(containerColor.copy(alpha = 0.48f))
                     }
                 )
                 .then(

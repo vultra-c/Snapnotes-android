@@ -1,18 +1,15 @@
 package com.whyy.snapnotes.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.EaseOutExpo
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -20,6 +17,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -48,7 +47,7 @@ fun TutorialCard(
     var expanded by remember { mutableStateOf(false) }
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 45f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = tween(180, easing = EaseOutExpo),
         label = "TutorialChevron"
     )
 
@@ -57,7 +56,11 @@ fun TutorialCard(
         onClick = { expanded = !expanded },
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(animationSpec = tween(220, easing = EaseOutExpo))
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,15 +97,14 @@ fun TutorialCard(
                 )
             }
 
-            // 高刷屏（90/120Hz）下用短 tween + EaseOutExpo 保持平滑，首帧前加 graphicsLayer 避免黑屏闪烁
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(animationSpec = tween(160, easing = androidx.compose.animation.core.EaseOutExpo)) + fadeIn(tween(120)),
-                exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(tween(100))
-            ) {
-                Column(
+            // 只动画外层尺寸，避免 AnimatedVisibility 在重型 Markdown 内容上逐帧改变约束。
+            // 内容区设上限并独立滚动，长教程不会把整页布局撑到很大。
+            if (expanded) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState())
                         .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                 ) {
                     content()

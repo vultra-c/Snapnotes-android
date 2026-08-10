@@ -170,6 +170,7 @@ private fun LiquidGlassNavigationBarGlass(
     shape: Shape
 ) {
     val config = LocalLiquidGlassConfig.current
+    val subtle = if (config.subtleMode) 0.42f else 1f
     val tabsBackdrop = rememberLayerBackdrop()
     val tabCount = tabs.size
 
@@ -277,10 +278,10 @@ private fun LiquidGlassNavigationBarGlass(
                     shape = { shape },
                     effects = {
                         vibrancy()
-                        blur(config.blurRadiusDp.dp.toPx())
+                        blur(config.blurRadiusDp.dp.toPx() * subtle)
                         lens(
-                            config.refractionHeightDp.dp.toPx(),
-                            config.refractionAmountDp.dp.toPx(),
+                            config.refractionHeightDp.dp.toPx() * subtle,
+                            config.refractionAmountDp.dp.toPx() * subtle,
                             chromaticAberration = config.chromaticAberration
                         )
                     },
@@ -323,10 +324,10 @@ private fun LiquidGlassNavigationBarGlass(
                         effects = {
                             val progress = dampedDragAnimation.pressProgress
                             vibrancy()
-                            blur(config.blurRadiusDp.dp.toPx())
+                            blur(config.blurRadiusDp.dp.toPx() * subtle)
                             lens(
-                                config.refractionHeightDp.dp.toPx() * progress,
-                                config.refractionAmountDp.dp.toPx() * progress
+                                config.refractionHeightDp.dp.toPx() * progress * subtle,
+                                config.refractionAmountDp.dp.toPx() * progress * subtle
                             )
                         },
                         highlight = {
@@ -373,9 +374,9 @@ private fun LiquidGlassNavigationBarGlass(
                     effects = {
                         val progress = dampedDragAnimation.pressProgress
                         lens(
-                            10f.dp.toPx() * progress,
-                            14f.dp.toPx() * progress,
-                            chromaticAberration = true
+                            10f.dp.toPx() * progress * subtle,
+                            14f.dp.toPx() * progress * subtle,
+                            chromaticAberration = config.chromaticAberration
                         )
                     },
                     highlight = {

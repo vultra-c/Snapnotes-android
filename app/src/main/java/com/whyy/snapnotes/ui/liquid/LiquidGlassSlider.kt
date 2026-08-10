@@ -51,6 +51,7 @@ fun LiquidGlassSlider(
     modifier: Modifier = Modifier
 ) {
     val config = LocalLiquidGlassConfig.current
+    val subtle = if (config.subtleMode) 0.42f else 1f
     val rootBackdrop = LocalLiquidGlassBackdrop.current
     val useGlass = config.enabled && rootBackdrop != null && isRenderEffectSupported()
 
@@ -185,11 +186,11 @@ fun LiquidGlassSlider(
                             shape = { androidx.compose.foundation.shape.CircleShape },
                             effects = {
                                 val progress = dampedDragAnimation.pressProgress
-                                blur(8f.dp.toPx() * (1f - progress))
+                                blur(8f.dp.toPx() * (1f - progress) * subtle)
                                 lens(
-                                    10f.dp.toPx() * progress,
-                                    14f.dp.toPx() * progress,
-                                    chromaticAberration = true
+                                    10f.dp.toPx() * progress * subtle,
+                                    14f.dp.toPx() * progress * subtle,
+                                    chromaticAberration = config.chromaticAberration
                                 )
                             },
                             highlight = {
@@ -197,7 +198,7 @@ fun LiquidGlassSlider(
                                 Highlight.Ambient.copy(
                                     width = Highlight.Ambient.width / 1.5f,
                                     blurRadius = Highlight.Ambient.blurRadius / 1.5f,
-                                    alpha = progress
+                                    alpha = progress * if (config.subtleMode) 0.55f else 1f
                                 )
                             },
                             shadow = {
@@ -210,7 +211,7 @@ fun LiquidGlassSlider(
                                 val progress = dampedDragAnimation.pressProgress
                                 InnerShadow(
                                     radius = 4f.dp * progress,
-                                    alpha = progress
+                                    alpha = progress * if (config.subtleMode) 0.7f else 1f
                                 )
                             },
                             layerBlock = {

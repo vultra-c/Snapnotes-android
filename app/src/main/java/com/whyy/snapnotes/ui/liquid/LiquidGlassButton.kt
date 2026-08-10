@@ -72,6 +72,7 @@ fun LiquidGlassButton(
     if (useGlass && enabled) {
         val backdrop = rootBackdrop
         val isInteractive = config.interactive
+        val subtle = if (config.subtleMode) 0.42f else 1f
         Row(
             modifier
                 .drawBackdrop(
@@ -79,10 +80,10 @@ fun LiquidGlassButton(
                     shape = { shape },
                     effects = {
                         vibrancy()
-                        blur(config.blurRadiusDp.dp.toPx())
+                        blur(config.blurRadiusDp.dp.toPx() * subtle)
                         lens(
-                            config.refractionHeightDp.dp.toPx(),
-                            config.refractionAmountDp.dp.toPx(),
+                            config.refractionHeightDp.dp.toPx() * subtle,
+                            config.refractionAmountDp.dp.toPx() * subtle,
                             depthEffect = true,
                             chromaticAberration = config.chromaticAberration
                         )
@@ -116,7 +117,7 @@ fun LiquidGlassButton(
                         null
                     },
                     onDrawSurface = {
-                        drawRect(containerColor.copy(alpha = 0.62f))
+                        drawRect(containerColor.copy(alpha = 0.70f))
                     }
                 )
                 .then(clickableModifier)

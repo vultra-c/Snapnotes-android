@@ -29,17 +29,17 @@ fun LiquidGlassBackground(
                 drawRadialBlob(
                     center = Offset(size.width * 0.08f, size.height * 0.14f),
                     radius = size.maxDimension * 0.48f,
-                    color = accentColor.copy(alpha = 0.14f)
+                    color = accentColor.copy(alpha = 0.10f)
                 )
                 drawRadialBlob(
                     center = Offset(size.width * 0.92f, size.height * 0.30f),
                     radius = size.maxDimension * 0.40f,
-                    color = secondaryColor.copy(alpha = 0.10f)
+                    color = secondaryColor.copy(alpha = 0.07f)
                 )
                 drawRadialBlob(
                     center = Offset(size.width * 0.45f, size.height * 0.95f),
                     radius = size.maxDimension * 0.52f,
-                    color = accentColor.copy(alpha = 0.08f)
+                    color = accentColor.copy(alpha = 0.05f)
                 )
             }
     )

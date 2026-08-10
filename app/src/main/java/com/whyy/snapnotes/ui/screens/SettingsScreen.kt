@@ -1,5 +1,8 @@
 package com.whyy.snapnotes.ui.screens
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.EaseOutExpo
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -182,7 +185,11 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize(animationSpec = tween(220, easing = EaseOutExpo))
+                    ) {
                         BasicComponent(
                             title = "试验性功能",
                             summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含液态玻璃与两项预览特性（默认关闭）",
