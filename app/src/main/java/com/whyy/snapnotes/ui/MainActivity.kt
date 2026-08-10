@@ -238,6 +238,8 @@ class MainActivity : ComponentActivity() {
                 val amadeusModelsLoading by viewModel.amadeusModelsLoading.collectAsState()
                 val showFolderSelection by viewModel.showFolderSelection.collectAsState()
                 val latestBandFolderId by viewModel.latestBandFolderId.collectAsState()
+                val experimentalPagesPreview by viewModel.experimentalPagesPreview.collectAsState()
+                val experimentalInlineSearch by viewModel.experimentalInlineSearch.collectAsState()
 
                 // 「启用 Amadeus」开启 → 请求 Doze 电池优化白名单（后台/锁屏跑 LLM 网络的前提）。
                 LaunchedEffect(Unit) {
@@ -482,6 +484,10 @@ class MainActivity : ComponentActivity() {
                                                     onOpenAbout = navigateToAbout,
                                                     onResetFirstSyncConfirm = viewModel::resetFirstSyncConfirm,
                                                     onCreateFolder = viewModel::createFolder,
+                                                    experimentalPagesPreview = experimentalPagesPreview,
+                                                    onExperimentalPagesPreviewChange = viewModel::setExperimentalPagesPreview,
+                                                    experimentalInlineSearch = experimentalInlineSearch,
+                                                    onExperimentalInlineSearchChange = viewModel::setExperimentalInlineSearch,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
                                             }

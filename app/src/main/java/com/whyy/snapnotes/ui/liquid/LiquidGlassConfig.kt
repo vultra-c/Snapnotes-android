@@ -5,11 +5,13 @@ import com.kyant.backdrop.Backdrop
 
 data class LiquidGlassConfig(
     val enabled: Boolean = false,
-    val blurRadiusDp: Float = 8f,
-    val refractionAmountDp: Float = 16f,
-    val refractionHeightDp: Float = 10f,
+    // 默认更克制：降低折射与模糊，让玻璃“安静”不抢阅读注意
+    val blurRadiusDp: Float = 5f,
+    val refractionAmountDp: Float = 8f,
+    val refractionHeightDp: Float = 6f,
     val chromaticAberration: Boolean = false,
-    val interactive: Boolean = true
+    val interactive: Boolean = true,
+    val subtleMode: Boolean = true
 )
 
 val LocalLiquidGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }

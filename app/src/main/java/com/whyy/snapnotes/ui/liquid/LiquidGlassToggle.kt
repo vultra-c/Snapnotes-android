@@ -144,15 +144,15 @@ fun LiquidGlassToggle(
                         drawRect(lerp(trackColor, accentColor, fraction))
                     }
                     .size(64.dp, 28.dp)
-                    // 整条轨道可点击切换：轻点（未达到拖动阈值）直接翻转状态。
-                    // 点按滑块时这里与滑块的 onDragStopped 会同时收到事件，
-                    // 但拖动分支里 didDrag 为 false 时不再翻转，因此不会双触发。
+                    // 整轨任意位置轻点即切换（不要求点中滑块）。拖动分支 didDrag==false 时才响应，避免双触发
                     .pointerInput(Unit) {
-                        detectTapGestures {
-                            val newChecked = !currentChecked
-                            fraction = if (newChecked) 1f else 0f
-                            currentOnCheckedChange(newChecked)
-                        }
+                        detectTapGestures(onTap = {
+                            if (!didDrag) {
+                                val newChecked = !currentChecked
+                                fraction = if (newChecked) 1f else 0f
+                                currentOnCheckedChange(newChecked)
+                            }
+                        })
                     }
             )
 

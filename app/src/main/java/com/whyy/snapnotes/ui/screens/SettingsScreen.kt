@@ -56,10 +56,16 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onResetFirstSyncConfirm: () -> Unit,
     onCreateFolder: (String) -> Unit = {},
+    // 试验性功能（可选，由外层传入；未传则显示为关闭/不可用但仍展示入口）
+    experimentalPagesPreview: Boolean = false,
+    onExperimentalPagesPreviewChange: (Boolean) -> Unit = {},
+    experimentalInlineSearch: Boolean = false,
+    onExperimentalInlineSearchChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
     var showFolderDialog by remember { mutableStateOf(false) }
+    var experimentalExpanded by remember { mutableStateOf(false) }
 
     if (showFolderDialog) {
         FolderCreationDialog(
@@ -103,7 +109,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
                     Column(modifier = Modifier.fillMaxWidth()) {
                         WindowDropdownPreference(
                             title = "应用主题",
@@ -170,77 +175,113 @@ fun SettingsScreen(
                     )
                 }
             }
+            // ── 试验性功能：液态玻璃整体与新增试验项迁入此分组，默认关闭不影响流程 ──
             item {
-                SmallTitle(text = "液态玻璃", modifier = Modifier.padding(top = 12.dp))
+                SmallTitle(text = "试验性功能", modifier = Modifier.padding(top = 12.dp))
                 LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
                     Column(modifier = Modifier.fillMaxWidth()) {
                         BasicComponent(
-                            title = "启用液态玻璃效果",
-                            summary = "卡片与底部导航叠加毛玻璃与折射效果；按住拖动卡片会有反应",
+                            title = "试验性功能",
+                            summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含液态玻璃与两项预览特性（默认关闭）",
+                            onClick = { experimentalExpanded = !experimentalExpanded },
                             endActions = {
-                                LiquidGlassToggle(
-                                    checked = liquidGlassConfig.enabled,
-                                    onCheckedChange = { enabled ->
-                                        onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = enabled))
-                                    }
+                                top.yukonga.miuix.kmp.basic.Icon(
+                                    imageVector = if (experimentalExpanded) MiuixIcons.Reset else MiuixIcons.Info,
+                                    contentDescription = null,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                             }
                         )
-                        BasicComponent(
-                            title = "色散效果",
-                            summary = "折射边缘出现轻微彩虹色散（需 Android 13+）",
-                            endActions = {
-                                LiquidGlassToggle(
-                                    checked = liquidGlassConfig.chromaticAberration,
-                                    onCheckedChange = { enabled ->
-                                        onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = enabled))
+                        if (experimentalExpanded) {
+                            // 液态玻璃总开关与细粒度调节
+                            BasicComponent(
+                                title = "启用液态玻璃",
+                                summary = "卡片/导航的毛玻璃与折射；关闭后回退普通样式",
+                                endActions = {
+                                    LiquidGlassToggle(
+                                        checked = liquidGlassConfig.enabled,
+                                        onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = v)) }
+                                    )
+                                }
+                            )
+                            if (liquidGlassConfig.enabled) {
+                                BasicComponent(
+                                    title = "柔和模式",
+                                    summary = "降低折射/阴影，突出阅读内容",
+                                    endActions = {
+                                        LiquidGlassToggle(
+                                            checked = liquidGlassConfig.subtleMode,
+                                            onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(subtleMode = v)) }
+                                        )
                                     }
                                 )
-                            }
-                        )
-                        BasicComponent(
-                            title = "拖动反馈",
-                            summary = "按住并拖动卡片时产生挤压与跟随效果",
-                            endActions = {
-                                LiquidGlassToggle(
-                                    checked = liquidGlassConfig.interactive,
-                                    onCheckedChange = { enabled ->
-                                        onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = enabled))
+                                BasicComponent(
+                                    title = "色散效果",
+                                    summary = "边缘彩虹色散（Android 13+）",
+                                    endActions = {
+                                        LiquidGlassToggle(
+                                            checked = liquidGlassConfig.chromaticAberration,
+                                            onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = v)) }
+                                        )
                                     }
                                 )
+                                BasicComponent(
+                                    title = "拖动反馈",
+                                    summary = "按住拖动时的挤压跟随",
+                                    endActions = {
+                                        LiquidGlassToggle(
+                                            checked = liquidGlassConfig.interactive,
+                                            onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = v)) }
+                                        )
+                                    }
+                                )
+                                SliderSettingRow(
+                                    title = "模糊强度",
+                                    summary = "背景模糊半径",
+                                    value = liquidGlassConfig.blurRadiusDp,
+                                    range = 2f..16f,
+                                    onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(blurRadiusDp = v)) }
+                                )
+                                SliderSettingRow(
+                                    title = "折射强度",
+                                    summary = "折射位移幅度",
+                                    value = liquidGlassConfig.refractionAmountDp,
+                                    range = 2f..28f,
+                                    onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = v)) }
+                                )
+                                SliderSettingRow(
+                                    title = "折射高度",
+                                    summary = "透镜纵深感",
+                                    value = liquidGlassConfig.refractionHeightDp,
+                                    range = 2f..16f,
+                                    onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = v)) }
+                                )
                             }
-                        )
-                        SliderSettingRow(
-                            title = "模糊强度",
-                            summary = "背景模糊半径，越大越朦胧",
-                            value = liquidGlassConfig.blurRadiusDp,
-                            range = 4f..24f,
-                            onValueChange = { value ->
-                                onLiquidGlassConfigChange(liquidGlassConfig.copy(blurRadiusDp = value))
-                            }
-                        )
-                        SliderSettingRow(
-                            title = "折射强度",
-                            summary = "背景折射位移，越大越夸张",
-                            value = liquidGlassConfig.refractionAmountDp,
-                            range = 4f..40f,
-                            onValueChange = { value ->
-                                onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = value))
-                            }
-                        )
-                        SliderSettingRow(
-                            title = "折射高度",
-                            summary = "折射采样高度，影响透镜质感的纵深感",
-                            value = liquidGlassConfig.refractionHeightDp,
-                            range = 2f..24f,
-                            onValueChange = { value ->
-                                onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = value))
-                            }
-                        )
+                            // 两个纯试验项：仅本地开关，后续可对接真实实现
+                            BasicComponent(
+                                title = "页面预览动效",
+                                summary = "进入详情时的共享元素/视差预览（试验，需重启生效）",
+                                endActions = {
+                                    LiquidGlassToggle(
+                                        checked = experimentalPagesPreview,
+                                        onCheckedChange = onExperimentalPagesPreviewChange
+                                    )
+                                }
+                            )
+                            BasicComponent(
+                                title = "列表内联搜索",
+                                summary = "在历史/商店列表顶部常驻搜索框（试验）",
+                                endActions = {
+                                    LiquidGlassToggle(
+                                        checked = experimentalInlineSearch,
+                                        onCheckedChange = onExperimentalInlineSearchChange
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -250,7 +291,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
                     Column(modifier = Modifier.fillMaxWidth()) {
                         BasicComponent(
                             title = "重置首次同步确认",

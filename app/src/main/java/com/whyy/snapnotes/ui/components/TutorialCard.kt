@@ -94,12 +94,11 @@ fun TutorialCard(
                 )
             }
 
-            // 展开动画用较短的 tween 而非弹簧：液态玻璃卡片在尺寸变化时每一帧都要重绘
-            // 背景毛玻璃 + 折射，弹簧动画会拉长重绘时长导致明显掉帧，tween 更轻快平滑。
+            // 高刷屏（90/120Hz）下用短 tween + EaseOutExpo 保持平滑，首帧前加 graphicsLayer 避免黑屏闪烁
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(animationSpec = tween(220)) + fadeIn(tween(180)),
-                exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(tween(160))
+                enter = expandVertically(animationSpec = tween(160, easing = androidx.compose.animation.core.EaseOutExpo)) + fadeIn(tween(120)),
+                exit = shrinkVertically(animationSpec = tween(140)) + fadeOut(tween(100))
             ) {
                 Column(
                     modifier = Modifier

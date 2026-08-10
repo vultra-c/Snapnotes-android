@@ -250,7 +250,7 @@ private fun DevCard(
         )
         Spacer(Modifier.height(6.dp))
         Surface(
-            color = MiuixTheme.colorScheme.surfaceContainer,
+            color = MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
             shape = RoundedCornerShape(16.dp),
             onClick = onEmailClick
         ) {

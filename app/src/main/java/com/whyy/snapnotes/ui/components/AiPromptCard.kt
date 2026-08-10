@@ -90,8 +90,7 @@ fun AiPromptCard(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                // 液态玻璃卡片在尺寸变化时每帧重绘毛玻璃背景，用较短的 tween 避免展开掉帧
-                .animateContentSize(animationSpec = tween(220))
+                .animateContentSize(animationSpec = tween(180, easing = androidx.compose.animation.core.EaseOutExpo))
         ) {
             // ── 头部：图标 + 标题/副标题 + 展开箭头 ──
             Row(

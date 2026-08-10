@@ -81,6 +81,9 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private val liquidGlassRefractionHeightKey = "liquid_glass_refraction_height"
     private val liquidGlassChromaticKey = "liquid_glass_chromatic"
     private val liquidGlassInteractiveKey = "liquid_glass_interactive"
+    private val liquidGlassSubtleKey = "liquid_glass_subtle"
+    private val experimentalPagesPreviewKey = "experimental_pages_preview"
+    private val experimentalInlineSearchKey = "experimental_inline_search"
     private val amadeusEnabledKey = "amadeus_enabled"
     private val amadeusBaseUrlKey = "amadeus_baseurl"
     private val amadeusApiKeyKey = "amadeus_api_key"
@@ -196,11 +199,12 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private val _liquidGlassConfig = MutableStateFlow(
         LiquidGlassConfig(
             enabled = prefs.getBoolean(liquidGlassEnabledKey, false),
-            blurRadiusDp = prefs.getFloat(liquidGlassBlurKey, 8f),
-            refractionAmountDp = prefs.getFloat(liquidGlassRefractionAmountKey, 16f),
-            refractionHeightDp = prefs.getFloat(liquidGlassRefractionHeightKey, 10f),
+            blurRadiusDp = prefs.getFloat(liquidGlassBlurKey, 5f),
+            refractionAmountDp = prefs.getFloat(liquidGlassRefractionAmountKey, 8f),
+            refractionHeightDp = prefs.getFloat(liquidGlassRefractionHeightKey, 6f),
             chromaticAberration = prefs.getBoolean(liquidGlassChromaticKey, false),
-            interactive = prefs.getBoolean(liquidGlassInteractiveKey, true)
+            interactive = prefs.getBoolean(liquidGlassInteractiveKey, true),
+            subtleMode = prefs.getBoolean(liquidGlassSubtleKey, true)
         )
     )
     val liquidGlassConfig = _liquidGlassConfig.asStateFlow()
@@ -585,7 +589,17 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             .putFloat(liquidGlassRefractionHeightKey, config.refractionHeightDp)
             .putBoolean(liquidGlassChromaticKey, config.chromaticAberration)
             .putBoolean(liquidGlassInteractiveKey, config.interactive)
+            .putBoolean(liquidGlassSubtleKey, config.subtleMode)
             .apply()
+    }
+
+    // ── 试验性功能（默认全关，不影响原有流程） ──
+    private val _experimentalPagesPreview = MutableStateFlow(prefs.getBoolean(experimentalPagesPreviewKey, false))
+    val experimentalPagesPreview = _experimentalPagesPreview.asStateFlow()
+    private val _experimentalInlineSearch = MutableStateFlow(prefs.getBoolean(experimentalInlineSearchKey, false))
+    val experimentalInlineSearch = _experimentalInlineSearch.asStateFlow()
+    fun setExperimentalPagesPreview(v: Boolean) { prefs.edit().putBoolean(experimentalPagesPreviewKey, v).apply(); _experimentalPagesPreview.value = v }
+    fun setExperimentalInlineSearch(v: Boolean) { prefs.edit().putBoolean(experimentalInlineSearchKey, v).apply(); _experimentalInlineSearch.value = v }
     }
 
     /* ──────────── Amadeus（手环端 AI 聊天助手）手机端配置 ────────────

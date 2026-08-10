@@ -261,17 +261,15 @@ private fun LiquidGlassNavigationBarGlass(
                 .graphicsLayer {
                     translationX = panelOffset
                 }
-                // 点击 Tab 直接切换页面（保留拖动与动画）：点击位置映射到 Tab 下标，
-                // 通过 currentIndex 走既有的动画 + onTabSelected 链路，与拖动松手行为一致。
+                // 点击 Tab 直接切换：按 4 个等宽点击区判定，避免受内边距/总宽舍入影响
                 .pointerInput(tabCount, tabWidth, isLtr) {
                     detectTapGestures { position ->
-                        val rawIndex = (position.x / tabWidth).toInt()
-                        val tappedIndex =
-                            (if (isLtr) rawIndex else tabCount - 1 - rawIndex)
-                                .fastCoerceIn(0, tabCount - 1)
-                        if (tappedIndex != currentIndex) {
-                            currentIndex = tappedIndex
-                        }
+                        val pad = with(density) { 4.dp.toPx() }
+                        val contentWidth = tabWidth * tabCount
+                        val xInContent = (position.x - pad).coerceIn(0f, contentWidth - 0.5f)
+                        val rawIndex = (xInContent / tabWidth).toInt().fastCoerceIn(0, tabCount - 1)
+                        val tappedIndex = if (isLtr) rawIndex else tabCount - 1 - rawIndex
+                        if (tappedIndex != currentIndex) currentIndex = tappedIndex
                     }
                 }
                 .drawBackdrop(

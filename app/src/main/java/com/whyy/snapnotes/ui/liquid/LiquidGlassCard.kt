@@ -58,11 +58,12 @@ fun LiquidGlassCard(
                     backdrop = backdrop,
                     shape = { shape },
                     effects = {
+                        val subtle = if (config.subtleMode) 0.55f else 1f
                         vibrancy()
-                        blur(config.blurRadiusDp.dp.toPx())
+                        blur(config.blurRadiusDp.dp.toPx() * subtle)
                         lens(
-                            config.refractionHeightDp.dp.toPx(),
-                            config.refractionAmountDp.dp.toPx(),
+                            config.refractionHeightDp.dp.toPx() * subtle,
+                            config.refractionAmountDp.dp.toPx() * subtle,
                             depthEffect = true,
                             chromaticAberration = config.chromaticAberration
                         )
@@ -105,8 +106,8 @@ fun LiquidGlassCard(
                     },
                     shadow = {
                         Shadow(
-                            radius = 8f.dp,
-                            color = Color.Black.copy(alpha = 0.08f)
+                            radius = 6f.dp,
+                            color = Color.Black.copy(alpha = 0.04f)
                         )
                     },
                     innerShadow = {
@@ -117,7 +118,7 @@ fun LiquidGlassCard(
                         )
                     },
                     onDrawSurface = {
-                        drawRect(containerColor.copy(alpha = 0.55f))
+                        drawRect(containerColor.copy(alpha = 0.38f))
                     }
                 )
                 .then(
