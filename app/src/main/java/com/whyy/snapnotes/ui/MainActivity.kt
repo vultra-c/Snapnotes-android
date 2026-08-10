@@ -302,7 +302,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 // 「展开铺满屏幕」动画：记录入口卡片坐标，目标页从卡片位置放大到全屏。
-                val expandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
+                val bandExpandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
+                val localExpandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
                 val expandBandFiles = remember { mutableStateOf(false) }
                 val expandLocalStorage = remember { mutableStateOf(false) }
                 val navigateToBandFileTree = {
@@ -443,7 +444,8 @@ class MainActivity : ComponentActivity() {
                                                     onOpenBandFiles = navigateToBandFileTree,
                                                     onOpenLocalStorage = navigateToLocalStorage,
                                                     onOpenAmadeusConfig = navigateToAmadeus,
-                                                    onRecordExpandOrigin = { origin -> expandOrigin.value = origin },
+                                                    onRecordBandExpandOrigin = { origin -> bandExpandOrigin.value = origin },
+                                                    onRecordLocalExpandOrigin = { origin -> localExpandOrigin.value = origin },
                                                     onNavigateToEditor = {
                                                         viewModel.openEditor()
                                                         navigateToEditor()
@@ -569,22 +571,19 @@ class MainActivity : ComponentActivity() {
                                         // 进页面自动拉取手环文件树
                                         LaunchedEffect(Unit) { viewModel.refreshBandTree() }
                                         val expand = expandBandFiles.value
-                                        val origin = if (expand) expandOrigin.value else ExpandOrigin.None
+                                        val origin = if (expand) bandExpandOrigin.value else ExpandOrigin.None
                                         if (expand && origin != ExpandOrigin.None) {
                                             ExpandInScreen(
                                                 origin = origin,
-                                                onBackRequested = {
+                                                onBackRequested = {},
+                                                onExitFinished = {
                                                     expandBandFiles.value = false
                                                     navigateBack()
-                                                },
-                                                onExitFinished = {}
-                                            ) {
+                                                }
+                                            ) { requestExit ->
                                                 BandFileTreeScreen(
                                                     state = bandTreeState,
-                                                    onBackClick = {
-                                                        expandBandFiles.value = false
-                                                        navigateBack()
-                                                    },
+                                                    onBackClick = requestExit,
                                                     onRefresh = viewModel::refreshBandTree,
                                                     onCreateFolder = viewModel::createBandFolder,
                                                     onDeleteNode = viewModel::deleteBandNode,
@@ -633,13 +632,13 @@ class MainActivity : ComponentActivity() {
                                         val localFiles by viewModel.localFiles.collectAsState()
                                         val localCurrentPath by viewModel.localCurrentPath.collectAsState()
                                         val expandLocal = expandLocalStorage.value
-                                        val originLocal = if (expandLocal) expandOrigin.value else ExpandOrigin.None
-                                        val localStorageScreen: @Composable () -> Unit = {
+                                        val originLocal = if (expandLocal) localExpandOrigin.value else ExpandOrigin.None
+                                        val localStorageScreen: @Composable (onBack: () -> Unit) -> Unit = { onBack ->
                                             LocalStorageScreen(
                                                 currentPath = localCurrentPath,
                                                 folders = localFolders,
                                                 files = localFiles,
-                                                onBackClick = navigateBack,
+                                                onBackClick = onBack,
                                                 onFolderClick = viewModel::navigateLocalFolder,
                                                 onCreateFolder = viewModel::createLocalFolder,
                                                 onImportToBand = { file ->
@@ -655,16 +654,16 @@ class MainActivity : ComponentActivity() {
                                         if (expandLocal && originLocal != ExpandOrigin.None) {
                                             ExpandInScreen(
                                                 origin = originLocal,
-                                                onBackRequested = {
+                                                onBackRequested = {},
+                                                onExitFinished = {
                                                     expandLocalStorage.value = false
                                                     navigateBack()
-                                                },
-                                                onExitFinished = {}
-                                            ) {
-                                                localStorageScreen()
+                                                }
+                                            ) { requestExit ->
+                                                localStorageScreen(requestExit)
                                             }
                                         } else {
-                                            localStorageScreen()
+                                            localStorageScreen(navigateBack)
                                         }
                                     }
                                     entry<Screen.Editor> {
@@ -800,23 +799,14 @@ class MainActivity : ComponentActivity() {
                                         finish()
                                     }
                                 },
+                                // 页面转场不再使用横向平移；卡片入口页面由 ExpandInScreen 自己完成展开动画。
                                 transitionSpec = {
-                                    slideInHorizontally(
-                                        animationSpec = tween(350),
-                                        initialOffsetX = { it }
-                                    ) togetherWith slideOutHorizontally(
-                                        animationSpec = tween(350),
-                                        targetOffsetX = { -it / 3 }
-                                    )
+                                    androidx.compose.animation.EnterTransition.None togetherWith
+                                            androidx.compose.animation.ExitTransition.None
                                 },
                                 popTransitionSpec = {
-                                    slideInHorizontally(
-                                        animationSpec = tween(350),
-                                        initialOffsetX = { -it / 3 }
-                                    ) togetherWith slideOutHorizontally(
-                                        animationSpec = tween(350),
-                                        targetOffsetX = { it }
-                                    )
+                                    androidx.compose.animation.EnterTransition.None togetherWith
+                                            androidx.compose.animation.ExitTransition.None
                                 },
                                 transitionEffects = NavDisplayTransitionEffects(
                                     enableCornerClip = true,

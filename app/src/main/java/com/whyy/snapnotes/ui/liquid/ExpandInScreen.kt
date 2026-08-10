@@ -65,7 +65,7 @@ fun ExpandInScreen(
     originCornerRadiusDp: Float = 28f,
     scrimMaxAlpha: Float = 0.45f,
     maxBlurRadiusDp: Float = 42f,
-    content: @Composable () -> Unit
+    content: @Composable (onRequestExit: () -> Unit) -> Unit
 ) {
     val density = LocalDensity.current
     val useBlur = isRenderEffectSupported()
@@ -108,7 +108,14 @@ fun ExpandInScreen(
     val scrimAlpha = scrimMaxAlpha * progress
     val blurRadiusPx = with(density) { maxBlurRadiusDp.dp.toPx() * progress }
 
-    BackHandler(enabled = rendering && !finishing) { onBackRequested() }
+    fun requestExit() {
+        if (!finishing) {
+            finishing = true
+            onBackRequested()
+        }
+    }
+
+    BackHandler(enabled = rendering && !finishing) { requestExit() }
 
     // 进入：首帧先渲染（保持 0 尺寸的图形层也无妨），再触发动画
     LaunchedEffect(Unit) { rendering = true }
@@ -167,7 +174,7 @@ fun ExpandInScreen(
                         }
                         .clip(RoundedCornerShape(cornerRadius))
                 ) {
-                    content()
+                    content(requestExit)
                 }
             }
         }

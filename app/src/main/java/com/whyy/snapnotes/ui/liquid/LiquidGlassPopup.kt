@@ -47,7 +47,8 @@ fun LiquidGlassPopupSurface(
 ) {
     val config = LocalLiquidGlassConfig.current
     val rootBackdrop = LocalLiquidGlassBackdrop.current
-    val useGlass = config.enabled && rootBackdrop != null && isRenderEffectSupported()
+    // 弹出层和对话框不再使用液态玻璃，仅保留普通半透明面板与开合动画。
+    val useGlass = false
 
     AnimatedVisibility(
         visible = visible,

@@ -54,7 +54,8 @@ fun LiquidGlassButton(
 ) {
     val config = LocalLiquidGlassConfig.current
     val rootBackdrop = LocalLiquidGlassBackdrop.current
-    val useGlass = config.enabled && rootBackdrop != null && isRenderEffectSupported()
+    // 玻璃效果仅保留在底部导航栏；按钮始终使用普通样式。
+    val useGlass = false
 
     val animationScope = rememberCoroutineScope()
     val interactiveHighlight = remember(animationScope) {

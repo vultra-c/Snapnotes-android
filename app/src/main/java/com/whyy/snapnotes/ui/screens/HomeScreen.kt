@@ -106,7 +106,8 @@ fun HomeScreen(
     onOpenBandFiles: () -> Unit = {},
     onOpenLocalStorage: () -> Unit = {},
     onOpenAmadeusConfig: (() -> Unit)? = null,
-    onRecordExpandOrigin: (com.whyy.snapnotes.ui.liquid.ExpandOrigin) -> Unit = {},
+    onRecordBandExpandOrigin: (com.whyy.snapnotes.ui.liquid.ExpandOrigin) -> Unit = {},
+    onRecordLocalExpandOrigin: (com.whyy.snapnotes.ui.liquid.ExpandOrigin) -> Unit = {},
     onNavigateToEditor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -196,10 +197,10 @@ fun HomeScreen(
                                 width = coords.size.width.toFloat(),
                                 height = coords.size.height.toFloat()
                             )
-                            onRecordExpandOrigin(bandOrigin)
+                            onRecordBandExpandOrigin(bandOrigin)
                         },
                     onClick = {
-                        onRecordExpandOrigin(bandOrigin)
+                        onRecordBandExpandOrigin(bandOrigin)
                         onOpenBandFiles()
                     },
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
@@ -241,10 +242,10 @@ fun HomeScreen(
                                 width = coords.size.width.toFloat(),
                                 height = coords.size.height.toFloat()
                             )
-                            onRecordExpandOrigin(localOrigin)
+                            onRecordLocalExpandOrigin(localOrigin)
                         },
                     onClick = {
-                        onRecordExpandOrigin(localOrigin)
+                        onRecordLocalExpandOrigin(localOrigin)
                         onOpenLocalStorage()
                     },
                     containerColor = MiuixTheme.colorScheme.surfaceContainer

@@ -1,8 +1,13 @@
 package com.whyy.snapnotes.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseOutExpo
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -178,7 +183,7 @@ fun SettingsScreen(
                     )
                 }
             }
-            // ── 试验性功能：液态玻璃整体与新增试验项迁入此分组，默认关闭不影响流程 ──
+            // ── 试验性功能：仅保留底部导航栏液态玻璃与其他预览开关 ──
             item {
                 SmallTitle(text = "试验性功能", modifier = Modifier.padding(top = 12.dp))
                 LiquidGlassCard(
@@ -192,7 +197,7 @@ fun SettingsScreen(
                     ) {
                         BasicComponent(
                             title = "试验性功能",
-                            summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含液态玻璃与两项预览特性（默认关闭）",
+                            summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含底部导航栏液态玻璃与两项预览特性（默认关闭）",
                             onClick = { experimentalExpanded = !experimentalExpanded },
                             endActions = {
                                 top.yukonga.miuix.kmp.basic.Icon(
@@ -202,11 +207,16 @@ fun SettingsScreen(
                                 )
                             }
                         )
-                        if (experimentalExpanded) {
-                            // 液态玻璃总开关与细粒度调节
+                        AnimatedVisibility(
+                            visible = experimentalExpanded,
+                            enter = expandVertically(tween(220, easing = EaseOutExpo)) + fadeIn(tween(160)),
+                            exit = shrinkVertically(tween(180, easing = EaseOutExpo)) + fadeOut(tween(120))
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                            // 玻璃效果仅作用于底部导航栏，页面卡片和按钮保持普通样式。
                             BasicComponent(
-                                title = "启用液态玻璃",
-                                summary = "卡片/导航的毛玻璃与折射；关闭后回退普通样式",
+                                title = "启用导航栏液态玻璃",
+                                summary = "仅底部导航栏使用毛玻璃与折射；其他组件保持普通样式",
                                 endActions = {
                                     LiquidGlassToggle(
                                         checked = liquidGlassConfig.enabled,
@@ -214,7 +224,8 @@ fun SettingsScreen(
                                     )
                                 }
                             )
-                            if (liquidGlassConfig.enabled) {
+                            /* 其他玻璃参数已移除：当前版本只保留导航栏玻璃效果。 */
+                            /*
                                 BasicComponent(
                                     title = "柔和模式",
                                     summary = "降低折射/阴影，突出阅读内容",
@@ -267,6 +278,7 @@ fun SettingsScreen(
                                     onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = v)) }
                                 )
                             }
+                            */
                             // 两个纯试验项：仅本地开关，后续可对接真实实现
                             BasicComponent(
                                 title = "页面预览动效",
@@ -288,6 +300,7 @@ fun SettingsScreen(
                                     )
                                 }
                             )
+                            }
                         }
                     }
                 }

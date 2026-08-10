@@ -63,7 +63,8 @@ fun LiquidGlassToggle(
     val config = LocalLiquidGlassConfig.current
     val subtle = if (config.subtleMode) 0.42f else 1f
     val rootBackdrop = LocalLiquidGlassBackdrop.current
-    val useGlass = config.enabled && rootBackdrop != null && isRenderEffectSupported()
+    // 玻璃效果仅保留在底部导航栏；开关始终使用普通样式。
+    val useGlass = false
 
     val accentColor = MiuixTheme.colorScheme.primary
     val trackColor = Color(0xFF787878).copy(alpha = 0.2f)
@@ -71,6 +72,7 @@ fun LiquidGlassToggle(
     val density = LocalDensity.current
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val dragWidth = with(density) { 20f.dp.toPx() }
+    val plainTrackTravel = with(density) { 36f.dp.toPx() }
     val touchSlop = with(density) { 8f.dp.toPx() }
     val animationScope = rememberCoroutineScope()
     var didDrag by remember { mutableStateOf(false) }
@@ -243,8 +245,8 @@ fun LiquidGlassToggle(
                     .graphicsLayer {
                         val padding = 2f.dp.toPx()
                         translationX =
-                            if (isLtr) lerp(padding, padding + dragWidth, if (checked) 1f else 0f)
-                            else lerp(-padding, -(padding + dragWidth), if (checked) 1f else 0f)
+                            if (isLtr) lerp(padding, padding + plainTrackTravel, if (checked) 1f else 0f)
+                            else lerp(-padding, -(padding + plainTrackTravel), if (checked) 1f else 0f)
                     }
                     .background(Color.White, CircleShape)
                     .size(24.dp, 24.dp)
