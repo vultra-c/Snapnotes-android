@@ -13,6 +13,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -103,6 +105,8 @@ fun HomeScreen(
     onCreateFolder: (String) -> Unit = {},
     onOpenBandFiles: () -> Unit = {},
     onOpenLocalStorage: () -> Unit = {},
+    onOpenAmadeusConfig: (() -> Unit)? = null,
+    onRecordExpandOrigin: (com.whyy.snapnotes.ui.liquid.ExpandOrigin) -> Unit = {},
     onNavigateToEditor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -130,7 +134,9 @@ fun HomeScreen(
                 scrollBehavior = scrollBehavior,
                 actions = {
                     MoreMenu(
-                        onCreateFolder = { showFolderDialog = true }
+                        onCreateFolder = { showFolderDialog = true },
+                        onOpenAmadeusChat = onOpenAmadeusChat,
+                        onOpenAmadeusConfig = onOpenAmadeusConfig
                     )
                 }
             )
@@ -173,13 +179,29 @@ fun HomeScreen(
             )
 
             // 手环文件管理入口 + 本地存储库入口（并排）
+            // 两个入口都记录自身窗口坐标，点击后目标页从该卡片位置展开铺满全屏。
+            var bandOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.liquid.ExpandOrigin.None) }
+            var localOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.liquid.ExpandOrigin.None) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 LiquidGlassCard(
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenBandFiles,
+                    modifier = Modifier
+                        .weight(1f)
+                        .onGloballyPositioned { coords ->
+                            bandOrigin = com.whyy.snapnotes.ui.liquid.ExpandOrigin(
+                                left = coords.positionInWindow().x,
+                                top = coords.positionInWindow().y,
+                                width = coords.size.width.toFloat(),
+                                height = coords.size.height.toFloat()
+                            )
+                            onRecordExpandOrigin(bandOrigin)
+                        },
+                    onClick = {
+                        onRecordExpandOrigin(bandOrigin)
+                        onOpenBandFiles()
+                    },
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(
@@ -210,8 +232,21 @@ fun HomeScreen(
                 }
 
                 LiquidGlassCard(
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenLocalStorage,
+                    modifier = Modifier
+                        .weight(1f)
+                        .onGloballyPositioned { coords ->
+                            localOrigin = com.whyy.snapnotes.ui.liquid.ExpandOrigin(
+                                left = coords.positionInWindow().x,
+                                top = coords.positionInWindow().y,
+                                width = coords.size.width.toFloat(),
+                                height = coords.size.height.toFloat()
+                            )
+                            onRecordExpandOrigin(localOrigin)
+                        },
+                    onClick = {
+                        onRecordExpandOrigin(localOrigin)
+                        onOpenLocalStorage()
+                    },
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(

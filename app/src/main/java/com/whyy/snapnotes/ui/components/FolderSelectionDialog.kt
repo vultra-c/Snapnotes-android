@@ -42,13 +42,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
 import com.whyy.snapnotes.ui.viewmodel.BandFileNode
 import com.whyy.snapnotes.ui.viewmodel.BandTreeUiState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -115,18 +113,17 @@ fun FolderSelectionDialog(
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    // 液态玻璃弹出层：与全应用统一的毛玻璃风格
+    LiquidGlassPopupSurface(
+        visible = true,
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surface)
+                .padding(20.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
                 // 标题栏
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -310,7 +307,6 @@ fun FolderSelectionDialog(
                 }
             }
         }
-    }
 }
 
 /**

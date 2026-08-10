@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,15 +50,12 @@ import com.whyy.snapnotes.ui.viewmodel.BandTreeUiState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
@@ -75,8 +73,6 @@ import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Send
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -379,35 +375,21 @@ fun BandFileTreeScreen(
         )
     }
 
-    // 删除确认对话框
-    if (showDeleteConfirm) {
-        OverlayDialog(
-            title = "确认删除",
-            summary = "「${deleteTargetName}」将被永久删除" +
-                if (deleteTargetIsFolder) "，文件夹内所有内容也将一并删除" else "",
-            show = true,
-            onDismissRequest = { showDeleteConfirm = false },
-            renderInRootScaffold = false
-        ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextButton(
-                    text = "取消",
-                    onClick = { showDeleteConfirm = false },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = "删除",
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDeleteNode(deleteTargetId)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+    // 删除确认对话框——液态玻璃风格
+    LiquidGlassDialog(
+        show = showDeleteConfirm,
+        onDismissRequest = { showDeleteConfirm = false },
+        title = "确认删除",
+        summary = "「${deleteTargetName}」将被永久删除" +
+            if (deleteTargetIsFolder) "，文件夹内所有内容也将一并删除" else "",
+        dismissText = "取消",
+        confirmText = "删除",
+        onDismiss = { showDeleteConfirm = false },
+        onConfirm = {
+            showDeleteConfirm = false
+            onDeleteNode(deleteTargetId)
         }
-    }
+    )
 }
 
 /**
@@ -561,35 +543,42 @@ private fun TreeItemView(
                 }
             }
 
-            // 长按上下文菜单（非选择模式）
+            // 长按上下文菜单（非选择模式）——液态玻璃风格
             if (!pickMode) {
-                OverlayListPopup(
-                    show = showContextMenu,
-                    popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                    alignment = PopupPositionProvider.Align.End,
-                    onDismissRequest = { showContextMenu = false }
+                LiquidGlassPopupSurface(
+                    visible = showContextMenu,
+                    onDismissRequest = { showContextMenu = false },
+                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    ListPopupColumn {
-                        actions.forEachIndexed { index, action ->
-                            DropdownImpl(
-                                item = DropdownItem(
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        actions.forEach { action ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(
+                                        interactionSource = null,
+                                        indication = null,
+                                        onClick = {
+                                            showContextMenu = false
+                                            action.onClick()
+                                        }
+                                    )
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = action.icon,
+                                    contentDescription = null,
+                                    tint = MiuixTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
                                     text = action.text,
-                                    icon = { m ->
-                                        Icon(
-                                            imageVector = action.icon,
-                                            contentDescription = null,
-                                            modifier = m
-                                        )
-                                    }
-                                ),
-                                optionSize = actions.size,
-                                isSelected = false,
-                                index = index,
-                                onSelectedIndexChange = {
-                                    showContextMenu = false
-                                    action.onClick()
-                                }
-                            )
+                                    style = MiuixTheme.textStyles.title4,
+                                    color = MiuixTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }
@@ -701,14 +690,16 @@ private fun BandTextInputDialog(
     androidx.compose.runtime.LaunchedEffect(show, initial) {
         if (show) text = initial
     }
-    OverlayDialog(
-        title = title,
-        summary = hint,
+    LiquidGlassDialog(
         show = show,
         onDismissRequest = onDismiss,
-        renderInRootScaffold = false
-    ) {
-        Column {
+        title = title,
+        summary = hint,
+        dismissText = "取消",
+        confirmText = "确定",
+        onDismiss = onDismiss,
+        onConfirm = { onConfirm(text.trim()) },
+        content = {
             TextField(
                 value = text,
                 onValueChange = { text = it },
@@ -716,23 +707,8 @@ private fun BandTextInputDialog(
                 singleLine = true,
                 label = label
             )
-            Spacer(Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextButton(
-                    text = "取消",
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = "确定",
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = { onConfirm(text.trim()) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
-    }
+    )
 }
 
 /** 上下文菜单项。 */

@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
 import com.whyy.snapnotes.ui.viewmodel.AmadeusConfig
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -69,7 +70,6 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -372,13 +372,16 @@ private fun ModelPickerDialog(
         else availableModels.filter { it.contains(searchQuery, ignoreCase = true) }
     }
 
-    OverlayDialog(
+    LiquidGlassDialog(
         title = "选择模型",
         summary = "从列表选择，或手动输入模型名",
         show = show,
         onDismissRequest = onDismiss,
-        renderInRootScaffold = false
-    ) {
+        dismissText = "关闭",
+        confirmText = "",
+        onDismiss = onDismiss,
+        onConfirm = onDismiss,
+        content = {
         Column {
             when {
                 // 首次拉取（尚无任何结果）时用 shimmer 骨架，比单纯转圈更「有内容感」。
@@ -549,15 +552,10 @@ private fun ModelPickerDialog(
                     onClick = { showManualInput = true },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(Modifier.height(4.dp))
-                TextButton(
-                    text = "关闭",
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
-    }
+        }
+    )
 }
 
 /**
@@ -666,7 +664,7 @@ private fun ShimmerModelItem(modifier: Modifier = Modifier) {
 }
 
 /**
- * 文本编辑弹窗，使用 OverlayDialog 并利用其 show 参数控制显隐动画。
+ * 文本编辑弹窗，使用 LiquidGlassDialog 并利用其 show 参数控制显隐动画。
  */
 @Composable
 private fun AmadeusTextEditDialog(
@@ -689,41 +687,27 @@ private fun AmadeusTextEditDialog(
         }
     }
 
-    OverlayDialog(
+    LiquidGlassDialog(
         title = title,
         summary = hint,
         show = show,
         onDismissRequest = onDismiss,
-        renderInRootScaffold = false
-    ) {
-        Column {
+        dismissText = "取消",
+        confirmText = "确定",
+        onDismiss = onDismiss,
+        onConfirm = { onConfirm(text.trim()) },
+        content = {
             TextField(
                 value = text,
                 onValueChange = { text = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .imePadding(),
+                    .focusRequester(focusRequester),
                 singleLine = true,
                 label = label
             )
-            Spacer(Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextButton(
-                    text = "取消",
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = "确定",
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = { onConfirm(text.trim()) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
-    }
+    )
 }
 
 /** 把时间戳格式化成「HH:mm」用于卡片上的「上次更新」提示。失败返回空串。 */

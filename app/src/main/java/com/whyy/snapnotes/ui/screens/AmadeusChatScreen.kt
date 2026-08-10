@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.AmadeusChat
 import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -34,7 +35,6 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.*
 
@@ -257,65 +257,37 @@ fun AmadeusChatScreen(
         }
     }
 
-    // 清空对话确认弹窗
-    OverlayDialog(
+    // 清空对话确认弹窗——液态玻璃风格
+    LiquidGlassDialog(
         title = "清空对话？",
         summary = "将删除所有手机端对话历史，此操作不可撤销。",
         show = showClearConfirm,
-        onDismissRequest = { showClearConfirm = false }
-    ) {
-        Spacer(Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            TextButton(
-                text = "取消",
-                onClick = { showClearConfirm = false },
-                modifier = Modifier.weight(1f)
-            )
-            TextButton(
-                text = "清空",
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-                onClick = {
-                    onClearChat()
-                    showClearConfirm = false
-                    Toast.makeText(context, "已清空对话", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier.weight(1f)
-            )
+        onDismissRequest = { showClearConfirm = false },
+        dismissText = "取消",
+        confirmText = "清空",
+        onDismiss = { showClearConfirm = false },
+        onConfirm = {
+            onClearChat()
+            showClearConfirm = false
+            Toast.makeText(context, "已清空对话", Toast.LENGTH_SHORT).show()
         }
-    }
+    )
 
-    // 文件上传说明弹窗
-    OverlayDialog(
+    // 文件上传说明弹窗——液态玻璃风格
+    LiquidGlassDialog(
         title = "上传文件",
         summary = "选择一个文本文件，其内容将作为上下文随消息一并发送给 Amadeus。" +
             "支持 .txt / .md / .json 等纯文本格式。",
         show = showFileHintDialog,
-        onDismissRequest = { showFileHintDialog = false }
-    ) {
-        Spacer(Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            TextButton(
-                text = "取消",
-                onClick = { showFileHintDialog = false },
-                modifier = Modifier.weight(1f)
-            )
-            TextButton(
-                text = "选择文件",
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-                onClick = {
-                    showFileHintDialog = false
-                    filePickerLauncher.launch("text/*")
-                },
-                modifier = Modifier.weight(1f)
-            )
+        onDismissRequest = { showFileHintDialog = false },
+        dismissText = "取消",
+        confirmText = "选择文件",
+        onDismiss = { showFileHintDialog = false },
+        onConfirm = {
+            showFileHintDialog = false
+            filePickerLauncher.launch("text/*")
         }
-    }
+    )
 }
 
 // ────────────────────────── 子组件 ──────────────────────────

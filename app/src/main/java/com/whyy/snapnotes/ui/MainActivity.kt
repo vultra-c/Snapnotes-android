@@ -88,6 +88,8 @@ import com.whyy.snapnotes.ui.liquid.LiquidGlassNavTab
 import com.whyy.snapnotes.ui.liquid.LiquidGlassNavigationBar
 import com.whyy.snapnotes.ui.liquid.LocalLiquidGlassBackdrop
 import com.whyy.snapnotes.ui.liquid.LocalLiquidGlassConfig
+import com.whyy.snapnotes.ui.liquid.ExpandInScreen
+import com.whyy.snapnotes.ui.liquid.ExpandOrigin
 import com.whyy.snapnotes.ui.screens.StoreScreen
 import com.whyy.snapnotes.ui.screens.StoreDetailScreen
 import com.whyy.snapnotes.ui.screens.LocalStorageScreen
@@ -298,7 +300,12 @@ class MainActivity : ComponentActivity() {
                         backStack.add(Screen.AmadeusContext)
                     }
                 }
+                // 「展开铺满屏幕」动画：记录入口卡片坐标，目标页从卡片位置放大到全屏。
+                val expandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
+                val expandBandFiles = remember { mutableStateOf(false) }
+                val expandLocalStorage = remember { mutableStateOf(false) }
                 val navigateToBandFileTree = {
+                    expandBandFiles.value = true
                     if (backStack.lastOrNull() != Screen.BandFileTree) {
                         backStack.add(Screen.BandFileTree)
                     }
@@ -308,6 +315,7 @@ class MainActivity : ComponentActivity() {
                     Unit
                 }
                 val navigateToLocalStorage = {
+                    expandLocalStorage.value = true
                     if (backStack.lastOrNull() != Screen.LocalStorage) {
                         backStack.add(Screen.LocalStorage)
                     }
@@ -433,6 +441,8 @@ class MainActivity : ComponentActivity() {
                                                     onCreateFolder = viewModel::createFolder,
                                                     onOpenBandFiles = navigateToBandFileTree,
                                                     onOpenLocalStorage = navigateToLocalStorage,
+                                                    onOpenAmadeusConfig = navigateToAmadeus,
+                                                    onRecordExpandOrigin = { origin -> expandOrigin.value = origin },
                                                     onNavigateToEditor = {
                                                         viewModel.openEditor()
                                                         navigateToEditor()
@@ -557,15 +567,41 @@ class MainActivity : ComponentActivity() {
                                     entry<Screen.BandFileTree> {
                                         // 进页面自动拉取手环文件树
                                         LaunchedEffect(Unit) { viewModel.refreshBandTree() }
-                                        BandFileTreeScreen(
-                                            state = bandTreeState,
-                                            onBackClick = navigateBack,
-                                            onRefresh = viewModel::refreshBandTree,
-                                            onCreateFolder = viewModel::createBandFolder,
-                                            onDeleteNode = viewModel::deleteBandNode,
-                                            onRenameNode = viewModel::renameBandNode,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
+                                        val expand = expandBandFiles.value
+                                        val origin = if (expand) expandOrigin.value else ExpandOrigin.None
+                                        if (expand && origin != ExpandOrigin.None) {
+                                            ExpandInScreen(
+                                                origin = origin,
+                                                onBackRequested = {
+                                                    expandBandFiles.value = false
+                                                    navigateBack()
+                                                },
+                                                onExitFinished = {}
+                                            ) {
+                                                BandFileTreeScreen(
+                                                    state = bandTreeState,
+                                                    onBackClick = {
+                                                        expandBandFiles.value = false
+                                                        navigateBack()
+                                                    },
+                                                    onRefresh = viewModel::refreshBandTree,
+                                                    onCreateFolder = viewModel::createBandFolder,
+                                                    onDeleteNode = viewModel::deleteBandNode,
+                                                    onRenameNode = viewModel::renameBandNode,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            }
+                                        } else {
+                                            BandFileTreeScreen(
+                                                state = bandTreeState,
+                                                onBackClick = navigateBack,
+                                                onRefresh = viewModel::refreshBandTree,
+                                                onCreateFolder = viewModel::createBandFolder,
+                                                onDeleteNode = viewModel::deleteBandNode,
+                                                onRenameNode = viewModel::renameBandNode,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
                                     }
                                     entry<Screen.StoreDetail> { screenEntry ->
                                         StoreDetailScreen(
@@ -595,22 +631,40 @@ class MainActivity : ComponentActivity() {
                                         val localFolders by viewModel.localFolders.collectAsState()
                                         val localFiles by viewModel.localFiles.collectAsState()
                                         val localCurrentPath by viewModel.localCurrentPath.collectAsState()
-                                        LocalStorageScreen(
-                                            currentPath = localCurrentPath,
-                                            folders = localFolders,
-                                            files = localFiles,
-                                            onBackClick = navigateBack,
-                                            onFolderClick = viewModel::navigateLocalFolder,
-                                            onCreateFolder = viewModel::createLocalFolder,
-                                            onImportToBand = { file ->
-                                                viewModel.pushFromFile(file)
-                                                navigateBack()
-                                            },
-                                            onDeleteFile = viewModel::deleteLocalFile,
-                                            onRenameFile = viewModel::renameLocalFile,
-                                            onRefresh = viewModel::refreshLocalStorage,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
+                                        val expandLocal = expandLocalStorage.value
+                                        val originLocal = if (expandLocal) expandOrigin.value else ExpandOrigin.None
+                                        val localStorageScreen: @Composable () -> Unit = {
+                                            LocalStorageScreen(
+                                                currentPath = localCurrentPath,
+                                                folders = localFolders,
+                                                files = localFiles,
+                                                onBackClick = navigateBack,
+                                                onFolderClick = viewModel::navigateLocalFolder,
+                                                onCreateFolder = viewModel::createLocalFolder,
+                                                onImportToBand = { file ->
+                                                    viewModel.pushFromFile(file)
+                                                    navigateBack()
+                                                },
+                                                onDeleteFile = viewModel::deleteLocalFile,
+                                                onRenameFile = viewModel::renameLocalFile,
+                                                onRefresh = viewModel::refreshLocalStorage,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                        if (expandLocal && originLocal != ExpandOrigin.None) {
+                                            ExpandInScreen(
+                                                origin = originLocal,
+                                                onBackRequested = {
+                                                    expandLocalStorage.value = false
+                                                    navigateBack()
+                                                },
+                                                onExitFinished = {}
+                                            ) {
+                                                localStorageScreen()
+                                            }
+                                        } else {
+                                            localStorageScreen()
+                                        }
                                     }
                                     entry<Screen.Editor> {
                                         EditorScreen(

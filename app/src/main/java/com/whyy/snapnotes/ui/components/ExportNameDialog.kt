@@ -1,12 +1,7 @@
 package com.whyy.snapnotes.ui.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,10 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.TextButton
+import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import kotlinx.coroutines.delay
 
 /**
@@ -46,16 +39,21 @@ fun ExportNameDialog(
         }
     }
 
-    // 不用 if (!show) return 外层拔组件——那样 OverlayDialog 看不到 show=true→false 的翻转，
-    // 退场动画无法触发。显示/隐藏完全交给 OverlayDialog 的 show。
-    OverlayDialog(
+    // 显示/隐藏完全交给 LiquidGlassDialog 的 show（内部 AnimatedVisibility）。
+    LiquidGlassDialog(
         title = "导出文件名",
         summary = "为导出的 JSON 文件命名（自动补 .json）",
         show = show,
         onDismissRequest = onDismiss,
-        renderInRootScaffold = false  // 保持当前 Scaffold 内，避免被底部导航遮挡
-    ) {
-        Column {
+        dismissText = "取消",
+        confirmText = "下一步",
+        onDismiss = onDismiss,
+        onConfirm = {
+            val clean = name.trim().ifBlank { defaultName }
+            val withExt = if (clean.endsWith(".json", ignoreCase = true)) clean else "$clean.json"
+            onConfirm(withExt)
+        },
+        content = {
             TextField(
                 value = name,
                 onValueChange = { name = it },
@@ -66,25 +64,6 @@ fun ExportNameDialog(
                 singleLine = true,
                 label = "文件名"
             )
-            Spacer(Modifier.height(12.dp))  // 垂直间距
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextButton(
-                    text = "取消",
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(20.dp))
-                TextButton(
-                    text = "下一步",
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
-                    onClick = {
-                        val clean = name.trim().ifBlank { defaultName }
-                        val withExt = if (clean.endsWith(".json", ignoreCase = true)) clean else "$clean.json"
-                        onConfirm(withExt)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-            }
         }
-    }
+    )
 }

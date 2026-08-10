@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.RawToLatexConverter
 import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
 import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import com.whyy.snapnotes.ui.viewmodel.EditorSubject
 import kotlinx.coroutines.delay
@@ -58,7 +59,6 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -687,33 +687,28 @@ fun JsonPreviewDialog(
     show: Boolean,
     onDismiss: () -> Unit
 ) {
-    if (show) {
-        OverlayDialog(
-            title = "JSON 预览",
-            summary = "预览即将导出的 JSON 内容：",
-            show = show,   // Boolean，与 SuperDialog 新版一致
-            onDismissRequest = onDismiss
+    LiquidGlassDialog(
+        show = show,
+        title = "JSON 预览",
+        summary = "预览即将导出的 JSON 内容：",
+        confirmText = "关闭",
+        dismissText = "",
+        onConfirm = onDismiss,
+        onDismiss = onDismiss,
+        onDismissRequest = onDismiss
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(360.dp)
+                .verticalScroll(rememberScrollState())
+                .background(MiuixTheme.colorScheme.surfaceVariant)
+                .padding(12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(360.dp)
-                    .verticalScroll(rememberScrollState())
-                    .background(MiuixTheme.colorScheme.surfaceVariant)
-                    .padding(12.dp)
-            ) {
-                Text(
-                    text = jsonString,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurface
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            TextButton(
-                text = "关闭",
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                text = jsonString,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurface
             )
         }
     }
