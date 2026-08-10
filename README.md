@@ -32,6 +32,16 @@
 - 内容创作者：台词、要点、提纲随身带，彩排时瞄一眼就能接上。
 - 任何想「抬腕即查」的人：把你的小抄装到最方便看的位置。
 
+## 液态玻璃界面（AndroidLiquidGlass）
+
+手机端 App 的卡片、底部导航、按钮与开关采用了 **AndroidLiquidGlass**（[Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass)）的液态玻璃渲染方案：
+
+- **毛玻璃 + 折射**：卡片与底部导航叠加背景模糊与光线折射，色彩随背景实时流动；
+- **拖动反应**：按住并拖动卡片 / 按钮 / 底部导航 Tab / 滑块时，组件会跟随指尖产生挤压、位移与光斑变化，松手后弹性回弹；
+- **可自定义**：在「设置 → 液态玻璃」中可开关效果，并调节模糊强度、折射强度、折射高度、色散（需 Android 13+）与拖动反馈；关闭后自动回退为普通卡片样式，不影响任何功能。
+
+效果基于 [RenderEffect](https://developer.android.com/reference/android/graphics/RenderEffect) 实现，支持 Android 12+（Android 13+ 可启用色散）。
+
 ## 一句话
 
 手机整理知识，手环随身翻阅——闪念小抄让你的小抄真正「抬手可得」。

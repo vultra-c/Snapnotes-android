@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.AmadeusChat
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -324,11 +325,11 @@ fun AmadeusChatScreen(
  */
 @Composable
 private fun LockScreenWarningCard(modifier: Modifier = Modifier) {
-    Card(
+    LiquidGlassCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
-        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.errorContainer)
+        containerColor = MiuixTheme.colorScheme.errorContainer
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -366,11 +367,11 @@ private fun NotReadyBanner(
     onOpenConfig: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    LiquidGlassCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
-        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.primaryContainer)
+        containerColor = MiuixTheme.colorScheme.primaryContainer
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),

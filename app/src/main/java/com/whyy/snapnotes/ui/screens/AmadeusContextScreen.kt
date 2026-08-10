@@ -34,7 +34,7 @@ import com.whyy.snapnotes.logic.AmadeusChat.SessionDetail
 import com.whyy.snapnotes.logic.AmadeusChat.SessionSnapshot
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -115,14 +115,15 @@ fun AmadeusContextScreen(
             // ① 最近一次调用
             item {
                 SmallTitle(text = "最近一次调用", modifier = Modifier.padding(top = 12.dp))
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     onClick = {
                         if (lastCall is CallStatus.Failed) {
                             copyToClipboard(context, lastCall.msg)
                             Toast.makeText(context, "错误信息已复制", Toast.LENGTH_SHORT).show()
                         }
-                    }
+                    },
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -156,7 +157,10 @@ fun AmadeusContextScreen(
             // ③ 测试发送
             item {
                 SmallTitle(text = "测试发送", modifier = Modifier.padding(top = 12.dp))
-                Card(modifier = Modifier.padding(horizontal = 12.dp)) {
+                LiquidGlassCard(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         val focusRequester = remember { FocusRequester() }
                         TextField(
@@ -200,7 +204,10 @@ fun AmadeusContextScreen(
             }
             if (snapshots.isEmpty()) {
                 item {
-                    Card(modifier = Modifier.padding(horizontal = 12.dp)) {
+                    LiquidGlassCard(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    ) {
                         Text(
                             "暂无会话。手环发对话或上方测试发送后会出现在这里。",
                             style = MiuixTheme.textStyles.body2,
@@ -211,9 +218,10 @@ fun AmadeusContextScreen(
                 }
             } else {
                 items(snapshots, key = { it.sessionId }) { snap ->
-                    Card(
+                    LiquidGlassCard(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        onClick = { detailFor = onDetail(snap.sessionId) }
+                        onClick = { detailFor = onDetail(snap.sessionId) },
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {

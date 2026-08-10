@@ -39,6 +39,7 @@ import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.StorageRingCard
+import com.whyy.snapnotes.ui.liquid.LiquidGlassButton
 import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
 import androidx.compose.foundation.basicMarquee
@@ -49,8 +50,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -69,8 +68,6 @@ import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.SinkFeedback
-import top.yukonga.miuix.kmp.utils.pressable
 import androidx.compose.ui.draw.rotate
 
 private enum class ConnectionStage {
@@ -301,13 +298,11 @@ fun HomeScreen(
                 }
             }
 
-            Button(
+            LiquidGlassButton(
                 onClick = onStartPush,
                 enabled = selectedFile != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(interactionSource = null, indication = SinkFeedback()),
-                colors = ButtonDefaults.buttonColorsPrimary()
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = MiuixTheme.colorScheme.primary
             ) {
                 Text(
                     text = if (selectedFile != null) "开始推送到手环" else "请先选择文件",

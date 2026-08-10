@@ -29,8 +29,8 @@ import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -164,10 +164,11 @@ fun HistoryScreen(
         ) {
             // 说明卡
             item {
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -237,7 +238,7 @@ fun HistoryScreen(
                 }
                 items(records, key = { it.id }) { record ->
                     val isSelected = record.id in selectedIds
-                    Card(
+                    LiquidGlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -259,9 +260,8 @@ fun HistoryScreen(
                                     selectedIds = selectedIds + record.id
                                 }
                             ),
-                        insideMargin = PaddingValues(0.dp),
                         onClick = null,
-                        showIndication = false
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         BasicComponent(
                             title = record.fileName,

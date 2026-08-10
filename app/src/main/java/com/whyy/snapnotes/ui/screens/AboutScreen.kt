@@ -36,8 +36,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.R
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -65,6 +65,9 @@ private const val REF_PROJECT_NAME = "弦电子书-安卓（com.bandbbs.ebook-an
 private const val REF_PROJECT_URL = "https://github.com/youshen2/com.bandbbs.ebook-android"
 private const val REF_PROJECT_NAME_ANDROID = "弦电子书-手环（com.bandbbs.ebook）"
 private const val REF_PROJECT_URL_ANDROID = "https://github.com/youshen2/com.bandbbs.ebook"
+/** 液态玻璃效果参考项目（Kyant0/AndroidLiquidGlass）。 */
+private const val REF_PROJECT_LIQUID_GLASS = "AndroidLiquidGlass（液态玻璃）"
+private const val REF_PROJECT_LIQUID_GLASS_URL = "https://github.com/Kyant0/AndroidLiquidGlass"
 /** 底部版本标签（彩蛋藏在这条的长按上；不带任何 ❤ 装饰）。 */
 private const val APP_VERSION_LABEL = "版本 1.0.1"
 // ──────────────────────────────────────────────────────────────────────
@@ -118,9 +121,9 @@ fun AboutScreen(
                 // ── 开发者 ──
                 item {
                     SmallTitle(text = "开发者", modifier = Modifier.padding(top = 12.dp))
-                    Card(
+                    LiquidGlassCard(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        insideMargin = PaddingValues(0.dp)
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         // 两位开发者头像 + 昵称并排居中展示，下方各自一个可复制的邮箱。
                         Row(
@@ -147,9 +150,9 @@ fun AboutScreen(
                 // ── 项目开源 ──
                 item {
                     SmallTitle(text = "项目开源")
-                    Card(
+                    LiquidGlassCard(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        insideMargin = PaddingValues(0.dp)
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         BasicComponent(
                             title = "本项目开源地址",
@@ -161,9 +164,9 @@ fun AboutScreen(
                 // ── 参考项目 ──
                 item {
                     SmallTitle(text = "参考项目")
-                    Card(
+                    LiquidGlassCard(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        insideMargin = PaddingValues(0.dp)
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         BasicComponent(
                             title = REF_PROJECT_NAME_ANDROID,
@@ -172,6 +175,10 @@ fun AboutScreen(
                         BasicComponent(
                             title = REF_PROJECT_NAME,
                             onClick = { openUrl(REF_PROJECT_URL) }
+                        )
+                        BasicComponent(
+                            title = REF_PROJECT_LIQUID_GLASS,
+                            onClick = { openUrl(REF_PROJECT_LIQUID_GLASS_URL) }
                         )
                     }
                 }

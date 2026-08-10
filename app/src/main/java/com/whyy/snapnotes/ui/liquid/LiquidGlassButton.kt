@@ -2,18 +2,22 @@ package com.whyy.snapnotes.ui.liquid
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
@@ -21,24 +25,32 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.isRenderEffectSupported
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.tanh
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+/**
+ * 液态玻璃主按钮（参考 AndroidLiquidGlass 的 LiquidButton 示例）。
+ *
+ * - 玻璃开启时：按钮表面叠加毛玻璃 + 折射，按住并拖动时会产生「跟随指尖挤压形变」的
+ *   液态反应（[InteractiveHighlight] 驱动，与 [LiquidGlassCard] 同款交互）。
+ * - 玻璃关闭 / 不支持 RenderEffect 时：回退为普通主色按钮，保证功能不依赖特效。
+ *
+ * @param containerColor 玻璃表面底色（普通模式下的按钮底色）
+ * @param shape 按钮圆角形状
+ */
 @Composable
-fun LiquidGlassCard(
+fun LiquidGlassButton(
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    containerColor: Color,
+    enabled: Boolean = true,
+    containerColor: Color = MiuixTheme.colorScheme.primary,
     shape: Shape = RoundedCornerShape(28.dp),
-    contentPadding: PaddingValues = PaddingValues(0.dp),
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable RowScope.() -> Unit
 ) {
     val config = LocalLiquidGlassConfig.current
     val rootBackdrop = LocalLiquidGlassBackdrop.current
@@ -49,10 +61,18 @@ fun LiquidGlassCard(
         InteractiveHighlight(animationScope)
     }
 
-    if (useGlass) {
+    val clickableModifier = Modifier.clickable(
+        interactionSource = null,
+        indication = null,
+        role = Role.Button,
+        enabled = enabled,
+        onClick = onClick
+    )
+
+    if (useGlass && enabled) {
         val backdrop = rootBackdrop
         val isInteractive = config.interactive
-        Box(
+        Row(
             modifier
                 .drawBackdrop(
                     backdrop = backdrop,
@@ -95,42 +115,11 @@ fun LiquidGlassCard(
                     } else {
                         null
                     },
-                    highlight = {
-                        val progress = interactiveHighlight.pressProgress
-                        if (progress > 0f) {
-                            Highlight.Default.copy(alpha = progress)
-                        } else {
-                            null
-                        }
-                    },
-                    shadow = {
-                        Shadow(
-                            radius = 8f.dp,
-                            color = Color.Black.copy(alpha = 0.08f)
-                        )
-                    },
-                    innerShadow = {
-                        val progress = interactiveHighlight.pressProgress
-                        InnerShadow(
-                            radius = 8f.dp * progress,
-                            alpha = progress
-                        )
-                    },
                     onDrawSurface = {
-                        drawRect(containerColor.copy(alpha = 0.55f))
+                        drawRect(containerColor.copy(alpha = 0.62f))
                     }
                 )
-                .then(
-                    if (onClick != null) {
-                        Modifier.clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = onClick
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
+                .then(clickableModifier)
                 .then(
                     if (isInteractive) {
                         Modifier
@@ -140,26 +129,26 @@ fun LiquidGlassCard(
                         Modifier
                     }
                 )
-                .padding(contentPadding),
+                .height(48.dp)
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
             content = content
         )
     } else {
-        Box(
+        Row(
             modifier
                 .clip(shape)
-                .background(containerColor)
-                .then(
-                    if (onClick != null) {
-                        Modifier.clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = onClick
-                        )
-                    } else {
-                        Modifier
-                    }
+                .background(
+                    if (enabled) containerColor
+                    else containerColor.copy(alpha = 0.38f)
                 )
-                .padding(contentPadding),
+                .then(clickableModifier)
+                .alpha(if (enabled) 1f else 0.6f)
+                .height(48.dp)
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
             content = content
         )
     }

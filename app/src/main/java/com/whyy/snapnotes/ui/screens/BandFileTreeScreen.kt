@@ -48,7 +48,7 @@ import com.whyy.snapnotes.ui.viewmodel.BandFileNode
 import com.whyy.snapnotes.ui.viewmodel.BandTreeUiState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -469,7 +469,7 @@ private fun TreeItemView(
             .animateContentSize()
     ) {
         Box {
-            Card(
+            LiquidGlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -482,9 +482,8 @@ private fun TreeItemView(
                             if (!pickMode) showContextMenu = true
                         }
                     ),
-                insideMargin = PaddingValues(0.dp),
                 onClick = null,
-                showIndication = false
+                containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 Row(
                     modifier = Modifier
@@ -637,7 +636,10 @@ private fun TreeItemView(
  */
 @Composable
 private fun EmptyStateCard(onCreate: () -> Unit) {
-    Card(modifier = Modifier.padding(horizontal = 12.dp)) {
+    LiquidGlassCard(
+        modifier = Modifier.padding(horizontal = 12.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

@@ -39,10 +39,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -351,10 +351,12 @@ private fun BreadcrumbBar(
         }
     }
 
-    Card(
+    LiquidGlassCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -431,7 +433,7 @@ private fun FolderItemCard(
     var showContextMenu by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        Card(
+        LiquidGlassCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -440,8 +442,7 @@ private fun FolderItemCard(
                     onLongClick = { showContextMenu = true }
                 ),
             onClick = null,
-            showIndication = false,
-            insideMargin = PaddingValues(0.dp)
+            containerColor = MiuixTheme.colorScheme.surfaceContainer
         ) {
             BasicComponent(
                 title = folder.name,
@@ -533,7 +534,7 @@ private fun FileItemCard(
     val dateStr = remember(file.lastModified) { formatDate(file.lastModified) }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        Card(
+        LiquidGlassCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -542,8 +543,7 @@ private fun FileItemCard(
                     onLongClick = { showContextMenu = true }
                 ),
             onClick = null,
-            showIndication = false,
-            insideMargin = PaddingValues(0.dp)
+            containerColor = MiuixTheme.colorScheme.surfaceContainer
         ) {
             Row(
                 modifier = Modifier
@@ -649,7 +649,10 @@ private fun FileItemCard(
  */
 @Composable
 private fun EmptyStateCard(onCreate: () -> Unit, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.padding(horizontal = 12.dp)) {
+    LiquidGlassCard(
+        modifier = modifier.padding(horizontal = 12.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

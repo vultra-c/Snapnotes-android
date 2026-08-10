@@ -42,13 +42,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.RawToLatexConverter
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import com.whyy.snapnotes.ui.viewmodel.EditorSubject
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -249,9 +248,9 @@ private fun SubjectCard(
         label = "SubjectChevron"
     )
 
-    Card(
+    LiquidGlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -351,9 +350,9 @@ private fun EntryCard(
     )
     val e = entry
 
-    Card(
+    LiquidGlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceVariant)
+        containerColor = MiuixTheme.colorScheme.surfaceVariant
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -527,9 +526,9 @@ private fun EntryCard(
 
 @Composable
 private fun EmptyPlaceholderCard(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Card(
+    LiquidGlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier

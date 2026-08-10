@@ -14,10 +14,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.CheckResult
 import com.whyy.snapnotes.ui.viewmodel.TroubleshootState
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -98,11 +98,11 @@ fun TroubleshootScreen(
         ) {
             item {
                 SmallTitle(text = "连接链路", modifier = Modifier.padding(top = 12.dp))
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .fillMaxWidth(),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     TroubleshootItem(
                         title = "蓝牙已开启",

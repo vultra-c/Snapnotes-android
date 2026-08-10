@@ -33,10 +33,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -44,7 +43,6 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
@@ -82,12 +80,10 @@ fun AiPromptCard(modifier: Modifier = Modifier) {
         }
     }
 
-    Card(
+    LiquidGlassCard(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
         onClick = { expanded = !expanded },
-        pressFeedbackType = PressFeedbackType.Tilt,
-        showIndication = true
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier

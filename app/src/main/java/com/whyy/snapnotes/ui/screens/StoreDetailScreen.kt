@@ -48,9 +48,9 @@ import com.whyy.snapnotes.data.StorePack
 import com.whyy.snapnotes.data.StoreSubject
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -294,10 +294,11 @@ private fun OnlineSearchCard(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit
 ) {
-    Card(
+    LiquidGlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 6.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier
@@ -384,10 +385,11 @@ private fun OnlineSearchCard(
  */
 @Composable
 private fun PackHeaderCard(pack: StorePack) {
-    Card(
+    LiquidGlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 6.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier
@@ -507,10 +509,11 @@ private fun SubjectCard(
         label = "subjectChevron"
     )
 
-    Card(
+    LiquidGlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp)
+            .padding(vertical = 5.dp),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier

@@ -48,11 +48,10 @@ import com.whyy.snapnotes.data.STORE_PACKS
 import com.whyy.snapnotes.data.StorePack
 import com.whyy.snapnotes.data.StoreSubject
 import com.whyy.snapnotes.ui.components.MoreMenu
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -127,10 +126,11 @@ fun StoreScreen(
         ) {
             // 商店介绍卡
             item {
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Row(
                         modifier = Modifier
@@ -200,13 +200,11 @@ fun StoreScreen(
                 )
             }
             item {
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp),
-                    colors = CardDefaults.defaultColors(
-                        color = MiuixTheme.colorScheme.surfaceVariant
-                    )
+                    containerColor = MiuixTheme.colorScheme.surfaceVariant
                 ) {
                     Column(
                         modifier = Modifier
@@ -241,11 +239,12 @@ private fun StorePackCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    LiquidGlassCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        onClick = onClick
+        onClick = onClick,
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(
             modifier = Modifier
@@ -313,10 +312,8 @@ private fun StorePackCard(
 
 @Composable
 private fun SubjectTag(text: String) {
-    Card(
-        colors = CardDefaults.defaultColors(
-            color = MiuixTheme.colorScheme.surfaceContainer
-        )
+    LiquidGlassCard(
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Text(
             text = text,

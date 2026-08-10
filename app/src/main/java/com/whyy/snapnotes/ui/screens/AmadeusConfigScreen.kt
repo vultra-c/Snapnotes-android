@@ -44,12 +44,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.AmadeusConfig
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -72,7 +71,6 @@ import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.text.SimpleDateFormat
@@ -165,9 +163,9 @@ fun AmadeusConfigScreen(
             // 说明卡片：锁屏后台不可用的警告已移至「Amadeus 对话」页面，此处仅保留基本配置。
             item {
                 SmallTitle(text = "基本", modifier = Modifier.padding(top = 12.dp))
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     BasicComponent(
                         title = "启用 Amadeus",
@@ -183,9 +181,9 @@ fun AmadeusConfigScreen(
             }
             item {
                 SmallTitle(text = "API")
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     BasicComponent(
                         title = "Base URL",
@@ -208,11 +206,11 @@ fun AmadeusConfigScreen(
             // 加载中替换为小转圈；未填 API Key 时不再静默禁用，而是点击直接跳去填 Key。
             item {
                 val apiKeyBlank = config.apiKey.isBlank()
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp),
-                    colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.primaryContainer),
+                    containerColor = MiuixTheme.colorScheme.primaryContainer,
                     onClick = {
                         when {
                             apiKeyBlank -> editingField = EditField.ApiKey
@@ -222,9 +220,7 @@ fun AmadeusConfigScreen(
                                 if (availableModels.isNullOrEmpty()) showModelPicker = true
                             }
                         }
-                    },
-                    pressFeedbackType = PressFeedbackType.Tilt,
-                    showIndication = true
+                    }
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),

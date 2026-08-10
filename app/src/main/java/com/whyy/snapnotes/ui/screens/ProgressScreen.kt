@@ -48,13 +48,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.PushState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
@@ -213,9 +212,9 @@ fun ProgressScreen(
             }
 
             // ── 文件信息卡片 ──
-            Card(
+            LiquidGlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(0.dp)
+                containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 BasicComponent(
                     title = pushState.fileName.ifBlank { "未知文件" },
@@ -224,9 +223,9 @@ fun ProgressScreen(
             }
 
             // ── 进度卡片 ──
-            Card(
+            LiquidGlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+                containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),

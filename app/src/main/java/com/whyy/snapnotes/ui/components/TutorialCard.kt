@@ -8,7 +8,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,7 +25,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.Card
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -52,10 +51,10 @@ fun TutorialCard(
         label = "TutorialChevron"
     )
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { expanded = !expanded }
+    LiquidGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = { expanded = !expanded },
+        containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(

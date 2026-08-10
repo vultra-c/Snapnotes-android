@@ -39,12 +39,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.viewmodel.PushState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -133,7 +132,7 @@ fun ResultScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // ── 结果主卡片：图标（弹跳入场 + 成功涟漪/粒子） + 标题 + 副标题 ──
-            Card(
+            LiquidGlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .animateContentSize(
@@ -142,7 +141,7 @@ fun ResultScreen(
                             stiffness = Spring.StiffnessMediumLow
                         )
                     ),
-                colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+                containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 Column(
                     modifier = Modifier
@@ -262,9 +261,9 @@ fun ResultScreen(
                     ?.let { add("错误信息" to it) }
             }
             if (detailPairs.isNotEmpty()) {
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Column(
                         modifier = Modifier

@@ -59,7 +59,7 @@ import com.whyy.snapnotes.ui.viewmodel.MAX_IMPORT_FILE_BYTES
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -661,8 +661,8 @@ private fun FileManagerPage(
             if (currentDir == null) {
                 item { SmallTitle(text = "快捷路径") }
                 item {
-                    Card(
-                        insideMargin = PaddingValues(0.dp)
+                    LiquidGlassCard(
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
                         if (filteredPresets.isEmpty()) {
                             if (availablePresets.isEmpty()) {
@@ -767,16 +767,17 @@ private fun FileManagerPage(
                                 }
                                 val isSelected = selectedFile == item.file
 
-                                Card(
+                                LiquidGlassCard(
                                     modifier = Modifier.clip(shape),
-                                    cornerRadius = 0.dp,
+                                    shape = shape,
                                     onClick = {
                                         if (item.isDirectory) {
                                             currentDir = item.file
                                         } else {
                                             onSelectFileChange(if (isSelected) null else item.file)
                                         }
-                                    }
+                                    },
+                                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                                 ) {
                                     if (item.isDirectory) {
                                         BasicComponent(

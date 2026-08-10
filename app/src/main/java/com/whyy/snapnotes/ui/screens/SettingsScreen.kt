@@ -20,15 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
+import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
 import com.whyy.snapnotes.ui.liquid.LiquidGlassConfig
 import com.whyy.snapnotes.ui.liquid.LiquidGlassSlider
+import com.whyy.snapnotes.ui.liquid.LiquidGlassToggle
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
@@ -99,9 +99,9 @@ fun SettingsScreen(
         ) {
             item {
                 SmallTitle(text = "外观", modifier = Modifier.padding(top = 12.dp))
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     WindowDropdownPreference(
                         title = "应用主题",
@@ -116,9 +116,9 @@ fun SettingsScreen(
                         title = "动态取色",
                         summary = "开启后按系统壁纸生成整套配色（Monet）",
                         endActions = {
-                            Switch(
+                            LiquidGlassToggle(
                                 checked = dynamicColor,
-                                onCheckedChange = { onDynamicColorChange(it) }
+                                onCheckedChange = onDynamicColorChange
                             )
                         }
                     )
@@ -126,17 +126,17 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "导入")
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     BasicComponent(
                         title = "使用内置文件管理器",
                         summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
                         endActions = {
-                            Switch(
+                            LiquidGlassToggle(
                                 checked = useBuiltinFileManager,
-                                onCheckedChange = { onUseBuiltinFileManagerChange(it) }
+                                onCheckedChange = onUseBuiltinFileManagerChange
                             )
                         }
                     )
@@ -144,9 +144,9 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "导出")
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     BasicComponent(
                         title = "导出目录",
@@ -169,15 +169,15 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "液态玻璃", modifier = Modifier.padding(top = 12.dp))
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     BasicComponent(
                         title = "启用液态玻璃效果",
                         summary = "卡片与底部导航叠加毛玻璃与折射效果；按住拖动卡片会有反应",
                         endActions = {
-                            Switch(
+                            LiquidGlassToggle(
                                 checked = liquidGlassConfig.enabled,
                                 onCheckedChange = { enabled ->
                                     onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = enabled))
@@ -189,7 +189,7 @@ fun SettingsScreen(
                         title = "色散效果",
                         summary = "折射边缘出现轻微彩虹色散（需 Android 13+）",
                         endActions = {
-                            Switch(
+                            LiquidGlassToggle(
                                 checked = liquidGlassConfig.chromaticAberration,
                                 onCheckedChange = { enabled ->
                                     onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = enabled))
@@ -201,7 +201,7 @@ fun SettingsScreen(
                         title = "拖动反馈",
                         summary = "按住并拖动卡片时产生挤压与跟随效果",
                         endActions = {
-                            Switch(
+                            LiquidGlassToggle(
                                 checked = liquidGlassConfig.interactive,
                                 onCheckedChange = { enabled ->
                                     onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = enabled))
@@ -227,13 +227,22 @@ fun SettingsScreen(
                             onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = value))
                         }
                     )
+                    SliderSettingRow(
+                        title = "折射高度",
+                        summary = "折射采样高度，影响透镜质感的纵深感",
+                        value = liquidGlassConfig.refractionHeightDp,
+                        range = 2f..24f,
+                        onValueChange = { value ->
+                            onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = value))
+                        }
+                    )
                 }
             }
             item {
                 SmallTitle(text = "其他")
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
+                    containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     BasicComponent(
                         title = "重置首次同步确认",
