@@ -174,7 +174,7 @@ fun ExpandInScreen(
                         }
                         .clip(RoundedCornerShape(cornerRadius))
                 ) {
-                    content(requestExit)
+                    content(::requestExit)
                 }
             }
         }
