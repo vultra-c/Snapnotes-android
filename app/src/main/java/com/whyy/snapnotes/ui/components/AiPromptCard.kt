@@ -34,7 +34,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -81,7 +81,7 @@ fun AiPromptCard(modifier: Modifier = Modifier) {
         }
     }
 
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier.fillMaxWidth(),
         onClick = { expanded = !expanded },
         containerColor = MiuixTheme.colorScheme.surfaceContainer

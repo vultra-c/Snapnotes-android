@@ -30,8 +30,8 @@ import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppPopupSurface
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
@@ -156,7 +156,7 @@ fun HistoryScreen(
         ) {
             // 说明卡
             item {
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -230,7 +230,7 @@ fun HistoryScreen(
                 }
                 items(records, key = { it.id }) { record ->
                     val isSelected = record.id in selectedIds
-                    LiquidGlassCard(
+                    AppCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -290,7 +290,7 @@ fun HistoryScreen(
                                                 .clickable { repushMenuShow = true },
                                             tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                         )
-                                        LiquidGlassPopupSurface(
+                                        AppPopupSurface(
                                             visible = repushMenuShow,
                                             onDismissRequest = { repushMenuShow = false },
                                             shape = RoundedCornerShape(20.dp)

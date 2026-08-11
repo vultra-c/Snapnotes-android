@@ -1,7 +1,8 @@
-package com.whyy.snapnotes.ui.liquid
+package com.whyy.snapnotes.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,48 +18,20 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-data class LiquidGlassNavTab(
+data class AppNavTab(
     val icon: ImageVector,
     val label: String
 )
 
-/**
- * 底部导航栏。
- *
- * 液态玻璃效果已整体下线：导航栏与页面其它组件一样使用不透明的普通样式，
- * 不再采样背景/半透明渲染，避免部分机型出现界面半透明、掉帧等问题。
- * 组件名与参数签名保持不变，调用方无需改动。
- */
 @Composable
-fun LiquidGlassNavigationBar(
+fun AppNavigationBar(
     selectedTabIndex: () -> Int,
     onTabSelected: (Int) -> Unit,
-    tabs: List<LiquidGlassNavTab>,
-    modifier: Modifier = Modifier,
-    containerColor: Color,
-    accentColor: Color,
-    shape: Shape
-) {
-    LiquidGlassNavigationBarPlain(
-        selectedTabIndex = selectedTabIndex,
-        onTabSelected = onTabSelected,
-        tabs = tabs,
-        modifier = modifier,
-        containerColor = containerColor,
-        accentColor = accentColor,
-        shape = shape
-    )
-}
-
-@Composable
-private fun LiquidGlassNavigationBarPlain(
-    selectedTabIndex: () -> Int,
-    onTabSelected: (Int) -> Unit,
-    tabs: List<LiquidGlassNavTab>,
+    tabs: List<AppNavTab>,
     modifier: Modifier = Modifier,
     containerColor: Color,
     accentColor: Color,
@@ -66,7 +39,6 @@ private fun LiquidGlassNavigationBarPlain(
 ) {
     val textColor = MiuixTheme.colorScheme.onSurface
     val unselectedColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
-
     Row(
         modifier
             .fillMaxWidth()
@@ -87,7 +59,7 @@ private fun LiquidGlassNavigationBarPlain(
                     )
                     .padding(vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                verticalArrangement = Arrangement.Center
             ) {
                 Icon(
                     imageVector = tab.icon,

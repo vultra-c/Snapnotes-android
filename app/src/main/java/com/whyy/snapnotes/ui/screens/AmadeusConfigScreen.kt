@@ -44,8 +44,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.AmadeusConfig
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -163,7 +163,7 @@ fun AmadeusConfigScreen(
             // 说明卡片：锁屏后台不可用的警告已移至「Amadeus 对话」页面，此处仅保留基本配置。
             item {
                 SmallTitle(text = "基本", modifier = Modifier.padding(top = 12.dp))
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -181,11 +181,11 @@ fun AmadeusConfigScreen(
             }
             item {
                 SmallTitle(text = "API")
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    // AppCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
                     Column(modifier = Modifier.fillMaxWidth()) {
                         BasicComponent(
                             title = "Base URL",
@@ -209,7 +209,7 @@ fun AmadeusConfigScreen(
             // 加载中替换为小转圈；未填 API Key 时不再静默禁用，而是点击直接跳去填 Key。
             item {
                 val apiKeyBlank = config.apiKey.isBlank()
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp),
@@ -372,7 +372,7 @@ private fun ModelPickerDialog(
         else availableModels.filter { it.contains(searchQuery, ignoreCase = true) }
     }
 
-    LiquidGlassDialog(
+    AppDialog(
         title = "选择模型",
         summary = "从列表选择，或手动输入模型名",
         show = show,
@@ -664,7 +664,7 @@ private fun ShimmerModelItem(modifier: Modifier = Modifier) {
 }
 
 /**
- * 文本编辑弹窗，使用 LiquidGlassDialog 并利用其 show 参数控制显隐动画。
+ * 文本编辑弹窗，使用 AppDialog 并利用其 show 参数控制显隐动画。
  */
 @Composable
 private fun AmadeusTextEditDialog(
@@ -687,7 +687,7 @@ private fun AmadeusTextEditDialog(
         }
     }
 
-    LiquidGlassDialog(
+    AppDialog(
         title = title,
         summary = hint,
         show = show,

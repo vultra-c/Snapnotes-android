@@ -15,7 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.CheckResult
 import com.whyy.snapnotes.ui.viewmodel.TroubleshootState
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -99,13 +99,13 @@ fun TroubleshootScreen(
         ) {
             item {
                 SmallTitle(text = "连接链路", modifier = Modifier.padding(top = 12.dp))
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .fillMaxWidth(),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
-                    // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                    // AppCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
                     Column(modifier = Modifier.fillMaxWidth()) {
                         TroubleshootItem(
                             title = "蓝牙已开启",

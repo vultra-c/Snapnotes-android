@@ -34,8 +34,8 @@ import com.whyy.snapnotes.logic.AmadeusChat.SessionDetail
 import com.whyy.snapnotes.logic.AmadeusChat.SessionSnapshot
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -115,7 +115,7 @@ fun AmadeusContextScreen(
             // ① 最近一次调用
             item {
                 SmallTitle(text = "最近一次调用", modifier = Modifier.padding(top = 12.dp))
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     onClick = {
                         if (lastCall is CallStatus.Failed) {
@@ -157,7 +157,7 @@ fun AmadeusContextScreen(
             // ③ 测试发送
             item {
                 SmallTitle(text = "测试发送", modifier = Modifier.padding(top = 12.dp))
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -204,7 +204,7 @@ fun AmadeusContextScreen(
             }
             if (snapshots.isEmpty()) {
                 item {
-                    LiquidGlassCard(
+                    AppCard(
                         modifier = Modifier.padding(horizontal = 12.dp),
                         containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
@@ -218,7 +218,7 @@ fun AmadeusContextScreen(
                 }
             } else {
                 items(snapshots, key = { it.sessionId }) { snap ->
-                    LiquidGlassCard(
+                    AppCard(
                         modifier = Modifier.padding(horizontal = 12.dp),
                         onClick = { detailFor = onDetail(snap.sessionId) },
                         containerColor = MiuixTheme.colorScheme.surfaceContainer
@@ -257,7 +257,7 @@ fun AmadeusContextScreen(
     val detail = detailFor
     if (detail != null) {
         val visible = remember(detail) { mutableStateOf(true) }
-        LiquidGlassDialog(
+        AppDialog(
             title = sessionIdLabel(SessionSnapshot(detail.sessionId, detail.messages.size, detail.sessionId.startsWith("test_"))),
             show = visible.value && detailFor != null,
             onDismissRequest = {
@@ -288,7 +288,7 @@ fun AmadeusContextScreen(
     }
 
     // 清空全部确认——液态玻璃风格
-    LiquidGlassDialog(
+    AppDialog(
         title = "清空全部会话？",
         summary = "将删除所有 chat 历史，手环新对话仍会建新会话。",
         show = showClearAllConfirm,

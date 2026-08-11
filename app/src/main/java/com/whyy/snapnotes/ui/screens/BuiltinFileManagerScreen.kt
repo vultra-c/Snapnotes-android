@@ -59,7 +59,7 @@ import com.whyy.snapnotes.ui.viewmodel.MAX_IMPORT_FILE_BYTES
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -661,10 +661,10 @@ private fun FileManagerPage(
             if (currentDir == null) {
                 item { SmallTitle(text = "快捷路径") }
                 item {
-                    LiquidGlassCard(
+                    AppCard(
                         containerColor = MiuixTheme.colorScheme.surfaceContainer
                     ) {
-                        // LiquidGlassCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
+                        // AppCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
                         Column(modifier = Modifier.fillMaxWidth()) {
                             if (filteredPresets.isEmpty()) {
                                 if (availablePresets.isEmpty()) {
@@ -770,7 +770,7 @@ private fun FileManagerPage(
                                 }
                                 val isSelected = selectedFile == item.file
 
-                                LiquidGlassCard(
+                                AppCard(
                                     modifier = Modifier.clip(shape),
                                     shape = shape,
                                     onClick = {

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -23,7 +23,7 @@ fun HistoryBatchDeleteConfirmDialog(
 ) {
     val visible = records != null && records.isNotEmpty()
     val list = records
-    LiquidGlassDialog(
+    AppDialog(
         title = "删除选中的 ${list?.size ?: 0} 条记录？",
         summary = if (list != null) {
             "这 ${list.size} 条记录将从本机推送历史中删除，本地缓存文件也会清掉。" +

@@ -25,7 +25,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -51,7 +51,7 @@ fun TutorialCard(
         label = "TutorialChevron"
     )
 
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier.fillMaxWidth(),
         onClick = { expanded = !expanded },
         containerColor = MiuixTheme.colorScheme.surfaceContainer

@@ -1,4 +1,4 @@
-package com.whyy.snapnotes.ui.liquid
+package com.whyy.snapnotes.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,14 +14,8 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/**
- * 液态玻璃确认/输入对话框。
- *
- * 与 Miuix [top.yukonga.miuix.kmp.overlay.OverlayDialog] 参数对齐，
- * 但表面换成与全局一致的液态玻璃（毛玻璃 + 折射），支持自定义 [content]。
- */
 @Composable
-fun LiquidGlassDialog(
+fun AppDialog(
     show: Boolean,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -34,7 +28,7 @@ fun LiquidGlassDialog(
     onDismiss: () -> Unit = onDismissRequest,
     content: (@Composable () -> Unit)? = null
 ) {
-    LiquidGlassPopupSurface(
+    AppPopupSurface(
         visible = show,
         onDismissRequest = onDismissRequest,
         modifier = modifier

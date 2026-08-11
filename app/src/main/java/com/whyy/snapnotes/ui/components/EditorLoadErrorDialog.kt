@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -14,8 +14,8 @@ fun EditorLoadErrorDialog(
     message: String?,
     onDismiss: () -> Unit
 ) {
-    // Always in composition：显示/隐藏完全交给 LiquidGlassDialog 的 show。
-    LiquidGlassDialog(
+    // Always in composition：显示/隐藏完全交给 AppDialog 的 show。
+    AppDialog(
         title = "加载失败",
         summary = message ?: "",
         show = message != null,

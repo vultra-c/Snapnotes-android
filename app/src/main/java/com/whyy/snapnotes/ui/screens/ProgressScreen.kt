@@ -48,7 +48,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.PushState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import top.yukonga.miuix.kmp.basic.BasicComponent
@@ -212,7 +212,7 @@ fun ProgressScreen(
             }
 
             // ── 文件信息卡片 ──
-            LiquidGlassCard(
+            AppCard(
                 modifier = Modifier.fillMaxWidth(),
                 containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
@@ -223,7 +223,7 @@ fun ProgressScreen(
             }
 
             // ── 进度卡片 ──
-            LiquidGlassCard(
+            AppCard(
                 modifier = Modifier.fillMaxWidth(),
                 containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {

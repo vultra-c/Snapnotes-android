@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 
 @Composable
 fun DraftRestoreDialog(
@@ -25,7 +25,7 @@ fun DraftRestoreDialog(
             pendingAction = null
         }
     }
-    LiquidGlassDialog(
+    AppDialog(
         show = visible,
         title = "恢复草稿",
         summary = "检测到上次编辑未保存的内容，是否恢复到编辑器？",

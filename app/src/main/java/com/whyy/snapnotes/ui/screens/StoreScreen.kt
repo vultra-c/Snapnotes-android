@@ -47,7 +47,7 @@ import com.whyy.snapnotes.data.STORE_PACKS
 import com.whyy.snapnotes.data.StorePack
 import com.whyy.snapnotes.data.StoreSubject
 import com.whyy.snapnotes.ui.components.MoreMenu
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -125,7 +125,7 @@ fun StoreScreen(
         ) {
             // 商店介绍卡
             item {
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -199,7 +199,7 @@ fun StoreScreen(
                 )
             }
             item {
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp),
@@ -238,7 +238,7 @@ private fun StorePackCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
@@ -311,7 +311,7 @@ private fun StorePackCard(
 
 @Composable
 private fun SubjectTag(text: String) {
-    LiquidGlassCard(
+    AppCard(
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
         Text(

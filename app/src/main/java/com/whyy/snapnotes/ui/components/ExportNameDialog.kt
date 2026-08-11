@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.TextField
 import kotlinx.coroutines.delay
 
@@ -39,8 +39,8 @@ fun ExportNameDialog(
         }
     }
 
-    // 显示/隐藏完全交给 LiquidGlassDialog 的 show（内部 AnimatedVisibility）。
-    LiquidGlassDialog(
+    // 显示/隐藏完全交给 AppDialog 的 show（内部 AnimatedVisibility）。
+    AppDialog(
         title = "导出文件名",
         summary = "为导出的 JSON 文件命名（自动补 .json）",
         show = show,

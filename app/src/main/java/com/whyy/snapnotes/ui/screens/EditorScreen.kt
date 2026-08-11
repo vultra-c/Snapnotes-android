@@ -42,8 +42,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.RawToLatexConverter
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import com.whyy.snapnotes.ui.viewmodel.EditorSubject
 import kotlinx.coroutines.delay
@@ -248,7 +248,7 @@ private fun SubjectCard(
         label = "SubjectChevron"
     )
 
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
@@ -350,7 +350,7 @@ private fun EntryCard(
     )
     val e = entry
 
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
         containerColor = MiuixTheme.colorScheme.surfaceVariant
     ) {
@@ -526,7 +526,7 @@ private fun EntryCard(
 
 @Composable
 private fun EmptyPlaceholderCard(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
@@ -687,7 +687,7 @@ fun JsonPreviewDialog(
     show: Boolean,
     onDismiss: () -> Unit
 ) {
-    LiquidGlassDialog(
+    AppDialog(
         show = show,
         title = "JSON 预览",
         summary = "预览即将导出的 JSON 内容：",

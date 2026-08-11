@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.BandStorageInfoData
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
@@ -71,7 +71,7 @@ fun StorageRingCard(
     val onSurface = MiuixTheme.colorScheme.onSurface
     val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
 
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier.fillMaxWidth(),
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {

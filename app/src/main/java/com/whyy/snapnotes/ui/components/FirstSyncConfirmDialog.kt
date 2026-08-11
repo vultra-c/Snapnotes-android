@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import kotlinx.coroutines.delay
 
 
@@ -29,7 +29,7 @@ fun FirstSyncConfirmDialog(
         }
     }
 
-    LiquidGlassDialog(
+    AppDialog(
         show = show,
         title = "同步确认",
         summary = "由于 Vela 优化问题，同步时手环重启为正常现象，开机后继续同步即可。\n\n首次同步报错为正常现象。\n若某文件同步一直报错，可重新选择并推送。" +

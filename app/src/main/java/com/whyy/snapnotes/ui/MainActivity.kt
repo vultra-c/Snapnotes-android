@@ -82,11 +82,11 @@ import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Store
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.whyy.snapnotes.ui.liquid.LiquidGlassBackground
-import com.whyy.snapnotes.ui.liquid.LiquidGlassNavTab
-import com.whyy.snapnotes.ui.liquid.LiquidGlassNavigationBar
-import com.whyy.snapnotes.ui.liquid.ExpandInScreen
-import com.whyy.snapnotes.ui.liquid.ExpandOrigin
+import com.whyy.snapnotes.ui.components.AppBackground
+import com.whyy.snapnotes.ui.components.AppNavTab
+import com.whyy.snapnotes.ui.components.AppNavigationBar
+import com.whyy.snapnotes.ui.components.ExpandTransition
+import com.whyy.snapnotes.ui.components.ExpandOrigin
 import com.whyy.snapnotes.ui.screens.StoreScreen
 import com.whyy.snapnotes.ui.screens.StoreDetailScreen
 import com.whyy.snapnotes.ui.screens.LocalStorageScreen
@@ -345,10 +345,8 @@ class MainActivity : ComponentActivity() {
                 val showBottomBar = currentScreen is Screen.HomePager
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    LiquidGlassBackground(
-                        backgroundColor = MiuixTheme.colorScheme.background,
-                        accentColor = MiuixTheme.colorScheme.primary,
-                        secondaryColor = MiuixTheme.colorScheme.primaryContainer
+                    AppBackground(
+                        backgroundColor = MiuixTheme.colorScheme.background
                     )
                     Scaffold(
                         snackbarHost = {
@@ -356,7 +354,7 @@ class MainActivity : ComponentActivity() {
                         },
                         bottomBar = {
                             if (showBottomBar) {
-                                LiquidGlassNavigationBar(
+                                AppNavigationBar(
                                     selectedTabIndex = { pagerState.currentPage },
                                     onTabSelected = { index ->
                                         when (index) {
@@ -382,10 +380,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     tabs = listOf(
-                                        LiquidGlassNavTab(MiuixIcons.Light.Home, "主页"),
-                                        LiquidGlassNavTab(MiuixIcons.Light.Store, "商店"),
-                                        LiquidGlassNavTab(MiuixIcons.Light.Recent, "历史"),
-                                        LiquidGlassNavTab(MiuixIcons.Light.Settings, "设置")
+                                        AppNavTab(MiuixIcons.Light.Home, "主页"),
+                                        AppNavTab(MiuixIcons.Light.Store, "商店"),
+                                        AppNavTab(MiuixIcons.Light.Recent, "历史"),
+                                        AppNavTab(MiuixIcons.Light.Settings, "设置")
                                     ),
                                     containerColor = MiuixTheme.colorScheme.surfaceContainer,
                                     accentColor = MiuixTheme.colorScheme.primary,
@@ -560,7 +558,7 @@ class MainActivity : ComponentActivity() {
                                         val expand = expandBandFiles.value
                                         val origin = if (expand) bandExpandOrigin.value else ExpandOrigin.None
                                         if (expand && origin != ExpandOrigin.None) {
-                                            ExpandInScreen(
+                                            ExpandTransition(
                                                 origin = origin,
                                                 onBackRequested = {},
                                                 onExitFinished = {
@@ -639,7 +637,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         if (expandLocal && originLocal != ExpandOrigin.None) {
-                                            ExpandInScreen(
+                                            ExpandTransition(
                                                 origin = originLocal,
                                                 onBackRequested = {},
                                                 onExitFinished = {
@@ -786,7 +784,7 @@ class MainActivity : ComponentActivity() {
                                         finish()
                                     }
                                 },
-                                // 页面转场不再使用横向平移；卡片入口页面由 ExpandInScreen 自己完成展开动画。
+                                // 页面转场不再使用横向平移；卡片入口页面由 ExpandTransition 自己完成展开动画。
                                 transitionSpec = {
                                     androidx.compose.animation.EnterTransition.None togetherWith
                                             androidx.compose.animation.ExitTransition.None

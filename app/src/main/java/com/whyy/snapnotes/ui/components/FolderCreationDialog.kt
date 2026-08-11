@@ -10,7 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.TextField
 
 /**
@@ -25,7 +25,7 @@ fun FolderCreationDialog(
     if (show) {
         var folderName by remember { mutableStateOf("") }
 
-        LiquidGlassDialog(
+        AppDialog(
             title = "创建文件夹",
             summary = "输入文件夹名称，将在应用知识库目录下创建",
             show = show,

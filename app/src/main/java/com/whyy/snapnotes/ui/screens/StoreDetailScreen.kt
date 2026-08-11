@@ -46,7 +46,7 @@ import com.whyy.snapnotes.data.StorePack
 import com.whyy.snapnotes.data.StoreSubject
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -292,7 +292,7 @@ private fun OnlineSearchCard(
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit
 ) {
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
@@ -383,7 +383,7 @@ private fun OnlineSearchCard(
  */
 @Composable
 private fun PackHeaderCard(pack: StorePack) {
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
@@ -508,7 +508,7 @@ private fun SubjectCard(
         label = "subjectChevron"
     )
 
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 5.dp),

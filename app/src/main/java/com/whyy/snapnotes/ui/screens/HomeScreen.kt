@@ -41,8 +41,8 @@ import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.StorageRingCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassButton
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppButton
+import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
 import androidx.compose.foundation.basicMarquee
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
@@ -106,8 +106,8 @@ fun HomeScreen(
     onOpenBandFiles: () -> Unit = {},
     onOpenLocalStorage: () -> Unit = {},
     onOpenAmadeusConfig: (() -> Unit)? = null,
-    onRecordBandExpandOrigin: (com.whyy.snapnotes.ui.liquid.ExpandOrigin) -> Unit = {},
-    onRecordLocalExpandOrigin: (com.whyy.snapnotes.ui.liquid.ExpandOrigin) -> Unit = {},
+    onRecordBandExpandOrigin: (com.whyy.snapnotes.ui.components.ExpandOrigin) -> Unit = {},
+    onRecordLocalExpandOrigin: (com.whyy.snapnotes.ui.components.ExpandOrigin) -> Unit = {},
     onNavigateToEditor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -181,17 +181,17 @@ fun HomeScreen(
 
             // 手环文件管理入口 + 本地存储库入口（并排）
             // 两个入口都记录自身窗口坐标，点击后目标页从该卡片位置展开铺满全屏。
-            var bandOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.liquid.ExpandOrigin.None) }
-            var localOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.liquid.ExpandOrigin.None) }
+            var bandOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.components.ExpandOrigin.None) }
+            var localOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.components.ExpandOrigin.None) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .weight(1f)
                         .onGloballyPositioned { coords ->
-                            bandOrigin = com.whyy.snapnotes.ui.liquid.ExpandOrigin(
+                            bandOrigin = com.whyy.snapnotes.ui.components.ExpandOrigin(
                                 left = coords.positionInWindow().x,
                                 top = coords.positionInWindow().y,
                                 width = coords.size.width.toFloat(),
@@ -232,11 +232,11 @@ fun HomeScreen(
                     }
                 }
 
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier
                         .weight(1f)
                         .onGloballyPositioned { coords ->
-                            localOrigin = com.whyy.snapnotes.ui.liquid.ExpandOrigin(
+                            localOrigin = com.whyy.snapnotes.ui.components.ExpandOrigin(
                                 left = coords.positionInWindow().x,
                                 top = coords.positionInWindow().y,
                                 width = coords.size.width.toFloat(),
@@ -279,7 +279,7 @@ fun HomeScreen(
             }
 
             if (selectedFile != null) {
-                    LiquidGlassCard(
+                    AppCard(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = onPickFile,
                         containerColor = MiuixTheme.colorScheme.surfaceContainer
@@ -301,7 +301,7 @@ fun HomeScreen(
                         )
                     }
             } else {
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = onPickFile,
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
@@ -334,7 +334,7 @@ fun HomeScreen(
                 }
             }
 
-            LiquidGlassButton(
+            AppButton(
                 onClick = onStartPush,
                 enabled = selectedFile != null,
                 modifier = Modifier.fillMaxWidth(),
@@ -355,7 +355,7 @@ fun HomeScreen(
             // ── 知识点编辑器入口 ──
             SmallTitle(text = "知识点管理", modifier = Modifier.padding(top = 8.dp))
 
-            LiquidGlassCard(
+            AppCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = onNavigateToEditor,
                 containerColor = MiuixTheme.colorScheme.surfaceContainer
@@ -426,7 +426,7 @@ private fun ConnectionStatusCard(
     // 仅在失败态允许整卡点击进排查页；其它态（连接中/已连/空闲）不可点。
     val cardClick: (() -> Unit)? = if (stage == ConnectionStage.Error) onTroubleshoot else null
 
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .then(

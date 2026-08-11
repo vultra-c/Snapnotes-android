@@ -16,7 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -44,7 +44,7 @@ fun AmadeusConfigCard(
     val onSurface = MiuixTheme.colorScheme.onSurface
     val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
 
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier.fillMaxWidth(),
         onClick = onClick,
         containerColor = MiuixTheme.colorScheme.surfaceContainer

@@ -42,7 +42,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
+import com.whyy.snapnotes.ui.components.AppPopupSurface
 import com.whyy.snapnotes.ui.viewmodel.BandFileNode
 import com.whyy.snapnotes.ui.viewmodel.BandTreeUiState
 import top.yukonga.miuix.kmp.basic.Button
@@ -114,7 +114,7 @@ fun FolderSelectionDialog(
     }
 
     // 液态玻璃弹出层：与全应用统一的毛玻璃风格
-    LiquidGlassPopupSurface(
+    AppPopupSurface(
         visible = true,
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(24.dp)

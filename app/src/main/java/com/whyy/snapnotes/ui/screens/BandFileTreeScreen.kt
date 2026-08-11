@@ -49,9 +49,9 @@ import com.whyy.snapnotes.ui.viewmodel.BandFileNode
 import com.whyy.snapnotes.ui.viewmodel.BandTreeUiState
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
-import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppDialog
+import com.whyy.snapnotes.ui.components.AppPopupSurface
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -376,7 +376,7 @@ fun BandFileTreeScreen(
     }
 
     // 删除确认对话框——液态玻璃风格
-    LiquidGlassDialog(
+    AppDialog(
         show = showDeleteConfirm,
         onDismissRequest = { showDeleteConfirm = false },
         title = "确认删除",
@@ -451,7 +451,7 @@ private fun TreeItemView(
             .animateContentSize()
     ) {
         Box {
-            LiquidGlassCard(
+            AppCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
@@ -545,7 +545,7 @@ private fun TreeItemView(
 
             // 长按上下文菜单（非选择模式）——液态玻璃风格
             if (!pickMode) {
-                LiquidGlassPopupSurface(
+                AppPopupSurface(
                     visible = showContextMenu,
                     onDismissRequest = { showContextMenu = false },
                     shape = RoundedCornerShape(20.dp)
@@ -625,7 +625,7 @@ private fun TreeItemView(
  */
 @Composable
 private fun EmptyStateCard(onCreate: () -> Unit) {
-    LiquidGlassCard(
+    AppCard(
         modifier = Modifier.padding(horizontal = 12.dp),
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
@@ -690,7 +690,7 @@ private fun BandTextInputDialog(
     androidx.compose.runtime.LaunchedEffect(show, initial) {
         if (show) text = initial
     }
-    LiquidGlassDialog(
+    AppDialog(
         show = show,
         onDismissRequest = onDismiss,
         title = title,

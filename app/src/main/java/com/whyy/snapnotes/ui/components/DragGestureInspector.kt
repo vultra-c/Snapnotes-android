@@ -1,4 +1,4 @@
-package com.whyy.snapnotes.ui.liquid
+package com.whyy.snapnotes.ui.components
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown

@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.VersionIncompatibleState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -33,9 +33,9 @@ fun VersionIncompatibleDialog(
     // 硬拦截：禁止返回键绕开版本检查。
     BackHandler(enabled = state != null) { }
 
-    // 显示/隐藏完全交给 LiquidGlassDialog 的 show：state 由非空→null 时播退场。
+    // 显示/隐藏完全交给 AppDialog 的 show：state 由非空→null 时播退场。
     val s = state
-    LiquidGlassDialog(
+    AppDialog(
         title = "版本不兼容",
         show = s != null,
         onDismissRequest = { /* 禁止点击外部取消 */ },

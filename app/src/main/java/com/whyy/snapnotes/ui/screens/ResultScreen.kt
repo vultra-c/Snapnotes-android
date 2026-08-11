@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
+import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.PushState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import top.yukonga.miuix.kmp.basic.Button
@@ -132,7 +132,7 @@ fun ResultScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // ── 结果主卡片：图标（弹跳入场 + 成功涟漪/粒子） + 标题 + 副标题 ──
-            LiquidGlassCard(
+            AppCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .animateContentSize(
@@ -261,7 +261,7 @@ fun ResultScreen(
                     ?.let { add("错误信息" to it) }
             }
             if (detailPairs.isNotEmpty()) {
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.fillMaxWidth(),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {

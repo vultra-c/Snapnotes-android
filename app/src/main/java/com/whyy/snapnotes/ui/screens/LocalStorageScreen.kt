@@ -39,9 +39,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
-import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppDialog
+import com.whyy.snapnotes.ui.components.AppPopupSurface
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -345,7 +345,7 @@ private fun BreadcrumbBar(
         }
     }
 
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -427,7 +427,7 @@ private fun FolderItemCard(
     var showContextMenu by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        LiquidGlassCard(
+        AppCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -461,7 +461,7 @@ private fun FolderItemCard(
             )
         }
 
-        LiquidGlassPopupSurface(
+        AppPopupSurface(
             visible = showContextMenu,
             onDismissRequest = { showContextMenu = false },
             shape = RoundedCornerShape(20.dp)
@@ -543,7 +543,7 @@ private fun FileItemCard(
     val dateStr = remember(file.lastModified) { formatDate(file.lastModified) }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        LiquidGlassCard(
+        AppCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -603,7 +603,7 @@ private fun FileItemCard(
             }
         }
 
-        LiquidGlassPopupSurface(
+        AppPopupSurface(
             visible = showContextMenu,
             onDismissRequest = { showContextMenu = false },
             shape = RoundedCornerShape(20.dp)
@@ -673,7 +673,7 @@ private fun FileItemCard(
  */
 @Composable
 private fun EmptyStateCard(onCreate: () -> Unit, modifier: Modifier = Modifier) {
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier.padding(horizontal = 12.dp),
         containerColor = MiuixTheme.colorScheme.surfaceContainer
     ) {
@@ -731,7 +731,7 @@ private fun LocalRenameDialog(
     onConfirm: (String) -> Unit
 ) {
     var text by remember { mutableStateOf(initialName) }
-    LiquidGlassDialog(
+    AppDialog(
         show = true,
         title = "重命名",
         summary = "请输入新的名称",
@@ -763,7 +763,7 @@ private fun LocalDeleteConfirmDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    LiquidGlassDialog(
+    AppDialog(
         show = true,
         title = "确认删除",
         summary = "「$name」将被永久删除" +

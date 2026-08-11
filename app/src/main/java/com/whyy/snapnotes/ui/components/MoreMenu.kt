@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassPopupSurface
+import com.whyy.snapnotes.ui.components.AppPopupSurface
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -77,7 +77,7 @@ fun MoreMenu(
             )
         }
         // 液态玻璃弹出层：与全应用统一的毛玻璃风格
-        LiquidGlassPopupSurface(
+        AppPopupSurface(
             visible = showPopup,
             onDismissRequest = { showPopup = false },
             shape = RoundedCornerShape(20.dp),

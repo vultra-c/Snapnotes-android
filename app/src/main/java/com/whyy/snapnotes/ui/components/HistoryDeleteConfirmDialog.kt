@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -21,10 +21,10 @@ fun HistoryDeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // 显示/隐藏交给 LiquidGlassDialog 的 show；隐藏时 summary 用占位文案。
+    // 显示/隐藏交给 AppDialog 的 show；隐藏时 summary 用占位文案。
     val visible = record != null
     val rec = record
-    LiquidGlassDialog(
+    AppDialog(
         title = "删除这条记录？",
         summary = if (rec != null) {
             "「${rec.fileName}」将从本机推送历史中删除，本地缓存文件也会清掉。" +

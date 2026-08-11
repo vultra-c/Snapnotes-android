@@ -26,8 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.AmadeusChat
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassDialog
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -258,7 +258,7 @@ fun AmadeusChatScreen(
     }
 
     // 清空对话确认弹窗——液态玻璃风格
-    LiquidGlassDialog(
+    AppDialog(
         title = "清空对话？",
         summary = "将删除所有手机端对话历史，此操作不可撤销。",
         show = showClearConfirm,
@@ -274,7 +274,7 @@ fun AmadeusChatScreen(
     )
 
     // 文件上传说明弹窗——液态玻璃风格
-    LiquidGlassDialog(
+    AppDialog(
         title = "上传文件",
         summary = "选择一个文本文件，其内容将作为上下文随消息一并发送给 Amadeus。" +
             "支持 .txt / .md / .json 等纯文本格式。",
@@ -297,7 +297,7 @@ fun AmadeusChatScreen(
  */
 @Composable
 private fun LockScreenWarningCard(modifier: Modifier = Modifier) {
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
@@ -339,7 +339,7 @@ private fun NotReadyBanner(
     onOpenConfig: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LiquidGlassCard(
+    AppCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),

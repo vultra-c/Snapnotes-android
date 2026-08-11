@@ -10,33 +10,25 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
-import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassSlider
-import com.whyy.snapnotes.ui.liquid.LiquidGlassToggle
+import com.whyy.snapnotes.ui.components.AppCard
+import com.whyy.snapnotes.ui.components.AppToggle
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -110,7 +102,7 @@ fun SettingsScreen(
         ) {
             item {
                 SmallTitle(text = "外观", modifier = Modifier.padding(top = 12.dp))
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -128,7 +120,7 @@ fun SettingsScreen(
                             title = "动态取色",
                             summary = "开启后按系统壁纸生成整套配色（Monet）",
                             endActions = {
-                                LiquidGlassToggle(
+                                AppToggle(
                                     checked = dynamicColor,
                                     onCheckedChange = onDynamicColorChange
                                 )
@@ -139,7 +131,7 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "导入")
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -147,7 +139,7 @@ fun SettingsScreen(
                         title = "使用内置文件管理器",
                         summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
                         endActions = {
-                            LiquidGlassToggle(
+                            AppToggle(
                                 checked = useBuiltinFileManager,
                                 onCheckedChange = onUseBuiltinFileManagerChange
                             )
@@ -157,7 +149,7 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "导出")
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -180,10 +172,10 @@ fun SettingsScreen(
                     )
                 }
             }
-            // ── 试验性功能：仅保留底部导航栏液态玻璃与其他预览开关 ──
+            // ── 试验性功能 ──
             item {
                 SmallTitle(text = "试验性功能", modifier = Modifier.padding(top = 12.dp))
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -216,7 +208,7 @@ fun SettingsScreen(
                                 title = "页面预览动效",
                                 summary = "进入详情时的共享元素/视差预览（试验，需重启生效）",
                                 endActions = {
-                                    LiquidGlassToggle(
+                                    AppToggle(
                                         checked = experimentalPagesPreview,
                                         onCheckedChange = onExperimentalPagesPreviewChange
                                     )
@@ -226,7 +218,7 @@ fun SettingsScreen(
                                 title = "列表内联搜索",
                                 summary = "在历史/商店列表顶部常驻搜索框（试验）",
                                 endActions = {
-                                    LiquidGlassToggle(
+                                    AppToggle(
                                         checked = experimentalInlineSearch,
                                         onCheckedChange = onExperimentalInlineSearchChange
                                     )
@@ -239,7 +231,7 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "其他")
-                LiquidGlassCard(
+                AppCard(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     containerColor = MiuixTheme.colorScheme.surfaceContainer
                 ) {
@@ -277,39 +269,4 @@ fun SettingsScreen(
     }
 }
 
-@Composable
-private fun SliderSettingRow(
-    title: String,
-    summary: String,
-    value: Float,
-    range: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = summary,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-            )
-        }
-        Spacer(Modifier.width(16.dp))
-        LiquidGlassSlider(
-            value = { value },
-            onValueChange = onValueChange,
-            valueRange = range,
-            modifier = Modifier.weight(1.2f)
-        )
-    }
-}
+
