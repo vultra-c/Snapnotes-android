@@ -35,6 +35,8 @@ class BandFileTreeManager(
         private const val TAG = "BandFileTree"
         private const val TREE_TAG = "tree"
         private const val OP_TIMEOUT_MS = 10_000L
+        /** 删除/重命名涉及手环端多步存储写入（meta + 分块正文），放宽到 15s。 */
+        private const val OP_TIMEOUT_MS_EXTENDED = 15_000L
     }
 
     private val json = Json {
@@ -45,14 +47,15 @@ class BandFileTreeManager(
 
     private var treeDeferred: CompletableDeferred<List<BandFileTreeNode>> = CompletableDeferred()
     private var folderCreatedDeferred: CompletableDeferred<FolderCreatedResult> = CompletableDeferred()
-    private var nodeDeletedDeferred: CompletableDeferred<Boolean> = CompletableDeferred()
-    private var nodeRenamedDeferred: CompletableDeferred<Boolean> = CompletableDeferred()
+    private var nodeDeletedDeferred: CompletableDeferred<BandNodeOpResult> = CompletableDeferred()
+    private var nodeRenamedDeferred: CompletableDeferred<BandNodeOpResult> = CompletableDeferred()
 
     init {
         conn.addListener(TREE_TAG) { payload ->
             try {
                 val obj = json.parseToJsonElement(payload).jsonObject
                 val response = obj["response"]?.jsonPrimitive?.contentOrNull
+                Log.d(TAG, "tree response: $payload")
                 when (response) {
                     "treeData" -> handleTreeData(obj)
                     "folderCreated" -> handleFolderCreated(obj)
@@ -117,43 +120,47 @@ class BandFileTreeManager(
 
     /**
      * 删除手环端节点（文件或文件夹，文件夹递归删除）。
-     * @return 是否成功
+     * @return 操作结果（success + 手环端返回的错误信息）
      */
-    suspend fun deleteNode(nodeId: String): Boolean = pusher.sendMutex.withLock {
+    suspend fun deleteNode(nodeId: String): BandNodeOpResult = pusher.sendMutex.withLock {
         nodeDeletedDeferred = CompletableDeferred()
+        val t0 = System.currentTimeMillis()
         try {
             val msg = TreeMessages.DeleteNode(nodeId = nodeId)
-            withTimeout(OP_TIMEOUT_MS) {
+            withTimeout(OP_TIMEOUT_MS_EXTENDED) {
                 conn.sendMessage(json.encodeToString(msg)).await()
             }
-            withTimeout(OP_TIMEOUT_MS) { nodeDeletedDeferred.await() }
+            Log.d(TAG, "deleteNode sent in ${System.currentTimeMillis() - t0}ms, waiting response")
+            withTimeout(OP_TIMEOUT_MS_EXTENDED) { nodeDeletedDeferred.await() }
         } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "deleteNode timeout")
-            false
+            Log.e(TAG, "deleteNode timeout after ${System.currentTimeMillis() - t0}ms")
+            BandNodeOpResult(false, "手环未响应（超时），请稍后重试")
         } catch (e: Exception) {
             Log.e(TAG, "deleteNode fail: ${e.message}")
-            false
+            BandNodeOpResult(false, e.message ?: "发送失败")
         }
     }
 
     /**
      * 重命名手环端节点。
-     * @return 是否成功
+     * @return 操作结果（success + 手环端返回的错误信息）
      */
-    suspend fun renameNode(nodeId: String, newName: String): Boolean = pusher.sendMutex.withLock {
+    suspend fun renameNode(nodeId: String, newName: String): BandNodeOpResult = pusher.sendMutex.withLock {
         nodeRenamedDeferred = CompletableDeferred()
+        val t0 = System.currentTimeMillis()
         try {
             val msg = TreeMessages.RenameNode(nodeId = nodeId, newName = newName)
-            withTimeout(OP_TIMEOUT_MS) {
+            withTimeout(OP_TIMEOUT_MS_EXTENDED) {
                 conn.sendMessage(json.encodeToString(msg)).await()
             }
-            withTimeout(OP_TIMEOUT_MS) { nodeRenamedDeferred.await() }
+            Log.d(TAG, "renameNode sent in ${System.currentTimeMillis() - t0}ms, waiting response")
+            withTimeout(OP_TIMEOUT_MS_EXTENDED) { nodeRenamedDeferred.await() }
         } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "renameNode timeout")
-            false
+            Log.e(TAG, "renameNode timeout after ${System.currentTimeMillis() - t0}ms")
+            BandNodeOpResult(false, "手环未响应（超时），请稍后重试")
         } catch (e: Exception) {
             Log.e(TAG, "renameNode fail: ${e.message}")
-            false
+            BandNodeOpResult(false, e.message ?: "发送失败")
         }
     }
 
@@ -197,7 +204,9 @@ class BandFileTreeManager(
         } ?: false
         val error = obj["error"]?.jsonPrimitive?.contentOrNull
         Log.d(TAG, "nodeDeleted: success=$success error=$error")
-        if (!nodeDeletedDeferred.isCompleted) nodeDeletedDeferred.complete(success)
+        if (!nodeDeletedDeferred.isCompleted) {
+            nodeDeletedDeferred.complete(BandNodeOpResult(success, if (success) null else error))
+        }
     }
 
     private fun handleNodeRenamed(obj: JsonObject) {
@@ -210,7 +219,9 @@ class BandFileTreeManager(
         } ?: false
         val error = obj["error"]?.jsonPrimitive?.contentOrNull
         Log.d(TAG, "nodeRenamed: success=$success error=$error")
-        if (!nodeRenamedDeferred.isCompleted) nodeRenamedDeferred.complete(success)
+        if (!nodeRenamedDeferred.isCompleted) {
+            nodeRenamedDeferred.complete(BandNodeOpResult(success, if (success) null else error))
+        }
     }
 
     // ── JSON 解析 ──
@@ -269,6 +280,14 @@ data class FolderCreateResult(
     val success: Boolean,
     val folderId: String?,
     val error: String?
+)
+
+/**
+ * 删除/重命名节点的结果。
+ */
+data class BandNodeOpResult(
+    val success: Boolean,
+    val error: String? = null
 )
 
 /**

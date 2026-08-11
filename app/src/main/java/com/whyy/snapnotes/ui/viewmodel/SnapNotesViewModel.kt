@@ -2030,12 +2030,13 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
         viewModelScope.launch {
-            val success = mgr.deleteNode(nodeId)
-            if (success) {
+            val result = mgr.deleteNode(nodeId)
+            if (result.success) {
                 _snackbarMessage.value = "已删除"
                 refreshBandTree()
             } else {
-                _snackbarMessage.value = "删除失败"
+                // 透传手环端返回的真实原因（如“知识点节点不支持删除”/“节点不存在”）
+                _snackbarMessage.value = result.error ?: "删除失败"
             }
         }
     }
@@ -2052,12 +2053,13 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
         viewModelScope.launch {
-            val success = mgr.renameNode(nodeId, trimmed)
-            if (success) {
+            val result = mgr.renameNode(nodeId, trimmed)
+            if (result.success) {
                 _snackbarMessage.value = "已重命名"
                 refreshBandTree()
             } else {
-                _snackbarMessage.value = "重命名失败"
+                // 透传手环端返回的真实原因
+                _snackbarMessage.value = result.error ?: "重命名失败"
             }
         }
     }

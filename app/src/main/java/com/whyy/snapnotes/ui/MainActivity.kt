@@ -21,7 +21,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
@@ -83,12 +82,9 @@ import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Store
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.whyy.snapnotes.ui.liquid.LiquidGlassBackground
 import com.whyy.snapnotes.ui.liquid.LiquidGlassNavTab
 import com.whyy.snapnotes.ui.liquid.LiquidGlassNavigationBar
-import com.whyy.snapnotes.ui.liquid.LocalLiquidGlassBackdrop
-import com.whyy.snapnotes.ui.liquid.LocalLiquidGlassConfig
 import com.whyy.snapnotes.ui.liquid.ExpandInScreen
 import com.whyy.snapnotes.ui.liquid.ExpandOrigin
 import com.whyy.snapnotes.ui.screens.StoreScreen
@@ -214,8 +210,6 @@ class MainActivity : ComponentActivity() {
                 appearanceMode = appearanceMode,
                 dynamicColor = dynamicColor
             ) {
-                val liquidGlassConfig by viewModel.liquidGlassConfig.collectAsState()
-                val liquidGlassBackdrop = rememberLayerBackdrop()
                 val screen by viewModel.screen.collectAsState()
                 val connectionState by viewModel.connectionState.collectAsState()
                 val selectedFile by viewModel.selectedFile.collectAsState()
@@ -350,13 +344,8 @@ class MainActivity : ComponentActivity() {
 
                 val showBottomBar = currentScreen is Screen.HomePager
 
-                CompositionLocalProvider(
-                    LocalLiquidGlassBackdrop provides liquidGlassBackdrop,
-                    LocalLiquidGlassConfig provides liquidGlassConfig
-                ) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     LiquidGlassBackground(
-                        backdrop = liquidGlassBackdrop,
                         backgroundColor = MiuixTheme.colorScheme.background,
                         accentColor = MiuixTheme.colorScheme.primary,
                         secondaryColor = MiuixTheme.colorScheme.primaryContainer
@@ -483,8 +472,6 @@ class MainActivity : ComponentActivity() {
                                                     onAppearanceModeChange = viewModel::setAppearanceMode,
                                                     dynamicColor = dynamicColor,
                                                     onDynamicColorChange = viewModel::setDynamicColor,
-                                                    liquidGlassConfig = liquidGlassConfig,
-                                                    onLiquidGlassConfigChange = viewModel::setLiquidGlassConfig,
                                                     useBuiltinFileManager = useBuiltinFileManager,
                                                     onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
                                                     lastExportDirSummary = lastExportDirSummary,
@@ -877,7 +864,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 } // Box 结束（Scaffold + 对话框）
-                } // CompositionLocalProvider 结束
             }
         }
     }

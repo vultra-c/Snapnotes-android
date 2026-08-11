@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.liquid.LiquidGlassCard
-import com.whyy.snapnotes.ui.liquid.LiquidGlassConfig
 import com.whyy.snapnotes.ui.liquid.LiquidGlassSlider
 import com.whyy.snapnotes.ui.liquid.LiquidGlassToggle
 import com.whyy.snapnotes.ui.theme.AppearanceMode
@@ -55,8 +54,6 @@ fun SettingsScreen(
     onAppearanceModeChange: (AppearanceMode) -> Unit,
     dynamicColor: Boolean,
     onDynamicColorChange: (Boolean) -> Unit,
-    liquidGlassConfig: LiquidGlassConfig = LiquidGlassConfig(),
-    onLiquidGlassConfigChange: (LiquidGlassConfig) -> Unit = {},
     useBuiltinFileManager: Boolean,
     onUseBuiltinFileManagerChange: (Boolean) -> Unit,
     lastExportDirSummary: String?,
@@ -197,7 +194,7 @@ fun SettingsScreen(
                     ) {
                         BasicComponent(
                             title = "试验性功能",
-                            summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含底部导航栏液态玻璃与两项预览特性（默认关闭）",
+                            summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含两项预览特性（默认关闭）",
                             onClick = { experimentalExpanded = !experimentalExpanded },
                             endActions = {
                                 top.yukonga.miuix.kmp.basic.Icon(
@@ -213,72 +210,7 @@ fun SettingsScreen(
                             exit = shrinkVertically(tween(180, easing = EaseOutExpo)) + fadeOut(tween(120))
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                            // 玻璃效果仅作用于底部导航栏，页面卡片和按钮保持普通样式。
-                            BasicComponent(
-                                title = "启用导航栏液态玻璃",
-                                summary = "仅底部导航栏使用毛玻璃与折射；其他组件保持普通样式",
-                                endActions = {
-                                    LiquidGlassToggle(
-                                        checked = liquidGlassConfig.enabled,
-                                        onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(enabled = v)) }
-                                    )
-                                }
-                            )
-                            /* 其他玻璃参数已移除：当前版本只保留导航栏玻璃效果。 */
-                            /*
-                                BasicComponent(
-                                    title = "柔和模式",
-                                    summary = "降低折射/阴影，突出阅读内容",
-                                    endActions = {
-                                        LiquidGlassToggle(
-                                            checked = liquidGlassConfig.subtleMode,
-                                            onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(subtleMode = v)) }
-                                        )
-                                    }
-                                )
-                                BasicComponent(
-                                    title = "色散效果",
-                                    summary = "边缘彩虹色散（Android 13+）",
-                                    endActions = {
-                                        LiquidGlassToggle(
-                                            checked = liquidGlassConfig.chromaticAberration,
-                                            onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(chromaticAberration = v)) }
-                                        )
-                                    }
-                                )
-                                BasicComponent(
-                                    title = "拖动反馈",
-                                    summary = "按住拖动时的挤压跟随",
-                                    endActions = {
-                                        LiquidGlassToggle(
-                                            checked = liquidGlassConfig.interactive,
-                                            onCheckedChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(interactive = v)) }
-                                        )
-                                    }
-                                )
-                                SliderSettingRow(
-                                    title = "模糊强度",
-                                    summary = "背景模糊半径",
-                                    value = liquidGlassConfig.blurRadiusDp,
-                                    range = 2f..16f,
-                                    onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(blurRadiusDp = v)) }
-                                )
-                                SliderSettingRow(
-                                    title = "折射强度",
-                                    summary = "折射位移幅度",
-                                    value = liquidGlassConfig.refractionAmountDp,
-                                    range = 2f..28f,
-                                    onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionAmountDp = v)) }
-                                )
-                                SliderSettingRow(
-                                    title = "折射高度",
-                                    summary = "透镜纵深感",
-                                    value = liquidGlassConfig.refractionHeightDp,
-                                    range = 2f..16f,
-                                    onValueChange = { v -> onLiquidGlassConfigChange(liquidGlassConfig.copy(refractionHeightDp = v)) }
-                                )
-                            }
-                            */
+
                             // 两个纯试验项：仅本地开关，后续可对接真实实现
                             BasicComponent(
                                 title = "页面预览动效",
