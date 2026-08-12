@@ -124,43 +124,6 @@ data class ExportResult(
 )
 
 /**
- * 手环端文件树节点。与手环端 interconnTree.js / dataManager.js 的树结构对齐。
- * - [id] 节点唯一标识（bt_folder_xxx / bt_content_xxx）
- * - [name] 显示名
- * - [type] "folder" 或 "content"
- * - [children] 仅 folder 类型有子节点
- */
-data class BandFileNode(
-    val id: String,
-    val name: String,
-    val type: String,
-    val children: List<BandFileNode> = emptyList()
-) {
-    val isFolder: Boolean get() = type == "folder"
-    val isContent: Boolean get() = type == "content"
-}
-
-/**
- * 手环文件树管理页 UI 状态。
- * - [Loading] 加载中
- * - [Ready] 树数据已就绪
- * - [Error] 加载/操作失败
- */
-sealed class BandTreeUiState {
-    data object Loading : BandTreeUiState()
-    data class Ready(val tree: List<BandFileNode>) : BandTreeUiState()
-    data class Error(val message: String) : BandTreeUiState()
-}
-
-/**
- * 手环文件树操作结果（创建文件夹/删除/重命名后回传 UI）。
- */
-data class BandTreeOpResult(
-    val success: Boolean,
-    val message: String
-)
-
-/**
  * 手环端 Amadeus AI 聊天助手的手机端配置。全字段只在手机端存/用，手环不传不存不感知
  * （详见根目录「手机端AI聊天适配说明.md」第五节）。本结构只承载 UI 填写与持久化，
  * 真正接 LLM 网络调用是后续任务；现在只把这几项落进_prefs_。

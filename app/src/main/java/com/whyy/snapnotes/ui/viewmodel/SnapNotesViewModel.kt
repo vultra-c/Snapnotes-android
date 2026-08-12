@@ -86,24 +86,7 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private var connection: InterHandshake? = null
     private var pusher: JsonFilePusher? = null
     private var amadeusChat: AmadeusChat? = null
-    private var bandFileTreeManager: com.whyy.snapnotes.logic.BandFileTreeManager? = null
     private var pendingPushUri: Uri? = null
-
-    /* ──────────── 手环文件树管理 ──────────── */
-    private val _bandTreeState = MutableStateFlow<BandTreeUiState>(BandTreeUiState.Loading)
-    val bandTreeState = _bandTreeState.asStateFlow()
-
-    /** 待导入到手环指定文件夹的 JSON（选择文件夹后触发推送）。 */
-    private var pendingImportFolderId: String? = null
-    private var pendingImportFolderName: String? = null
-
-    /** 推送前文件夹选择对话框状态。 */
-    private val _showFolderSelection = MutableStateFlow(false)
-    val showFolderSelection = _showFolderSelection.asStateFlow()
-
-    /** 手环端最新创建的文件夹 ID（用于默认选中）。null 表示无文件夹，默认主页。 */
-    private val _latestBandFolderId = MutableStateFlow<String?>(null)
-    val latestBandFolderId = _latestBandFolderId.asStateFlow()
 
     /* ──────────── 本地存储库 ──────────── */
     private val _localCurrentPath = MutableStateFlow("")
@@ -742,9 +725,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { amadeusChat!!.lastCall.collect { _amadeusLastCall.value = it } }
         // 把 AmadeusChat.phoneChatStatus 透传给 UI（手机端直聊页面观测加载/成功/失败）。
         viewModelScope.launch { amadeusChat!!.phoneChatStatus.collect { _phoneChatStatus.value = it } }
-
-        // 接入手环文件树管理通道：tag="tree" 入站分发，复用 pusher 的共享 BLE 串行锁。
-        bandFileTreeManager = com.whyy.snapnotes.logic.BandFileTreeManager(conn, pusher!!)
     }
 
     /* ──────────── Amadeus 上下文管理 / 最近调用状态（联「上下文管理菜单」） ──────────── */
@@ -1465,33 +1445,16 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             _showFirstSyncConfirm.value = true
             return
         }
-        // 推送前先同步手环文件树，再弹出文件夹选择对话框
-        refreshBandTree()
-        _showFolderSelection.value = true
-    }
-
-    /** 用户在文件夹选择对话框中确认目标文件夹后触发实际推送。 */
-    fun confirmFolderSelection(folderId: String?) {
-        _showFolderSelection.value = false
-        pendingImportFolderId = folderId
-        pendingPushUri?.let { uri ->
-            viewModelScope.launch { doPush(uri, folderId) }
-        }
-    }
-
-    /** 用户取消文件夹选择。 */
-    fun cancelFolderSelection() {
-        _showFolderSelection.value = false
-        pendingPushUri = null
+        // 直接推送到手环根目录（不再经过文件夹选择流程）
+        viewModelScope.launch { doPush(uri, null) }
     }
 
     fun confirmFirstSync() {
         prefs.edit().putBoolean(firstSyncConfirmedKey, true).apply()
         _showFirstSyncConfirm.value = false
-        // 首次确认后同样走文件夹选择流程
+        // 首次确认后直接推送
         pendingPushUri?.let { uri ->
-            refreshBandTree()
-            _showFolderSelection.value = true
+            viewModelScope.launch { doPush(uri, null) }
         }
     }
 
@@ -1947,88 +1910,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    /* ──────────── 手环文件树管理方法 ──────────── */
-
-    /** 拉取手环端文件树。 */
-    fun refreshBandTree() {
-        val mgr = bandFileTreeManager ?: run {
-            _bandTreeState.value = BandTreeUiState.Error("手环未连接")
-            return
-        }
-        _bandTreeState.value = BandTreeUiState.Loading
-        viewModelScope.launch {
-            val tree = mgr.requestTree()
-            _bandTreeState.value = BandTreeUiState.Ready(
-                tree.map { it.toUiNode() }
-            )
-        }
-    }
-
-    /** 在手环端创建文件夹。 */
-    fun createBandFolder(name: String, parentId: String) {
-        val mgr = bandFileTreeManager ?: run {
-            _snackbarMessage.value = "手环未连接"
-            return
-        }
-        val trimmed = name.trim()
-        if (trimmed.isBlank()) {
-            _snackbarMessage.value = "文件夹名称不能为空"
-            return
-        }
-        viewModelScope.launch {
-            val result = mgr.createFolder(trimmed, parentId)
-            if (result.success) {
-                _snackbarMessage.value = "已创建文件夹：$trimmed"
-                // 记录最新创建的文件夹 ID，用于推送时默认选中
-                result.folderId?.let { _latestBandFolderId.value = it }
-                refreshBandTree()
-            } else {
-                _snackbarMessage.value = "创建文件夹失败：${result.error ?: "未知错误"}"
-            }
-        }
-    }
-
-    /** 删除手环端节点。 */
-    fun deleteBandNode(nodeId: String) {
-        val mgr = bandFileTreeManager ?: run {
-            _snackbarMessage.value = "手环未连接"
-            return
-        }
-        viewModelScope.launch {
-            val result = mgr.deleteNode(nodeId)
-            if (result.success) {
-                _snackbarMessage.value = "已删除"
-                refreshBandTree()
-            } else {
-                // 透传手环端返回的真实原因（如“知识点节点不支持删除”/“节点不存在”）
-                _snackbarMessage.value = result.error ?: "删除失败"
-            }
-        }
-    }
-
-    /** 重命名手环端节点。 */
-    fun renameBandNode(nodeId: String, newName: String) {
-        val mgr = bandFileTreeManager ?: run {
-            _snackbarMessage.value = "手环未连接"
-            return
-        }
-        val trimmed = newName.trim()
-        if (trimmed.isBlank()) {
-            _snackbarMessage.value = "名称不能为空"
-            return
-        }
-        viewModelScope.launch {
-            val result = mgr.renameNode(nodeId, trimmed)
-            if (result.success) {
-                _snackbarMessage.value = "已重命名"
-                refreshBandTree()
-            } else {
-                // 透传手环端返回的真实原因
-                _snackbarMessage.value = result.error ?: "重命名失败"
-            }
-        }
-    }
-
     /* ──────────── 本地存储库管理方法 ──────────── */
 
     /** 本地存储根目录：app filesDir 下的 snapnotes_local。 */
@@ -2164,15 +2045,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         _amadeusModels.value = null
         _amadeusModelsLoading.value = false
     }
-
-    /** BandFileTreeNode → BandFileNode 转换。 */
-    private fun com.whyy.snapnotes.logic.BandFileTreeNode.toUiNode(): BandFileNode =
-        BandFileNode(
-            id = id,
-            name = name,
-            type = type,
-            children = children.map { it.toUiNode() }
-        )
 
 }
 

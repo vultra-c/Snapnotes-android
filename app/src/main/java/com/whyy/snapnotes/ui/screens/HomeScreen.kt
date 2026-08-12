@@ -103,10 +103,8 @@ fun HomeScreen(
     amadeusReady: Boolean = false,
     amadeusSummary: String = "",
     onCreateFolder: (String) -> Unit = {},
-    onOpenBandFiles: () -> Unit = {},
     onOpenLocalStorage: () -> Unit = {},
     onOpenAmadeusConfig: (() -> Unit)? = null,
-    onRecordBandExpandOrigin: (com.whyy.snapnotes.ui.components.ExpandOrigin) -> Unit = {},
     onRecordLocalExpandOrigin: (com.whyy.snapnotes.ui.components.ExpandOrigin) -> Unit = {},
     onNavigateToEditor: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -179,101 +177,50 @@ fun HomeScreen(
                 isConnected = connectionState.isConnected
             )
 
-            // 手环文件管理入口 + 本地存储库入口（并排）
-            // 两个入口都记录自身窗口坐标，点击后目标页从该卡片位置展开铺满全屏。
-            var bandOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.components.ExpandOrigin.None) }
+            // 本地存储库入口（全宽卡片）
+            // 记录入口卡片坐标，点击后目标页从该卡片位置展开铺满全屏。
             var localOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.components.ExpandOrigin.None) }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                AppCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .onGloballyPositioned { coords ->
-                            bandOrigin = com.whyy.snapnotes.ui.components.ExpandOrigin(
-                                left = coords.positionInWindow().x,
-                                top = coords.positionInWindow().y,
-                                width = coords.size.width.toFloat(),
-                                height = coords.size.height.toFloat()
-                            )
-                            onRecordBandExpandOrigin(bandOrigin)
-                        },
-                    onClick = {
-                        onRecordBandExpandOrigin(bandOrigin)
-                        onOpenBandFiles()
-                    },
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.File,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+            AppCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coords ->
+                        localOrigin = com.whyy.snapnotes.ui.components.ExpandOrigin(
+                            left = coords.positionInWindow().x,
+                            top = coords.positionInWindow().y,
+                            width = coords.size.width.toFloat(),
+                            height = coords.size.height.toFloat()
                         )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "手环文件管理",
-                                style = MiuixTheme.textStyles.title4,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "浏览手环文件",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            )
-                        }
-                    }
-                }
-
-                AppCard(
-                    modifier = Modifier
-                        .weight(1f)
-                        .onGloballyPositioned { coords ->
-                            localOrigin = com.whyy.snapnotes.ui.components.ExpandOrigin(
-                                left = coords.positionInWindow().x,
-                                top = coords.positionInWindow().y,
-                                width = coords.size.width.toFloat(),
-                                height = coords.size.height.toFloat()
-                            )
-                            onRecordLocalExpandOrigin(localOrigin)
-                        },
-                    onClick = {
                         onRecordLocalExpandOrigin(localOrigin)
-                        onOpenLocalStorage()
                     },
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                onClick = {
+                    onRecordLocalExpandOrigin(localOrigin)
+                    onOpenLocalStorage()
+                },
+                containerColor = MiuixTheme.colorScheme.surfaceContainer
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Notes,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                    Icon(
+                        imageVector = MiuixIcons.Notes,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "本地存储库",
+                            style = MiuixTheme.textStyles.title4,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onSurface
                         )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "本地存储库",
-                                style = MiuixTheme.textStyles.title4,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "管理本地考点",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            )
-                        }
+                        Text(
+                            text = "管理本地考点文件",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        )
                     }
                 }
             }

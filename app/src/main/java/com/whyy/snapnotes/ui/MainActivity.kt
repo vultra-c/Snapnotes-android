@@ -61,7 +61,6 @@ import com.whyy.snapnotes.ui.screens.AboutScreen
 import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
 import com.whyy.snapnotes.ui.screens.AmadeusChatScreen
 import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
-import com.whyy.snapnotes.ui.screens.BandFileTreeScreen
 import com.whyy.snapnotes.ui.screens.HistoryScreen
 import com.whyy.snapnotes.ui.screens.HomeScreen
 import com.whyy.snapnotes.ui.screens.ProgressScreen
@@ -99,7 +98,6 @@ sealed interface Screen : NavKey {
     data object Progress : Screen
     data object Result : Screen
     data object FileManager : Screen
-    data object BandFileTree : Screen
     data object About : Screen
     data object Troubleshoot : Screen
     data object AmadeusConfig : Screen
@@ -230,11 +228,8 @@ class MainActivity : ComponentActivity() {
                 val troubleshootState by viewModel.troubleshootState.collectAsState()
                 val amadeus by viewModel.amadeus.collectAsState()
                 val amadeusLastCall by viewModel.amadeusLastCall.collectAsState()
-                val bandTreeState by viewModel.bandTreeState.collectAsState()
                 val amadeusModels by viewModel.amadeusModels.collectAsState()
                 val amadeusModelsLoading by viewModel.amadeusModelsLoading.collectAsState()
-                val showFolderSelection by viewModel.showFolderSelection.collectAsState()
-                val latestBandFolderId by viewModel.latestBandFolderId.collectAsState()
                 val experimentalPagesPreview by viewModel.experimentalPagesPreview.collectAsState()
                 val experimentalInlineSearch by viewModel.experimentalInlineSearch.collectAsState()
 
@@ -296,16 +291,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 // 「展开铺满屏幕」动画：记录入口卡片坐标，目标页从卡片位置放大到全屏。
-                val bandExpandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
                 val localExpandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
-                val expandBandFiles = remember { mutableStateOf(false) }
                 val expandLocalStorage = remember { mutableStateOf(false) }
-                val navigateToBandFileTree = {
-                    expandBandFiles.value = true
-                    if (backStack.lastOrNull() != Screen.BandFileTree) {
-                        backStack.add(Screen.BandFileTree)
-                    }
-                }
                 val navigateToStoreDetail = { pack: com.whyy.snapnotes.data.StorePack ->
                     backStack.add(Screen.StoreDetail(pack))
                     Unit
@@ -428,10 +415,8 @@ class MainActivity : ComponentActivity() {
                                                         else if (amadeus.isReady) "已配置 · ${amadeus.model}"
                                                         else "配置不完整",
                                                     onCreateFolder = viewModel::createFolder,
-                                                    onOpenBandFiles = navigateToBandFileTree,
                                                     onOpenLocalStorage = navigateToLocalStorage,
                                                     onOpenAmadeusConfig = navigateToAmadeus,
-                                                    onRecordBandExpandOrigin = { origin -> bandExpandOrigin.value = origin },
                                                     onRecordLocalExpandOrigin = { origin -> localExpandOrigin.value = origin },
                                                     onNavigateToEditor = {
                                                         viewModel.openEditor()
@@ -548,42 +533,6 @@ class MainActivity : ComponentActivity() {
                                                     pendingFileManagerForEditor = false
                                                     navigateBack()
                                                 },
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        }
-                                    }
-                                    entry<Screen.BandFileTree> {
-                                        // 进页面自动拉取手环文件树
-                                        LaunchedEffect(Unit) { viewModel.refreshBandTree() }
-                                        val expand = expandBandFiles.value
-                                        val origin = if (expand) bandExpandOrigin.value else ExpandOrigin.None
-                                        if (expand && origin != ExpandOrigin.None) {
-                                            ExpandTransition(
-                                                origin = origin,
-                                                onBackRequested = {},
-                                                onExitFinished = {
-                                                    expandBandFiles.value = false
-                                                    navigateBack()
-                                                }
-                                            ) { requestExit ->
-                                                BandFileTreeScreen(
-                                                    state = bandTreeState,
-                                                    onBackClick = requestExit,
-                                                    onRefresh = viewModel::refreshBandTree,
-                                                    onCreateFolder = viewModel::createBandFolder,
-                                                    onDeleteNode = viewModel::deleteBandNode,
-                                                    onRenameNode = viewModel::renameBandNode,
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
-                                            }
-                                        } else {
-                                            BandFileTreeScreen(
-                                                state = bandTreeState,
-                                                onBackClick = navigateBack,
-                                                onRefresh = viewModel::refreshBandTree,
-                                                onCreateFolder = viewModel::createBandFolder,
-                                                onDeleteNode = viewModel::deleteBandNode,
-                                                onRenameNode = viewModel::renameBandNode,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         }
@@ -851,14 +800,6 @@ class MainActivity : ComponentActivity() {
                                     fileName
                                 )
                             }
-                        )
-
-                        com.whyy.snapnotes.ui.components.FolderSelectionDialog(
-                            show = showFolderSelection,
-                            treeState = bandTreeState,
-                            defaultFolderId = latestBandFolderId,
-                            onConfirm = viewModel::confirmFolderSelection,
-                            onDismiss = viewModel::cancelFolderSelection
                         )
                     }
                 } // Box 结束（Scaffold + 对话框）
