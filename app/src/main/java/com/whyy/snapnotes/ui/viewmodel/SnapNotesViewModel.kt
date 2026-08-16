@@ -784,10 +784,34 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
 
     /** 将 AI 回复的 JSON 导入到手环（走推送流程）。 */
     fun importJsonFromChat(jsonString: String) {
-        val trimmed = jsonString.trim()
-        // 去除可能的 markdown 代码块标记
-        val cleanJson = trimmed.removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+        val cleanJson = extractJsonObject(jsonString)
+        if (cleanJson == null) {
+            showSnackbar("未在 AI 回复中识别到有效的 JSON 对象")
+            return
+        }
         pushFromString(cleanJson, "AI生成_${System.currentTimeMillis()}.json")
+    }
+
+    /**
+     * 从 AI 回复文本中提取 JSON 对象：去掉可能的 markdown 代码块围栏后，
+     * 截取第一个 `{` 到最后一个 `}` 之间的内容，并校验它是单一合法的 JSON 对象。
+     * 提取失败返回 null（供调用方提示用户）。
+     */
+    private fun extractJsonObject(text: String): String? {
+        var s = text.trim()
+        s = s.removePrefix("```json").removePrefix("```JSON").removePrefix("```")
+        s = s.removeSuffix("```").trim()
+        val start = s.indexOf('{')
+        val end = s.lastIndexOf('}')
+        if (start < 0 || end <= start) return null
+        val candidate = s.substring(start, end + 1)
+        return runCatching {
+            val tok = JSONTokener(candidate)
+            val root = tok.nextValue()
+            if (root !is JSONObject) return null
+            if (tok.more()) return null   // 还有多余内容，说明不是单一完整对象
+            candidate
+        }.getOrNull()
     }
 
     private var autoRetryJob: Job? = null
