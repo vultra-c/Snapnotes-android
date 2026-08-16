@@ -92,7 +92,8 @@ fun AmadeusChatScreen(
 
     val isLoading = chatStatus is AmadeusChat.PhoneChatStatus.Loading
     val isFailed = chatStatus is AmadeusChat.PhoneChatStatus.Failed
-    val canSend = inputText.isNotBlank() && !isLoading && amadeusReady
+    // 有输入文字，或已选文件但未输入文字，都可发送；加载中/未就绪时禁用。
+    val canSend = (inputText.isNotBlank() || attachedFileContent != null) && !isLoading && amadeusReady
 
     BackHandler { onBackClick() }
 
@@ -129,7 +130,7 @@ fun AmadeusChatScreen(
     }
 
     fun handleSend() {
-        if (inputText.isBlank()) return
+        if (inputText.isBlank() && attachedFileContent.isNullOrBlank()) return
         onSendMessage(inputText.trim(), attachedFileContent)
         inputText = ""
         attachedFileName = null

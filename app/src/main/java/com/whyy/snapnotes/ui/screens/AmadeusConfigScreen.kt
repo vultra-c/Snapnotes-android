@@ -2,14 +2,9 @@ package com.whyy.snapnotes.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,15 +34,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.whyy.snapnotes.logic.ModelCatalog
+import com.whyy.snapnotes.logic.ModelIconLoader
+import com.whyy.snapnotes.logic.ModelInfo
 import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.AmadeusConfig
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
@@ -68,7 +71,6 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -81,15 +83,11 @@ import java.util.Locale
  * 手环端 Amadeus AI 聊天助手的配置页（手机端）。
  *
  * - 全部字段只存手机端 SharedPreferences（见 [com.whyy.snapnotes.ui.viewmodel.SnapNotesViewModel] 的
- *   Amadeus 段），手环不传不存不感知。详见根目录「手机端AI聊天适配说明.md」第五节。
- * - 本页只做 UI 填写 + 持久化：启用开关 + Base API（baseUrl/apiKey/model）。
- *   代理/超时仍在 prefs 里保留默认值供 [com.whyy.snapnotes.logic.AmadeusChat] 读取，但本页不再暴露编辑。
- * - 「启用」关闭时下方 API 项依旧可见可填（不灰化），但 [AmadeusConfig.isReady] 在未启用时
- *   永远为 false，主页入口卡片与 LLM 调用据此判「是否可用」。
- * - Model 支持自动获取可用模型列表（GET /v1/models），也支持手动输入。
- *   打开模型选择对话框时若从未获取过且已填 API Key，会自动触发一次获取。
- * - TopAppBar 右上角图标进「上下文管理菜单」（[AmadeusContextScreen]）：会话列表/查看/清空、
- *   本地测试发送、导出最近一次回复，便于观测 Amadeus 运行态与排查网络。
+ *   Amadeus 段），手环不传不存不感知。首次启动内置 NVIDIA NIM 配置（baseUrl/apiKey/model），
+ *   开箱即可用；用户在配置页覆盖后以用户值为准。
+ * - 「启用」关闭时下方 API 项依旧可见可填，但 [AmadeusConfig.isReady] 在未启用时永远为 false。
+ * - Model 支持内置模型目录（带品牌图标）+ 自动获取（GET /v1/models）+ 手动输入三种来源。
+ * - TopAppBar 右上角图标进「上下文管理菜单」（[AmadeusContextScreen]）。
  *
  * @param onBackClick 返回主页（由 NavDisplay 的 onBack 兜底，本回调用于 TopAppBar 返回箭头）。
  * @param onOpenContext 打开上下文管理菜单。
@@ -160,7 +158,6 @@ fun AmadeusConfigScreen(
                 bottom = 40.dp
             )
         ) {
-            // 说明卡片：锁屏后台不可用的警告已移至「Amadeus 对话」页面，此处仅保留基本配置。
             item {
                 SmallTitle(text = "基本", modifier = Modifier.padding(top = 12.dp))
                 AppCard(
@@ -199,7 +196,8 @@ fun AmadeusConfigScreen(
                         )
                         BasicComponent(
                             title = "Model",
-                            summary = config.model.ifBlank { "未设置" },
+                            summary = if (config.model.isBlank()) "未设置"
+                            else ModelCatalog.displayNameFor(config.model),
                             onClick = { showModelPicker = true }
                         )
                     }
@@ -331,11 +329,11 @@ fun AmadeusConfigScreen(
 }
 
 /**
- * 模型选择对话框：展示自动获取的模型列表 + 手动输入选项。
+ * 模型选择对话框：内置推荐模型（带品牌图标）+ 服务端获取模型 + 手动输入。
  *
  * - 打开时若从未获取过（[availableModels] == null）且已填 [apiKey]，自动触发一次 [onRefresh]。
- * - 模型超过 5 个时顶部出现搜索框，按名称实时过滤。
- * - 加载中用 shimmer 骨架占位，已有列表时刷新只在小图标上转圈，不打断选择。
+ * - 模型超过 5 个时顶部出现搜索框，按名称/id 实时过滤。
+ * - 每个模型条目左侧是 Gemini 风格的圆形品牌图标（@lobehub/icons CDN），右侧选中态打勾。
  */
 @Composable
 private fun ModelPickerDialog(
@@ -365,11 +363,15 @@ private fun ModelPickerDialog(
         }
     }
 
-    val showSearch = !availableModels.isNullOrEmpty() && availableModels.size > 5
-    val filteredModels = remember(availableModels, searchQuery) {
-        if (availableModels.isNullOrEmpty()) emptyList()
-        else if (searchQuery.isBlank()) availableModels
-        else availableModels.filter { it.contains(searchQuery, ignoreCase = true) }
+    // 内置目录 + 服务端模型（去重后追加），始终有可选内容。
+    val allModels = remember(availableModels) { ModelCatalog.merge(availableModels) }
+    val showSearch = allModels.size > 5
+    val filteredModels = remember(allModels, searchQuery) {
+        if (searchQuery.isBlank()) allModels
+        else allModels.filter {
+            it.id.contains(searchQuery, ignoreCase = true) ||
+                it.displayName.contains(searchQuery, ignoreCase = true)
+        }
     }
 
     AppDialog(
@@ -382,189 +384,143 @@ private fun ModelPickerDialog(
         onDismiss = onDismiss,
         onConfirm = onDismiss,
         content = {
-        Column {
-            when {
-                // 首次拉取（尚无任何结果）时用 shimmer 骨架，比单纯转圈更「有内容感」。
-                loading && availableModels.isNullOrEmpty() -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "正在获取可用模型…",
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.weight(1f)
-                        )
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "模型（${allModels.size}）",
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (loading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
                         )
-                    }
-                    LazyColumn(modifier = Modifier.height(240.dp)) {
-                        items(4) {
-                            ShimmerModelItem()
-                        }
-                    }
-                }
-                !availableModels.isNullOrEmpty() -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "可用模型（${availableModels.size}）",
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (loading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
+                    } else {
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = MiuixIcons.Refresh,
+                                contentDescription = "刷新",
+                                tint = MiuixTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
-                        } else {
-                            IconButton(onClick = onRefresh) {
-                                Icon(
-                                    imageVector = MiuixIcons.Refresh,
-                                    contentDescription = "刷新",
-                                    tint = MiuixTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                    if (showSearch) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            label = "搜索模型",
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = MiuixIcons.Search,
-                                    contentDescription = "搜索",
-                                    modifier = Modifier.padding(horizontal = 12.dp)
-                                )
-                            },
-                            trailingIcon = if (searchQuery.isNotEmpty()) {
-                                {
-                                    IconButton(
-                                        onClick = { searchQuery = "" },
-                                        modifier = Modifier.padding(end = 12.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = MiuixIcons.Close,
-                                            contentDescription = "清除"
-                                        )
-                                    }
-                                }
-                            } else null,
-                            singleLine = true
-                        )
-                    }
-                    LazyColumn(modifier = Modifier.height(240.dp)) {
-                        if (filteredModels.isEmpty()) {
-                            item {
-                                Text(
-                                    text = if (searchQuery.isBlank()) "暂无模型"
-                                    else "未找到匹配「$searchQuery」的模型",
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.padding(vertical = 20.dp)
-                                )
-                            }
-                        } else {
-                            // key 用 modelId，配合 animateItem() 才能在过滤/刷新时正确追踪并做位移动画。
-                            items(filteredModels, key = { it }) { modelId ->
-                                ModelListItem(
-                                    modelId = modelId,
-                                    isSelected = modelId == currentModel,
-                                    onClick = { onSelect(modelId) },
-                                    modifier = Modifier.animateItem()
-                                )
-                            }
                         }
                     }
                 }
-                else -> {
-                    Text(
-                        text = "未获取到模型列表",
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.padding(vertical = 8.dp)
+
+                if (showSearch) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        label = "搜索模型",
+                        leadingIcon = {
+                            Icon(
+                                imageVector = MiuixIcons.Search,
+                                contentDescription = "搜索",
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            )
+                        },
+                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(
+                                    onClick = { searchQuery = "" },
+                                    modifier = Modifier.padding(end = 12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Close,
+                                        contentDescription = "清除"
+                                    )
+                                }
+                            }
+                        } else null,
+                        singleLine = true
                     )
-                    if (apiKey.isBlank()) {
-                        Text(
-                            text = "请先在配置页填写 API Key 后再获取",
-                            style = MiuixTheme.textStyles.footnote2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+                }
+
+                LazyColumn(modifier = Modifier.height(260.dp)) {
+                    if (filteredModels.isEmpty()) {
+                        item {
+                            Text(
+                                text = if (searchQuery.isBlank()) "暂无模型"
+                                else "未找到匹配「$searchQuery」的模型",
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier.padding(vertical = 20.dp)
+                            )
+                        }
+                    } else {
+                        // key 用 model id，配合 animateItem() 才能在过滤/刷新时正确追踪并做位移动画。
+                        items(filteredModels, key = { it.id }) { info ->
+                            ModelListItem(
+                                info = info,
+                                isSelected = info.id == currentModel,
+                                onClick = { onSelect(info.id) },
+                                modifier = Modifier.animateItem()
+                            )
+                        }
                     }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // 手动输入区域
+                AnimatedVisibility(
+                    visible = showManualInput,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Column {
+                        TextField(
+                            value = manualText,
+                            onValueChange = { manualText = it },
+                            modifier = Modifier.fillMaxWidth().imePadding(),
+                            singleLine = true,
+                            label = "手动输入模型名"
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            TextButton(
+                                text = "取消",
+                                onClick = { showManualInput = false },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(Modifier.width(20.dp))
+                            TextButton(
+                                text = "确定",
+                                colors = ButtonDefaults.textButtonColorsPrimary(),
+                                onClick = { onManualInput(manualText.trim()) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                if (!showManualInput) {
                     TextButton(
-                        text = "重新获取",
-                        onClick = onRefresh,
+                        text = "手动输入模型名",
+                        onClick = { showManualInput = true },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            // 手动输入区域
-            AnimatedVisibility(
-                visible = showManualInput,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Column {
-                    TextField(
-                        value = manualText,
-                        onValueChange = { manualText = it },
-                        modifier = Modifier.fillMaxWidth().imePadding(),
-                        singleLine = true,
-                        label = "手动输入模型名"
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        TextButton(
-                            text = "取消",
-                            onClick = { showManualInput = false },
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(Modifier.width(20.dp))
-                        TextButton(
-                            text = "确定",
-                            colors = ButtonDefaults.textButtonColorsPrimary(),
-                            onClick = { onManualInput(manualText.trim()) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            if (!showManualInput) {
-                TextButton(
-                    text = "手动输入模型名",
-                    onClick = { showManualInput = true },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
         }
     )
 }
 
 /**
- * 单个模型条目：选中时以 primaryContainer 高亮、显示「当前使用」与对勾，
- * 未选中时保持透明背景，点击触发选择。
+ * 单个模型条目：左侧 Gemini 风格圆形品牌图标，中间友好名 + 模型 id，
+ * 选中时以 primaryContainer 高亮、右侧打勾。
  */
 @Composable
 private fun ModelListItem(
-    modelId: String,
+    info: ModelInfo,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -578,30 +534,35 @@ private fun ModelListItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(bg)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        ProviderIcon(provider = info.provider, size = 34.dp)
+        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = modelId,
+                text = info.displayName,
                 style = MiuixTheme.textStyles.body2,
                 color = titleColor,
                 fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            if (isSelected) {
-                Spacer(Modifier.height(2.dp))
+            if (info.displayName != info.id) {
                 Text(
-                    text = "当前使用",
+                    text = info.id,
                     style = MiuixTheme.textStyles.footnote2,
-                    color = MiuixTheme.colorScheme.primary
+                    color = titleColor.copy(alpha = 0.65f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
         if (isSelected) {
+            Spacer(Modifier.width(8.dp))
             Icon(
                 imageVector = MiuixIcons.Ok,
                 contentDescription = null,
@@ -613,54 +574,59 @@ private fun ModelListItem(
 }
 
 /**
- * 模型加载骨架行：用一条横向扫过的高光带模拟 shimmer 效果，比裸转圈更贴合列表形态。
+ * Gemini 风格的模型品牌图标：白色圆形底 + 彩色品牌 logo。
+ * 图标来自 @lobehub/icons 静态 CDN（见 [ModelIconLoader]）；加载失败时回退为品牌首字母。
  */
 @Composable
-private fun ShimmerModelItem(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val progress by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerProgress"
-    )
-    val base = MiuixTheme.colorScheme.surfaceVariant
-    val highlight = MiuixTheme.colorScheme.surfaceContainer
-    val bandWidth = 300f
-    val travel = 900f
-    val x = progress * travel
-    val brush = Brush.linearGradient(
-        colors = listOf(base, highlight, base),
-        start = Offset(x - bandWidth, 0f),
-        end = Offset(x, 0f)
-    )
-    Row(
+private fun ProviderIcon(
+    provider: String,
+    size: Dp,
+    modifier: Modifier = Modifier
+) {
+    var bitmap by remember(provider) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(provider) {
+        bitmap = withContext(Dispatchers.IO) { ModelIconLoader.load(provider)?.asImageBitmap() }
+    }
+    Box(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .size(size)
+            .clip(CircleShape)
+            .background(Color.White),
+        contentAlignment = Alignment.Center
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Box(
-                Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(16.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(brush)
+        val bmp = bitmap
+        if (bmp != null) {
+            Image(
+                bitmap = bmp,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(size * 0.7f)
             )
-            Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth(0.4f)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(brush)
+        } else {
+            Text(
+                text = provider.take(1).uppercase(),
+                style = MiuixTheme.textStyles.footnote1,
+                fontWeight = FontWeight.Bold,
+                color = providerAccent(provider)
             )
         }
     }
+}
+
+/** 品牌首字母回退色（logo 加载失败 / 加载中时用）。 */
+private fun providerAccent(provider: String): Color = when (provider) {
+    "nvidia" -> Color(0xFF76B900)
+    "meta" -> Color(0xFF0866FF)
+    "deepseek" -> Color(0xFF4D6BFE)
+    "qwen" -> Color(0xFF615CED)
+    "moonshot" -> Color(0xFF0D0E12)
+    "mistral" -> Color(0xFFFA520F)
+    "google" -> Color(0xFF4285F4)
+    "microsoft" -> Color(0xFF00A4EF)
+    "openai" -> Color(0xFF10A37F)
+    "anthropic" -> Color(0xFFD97757)
+    "zhipu" -> Color(0xFF3859FF)
+    else -> Color(0xFF76B900)
 }
 
 /**
@@ -721,7 +687,7 @@ private fun formatFetchTime(timestamp: Long): String {
 
 /** 可弹窗编辑的文本项；集中管理标题/标签/提示文案。 */
 private enum class EditField(val title: String, val label: String, val hint: String) {
-    BaseUrl("Base URL", "API 根地址", "留空走厂商默认，如 https://api.deepseek.com"),
+    BaseUrl("Base URL", "API 根地址", "留空走厂商默认，如 https://integrate.api.nvidia.com"),
     ApiKey("API Key", "密钥", "请输入API密钥"),
-    Model("Model", "模型名", "如 deepseek-chat")
+    Model("Model", "模型名", "如 meta/llama-3.3-70b-instruct")
 }

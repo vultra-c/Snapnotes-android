@@ -22,6 +22,7 @@ import com.whyy.snapnotes.logic.AmadeusChat
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
 import com.whyy.snapnotes.logic.JsonFilePusher
+import com.whyy.snapnotes.logic.AmadeusDefaults
 import com.whyy.snapnotes.logic.RawToLatexConverter
 import com.whyy.snapnotes.notifications.ForegroundTransferService
 import com.xiaomi.xms.wearable.node.Node
@@ -551,14 +552,20 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
 
     /* ──────────── Amadeus（手环端 AI 聊天助手）手机端配置 ────────────
      * 见根目录「手机端AI聊天适配说明.md」第五节：key/model/baseURL/代理/超时全在手机端。
-     * 这里只做 UI 可编辑 + SharedPreferences 持久化，真正接 LLM 网络是后续任务。
-     * 默认全空、enabled=false，未配置不发起任何调用。
+     * 这里只做 UI 可编辑 + SharedPreferences 持久化。
+     * 首次启动内置 NVIDIA NIM 配置（AmadeusDefaults），开箱即可在手机端直聊中发送消息；
+     * 用户在配置页覆盖后以用户值为准。
      */
     private fun loadAmadeusConfig(): AmadeusConfig = AmadeusConfig(
-        enabled = prefs.getBoolean(amadeusEnabledKey, false),
-        baseUrl = prefs.getString(amadeusBaseUrlKey, "").orEmpty(),
-        apiKey = prefs.getString(amadeusApiKeyKey, "").orEmpty(),
-        model = prefs.getString(amadeusModelKey, "").orEmpty(),
+        enabled = prefs.getBoolean(amadeusEnabledKey, true),
+        // baseUrl/apiKey/model 为空或未设置时回退到内置 NVIDIA NIM 配置：
+        // 用户只要没主动填自己的值，就能开箱直接发送；填了非空值则以用户值为准。
+        baseUrl = prefs.getString(amadeusBaseUrlKey, "").orEmpty()
+            .takeIf { it.isNotBlank() } ?: AmadeusDefaults.BASE_URL,
+        apiKey = prefs.getString(amadeusApiKeyKey, "").orEmpty()
+            .takeIf { it.isNotBlank() } ?: AmadeusDefaults.API_KEY,
+        model = prefs.getString(amadeusModelKey, "").orEmpty()
+            .takeIf { it.isNotBlank() } ?: AmadeusDefaults.MODEL,
         proxy = prefs.getString(amadeusProxyKey, "").orEmpty(),
         timeoutSec = runCatching { prefs.getInt(amadeusTimeoutKey, 30) }.getOrDefault(30)
     )

@@ -43,6 +43,8 @@ import androidx.navigation3.ui.NavDisplayTransitionEffects
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import com.whyy.snapnotes.App
 import com.whyy.snapnotes.logic.FormulaPngRenderer
@@ -733,14 +735,15 @@ class MainActivity : ComponentActivity() {
                                         finish()
                                     }
                                 },
-                                // 页面转场不再使用横向平移；卡片入口页面由 ExpandTransition 自己完成展开动画。
+                                // 页面转场：进栈右滑淡入（MIUI 风格），出栈反向；
+                                // 卡片入口的 LocalStorage 由 ExpandTransition 在内容层自行展开。
                                 transitionSpec = {
-                                    androidx.compose.animation.EnterTransition.None togetherWith
-                                            androidx.compose.animation.ExitTransition.None
+                                    (slideInHorizontally(tween(320)) { it } + fadeIn(tween(320))) togetherWith
+                                            (slideOutHorizontally(tween(320)) { -it / 4 } + fadeOut(tween(320)))
                                 },
                                 popTransitionSpec = {
-                                    androidx.compose.animation.EnterTransition.None togetherWith
-                                            androidx.compose.animation.ExitTransition.None
+                                    (slideInHorizontally(tween(320)) { -it / 4 } + fadeIn(tween(320))) togetherWith
+                                            (slideOutHorizontally(tween(320)) { it } + fadeOut(tween(320)))
                                 },
                                 transitionEffects = NavDisplayTransitionEffects(
                                     enableCornerClip = true,
