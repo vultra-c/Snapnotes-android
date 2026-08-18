@@ -13,8 +13,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -105,7 +103,6 @@ fun HomeScreen(
     onCreateFolder: (String) -> Unit = {},
     onOpenLocalStorage: () -> Unit = {},
     onOpenAmadeusConfig: (() -> Unit)? = null,
-    onRecordLocalExpandOrigin: (com.whyy.snapnotes.ui.components.ExpandOrigin) -> Unit = {},
     onNavigateToEditor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -178,24 +175,9 @@ fun HomeScreen(
             )
 
             // 本地存储库入口（全宽卡片）
-            // 记录入口卡片坐标，点击后目标页从该卡片位置展开铺满全屏。
-            var localOrigin by remember { mutableStateOf(com.whyy.snapnotes.ui.components.ExpandOrigin.None) }
             AppCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { coords ->
-                        localOrigin = com.whyy.snapnotes.ui.components.ExpandOrigin(
-                            left = coords.positionInWindow().x,
-                            top = coords.positionInWindow().y,
-                            width = coords.size.width.toFloat(),
-                            height = coords.size.height.toFloat()
-                        )
-                        onRecordLocalExpandOrigin(localOrigin)
-                    },
-                onClick = {
-                    onRecordLocalExpandOrigin(localOrigin)
-                    onOpenLocalStorage()
-                },
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onOpenLocalStorage,
                 containerColor = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 Row(

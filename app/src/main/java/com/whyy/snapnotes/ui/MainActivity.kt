@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,6 +44,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import com.whyy.snapnotes.App
 import com.whyy.snapnotes.logic.FormulaPngRenderer
@@ -74,8 +74,6 @@ import com.whyy.snapnotes.ui.theme.SnapNotesTheme
 import com.whyy.snapnotes.ui.viewmodel.AppScreen
 import com.whyy.snapnotes.ui.viewmodel.SnapNotesViewModel
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Home
@@ -86,8 +84,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.whyy.snapnotes.ui.components.AppBackground
 import com.whyy.snapnotes.ui.components.AppNavTab
 import com.whyy.snapnotes.ui.components.AppNavigationBar
-import com.whyy.snapnotes.ui.components.ExpandTransition
-import com.whyy.snapnotes.ui.components.ExpandOrigin
 import com.whyy.snapnotes.ui.screens.StoreScreen
 import com.whyy.snapnotes.ui.screens.StoreDetailScreen
 import com.whyy.snapnotes.ui.screens.LocalStorageScreen
@@ -232,8 +228,6 @@ class MainActivity : ComponentActivity() {
                 val amadeusLastCall by viewModel.amadeusLastCall.collectAsState()
                 val amadeusModels by viewModel.amadeusModels.collectAsState()
                 val amadeusModelsLoading by viewModel.amadeusModelsLoading.collectAsState()
-                val experimentalPagesPreview by viewModel.experimentalPagesPreview.collectAsState()
-                val experimentalInlineSearch by viewModel.experimentalInlineSearch.collectAsState()
 
                 // 「启用 Amadeus」开启 → 请求 Doze 电池优化白名单（后台/锁屏跑 LLM 网络的前提）。
                 LaunchedEffect(Unit) {
@@ -292,15 +286,11 @@ class MainActivity : ComponentActivity() {
                         backStack.add(Screen.AmadeusContext)
                     }
                 }
-                // 「展开铺满屏幕」动画：记录入口卡片坐标，目标页从卡片位置放大到全屏。
-                val localExpandOrigin = remember { mutableStateOf(ExpandOrigin.None) }
-                val expandLocalStorage = remember { mutableStateOf(false) }
                 val navigateToStoreDetail = { pack: com.whyy.snapnotes.data.StorePack ->
                     backStack.add(Screen.StoreDetail(pack))
                     Unit
                 }
                 val navigateToLocalStorage = {
-                    expandLocalStorage.value = true
                     if (backStack.lastOrNull() != Screen.LocalStorage) {
                         backStack.add(Screen.LocalStorage)
                     }
@@ -374,9 +364,6 @@ class MainActivity : ComponentActivity() {
                                         AppNavTab(MiuixIcons.Light.Recent, "历史"),
                                         AppNavTab(MiuixIcons.Light.Settings, "设置")
                                     ),
-                                    containerColor = MiuixTheme.colorScheme.surfaceContainer,
-                                    accentColor = MiuixTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(28.dp)
                                 )
                             }
                         } ,
@@ -419,7 +406,6 @@ class MainActivity : ComponentActivity() {
                                                     onCreateFolder = viewModel::createFolder,
                                                     onOpenLocalStorage = navigateToLocalStorage,
                                                     onOpenAmadeusConfig = navigateToAmadeus,
-                                                    onRecordLocalExpandOrigin = { origin -> localExpandOrigin.value = origin },
                                                     onNavigateToEditor = {
                                                         viewModel.openEditor()
                                                         navigateToEditor()
@@ -469,10 +455,6 @@ class MainActivity : ComponentActivity() {
                                                     onOpenAbout = navigateToAbout,
                                                     onResetFirstSyncConfirm = viewModel::resetFirstSyncConfirm,
                                                     onCreateFolder = viewModel::createFolder,
-                                                    experimentalPagesPreview = experimentalPagesPreview,
-                                                    onExperimentalPagesPreviewChange = viewModel::setExperimentalPagesPreview,
-                                                    experimentalInlineSearch = experimentalInlineSearch,
-                                                    onExperimentalInlineSearchChange = viewModel::setExperimentalInlineSearch,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
                                             }
@@ -567,40 +549,22 @@ class MainActivity : ComponentActivity() {
                                         val localFolders by viewModel.localFolders.collectAsState()
                                         val localFiles by viewModel.localFiles.collectAsState()
                                         val localCurrentPath by viewModel.localCurrentPath.collectAsState()
-                                        val expandLocal = expandLocalStorage.value
-                                        val originLocal = if (expandLocal) localExpandOrigin.value else ExpandOrigin.None
-                                        val localStorageScreen: @Composable (onBack: () -> Unit) -> Unit = { onBack ->
-                                            LocalStorageScreen(
-                                                currentPath = localCurrentPath,
-                                                folders = localFolders,
-                                                files = localFiles,
-                                                onBackClick = onBack,
-                                                onFolderClick = viewModel::navigateLocalFolder,
-                                                onCreateFolder = viewModel::createLocalFolder,
-                                                onImportToBand = { file ->
-                                                    viewModel.pushFromFile(file)
-                                                    navigateBack()
-                                                },
-                                                onDeleteFile = viewModel::deleteLocalFile,
-                                                onRenameFile = viewModel::renameLocalFile,
-                                                onRefresh = viewModel::refreshLocalStorage,
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        }
-                                        if (expandLocal && originLocal != ExpandOrigin.None) {
-                                            ExpandTransition(
-                                                origin = originLocal,
-                                                onBackRequested = {},
-                                                onExitFinished = {
-                                                    expandLocalStorage.value = false
-                                                    navigateBack()
-                                                }
-                                            ) { requestExit ->
-                                                localStorageScreen(requestExit)
-                                            }
-                                        } else {
-                                            localStorageScreen(navigateBack)
-                                        }
+                                        LocalStorageScreen(
+                                            currentPath = localCurrentPath,
+                                            folders = localFolders,
+                                            files = localFiles,
+                                            onBackClick = navigateBack,
+                                            onFolderClick = viewModel::navigateLocalFolder,
+                                            onCreateFolder = viewModel::createLocalFolder,
+                                            onImportToBand = { file ->
+                                                viewModel.pushFromFile(file)
+                                                navigateBack()
+                                            },
+                                            onDeleteFile = viewModel::deleteLocalFile,
+                                            onRenameFile = viewModel::renameLocalFile,
+                                            onRefresh = viewModel::refreshLocalStorage,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
                                     }
                                     entry<Screen.Editor> {
                                         EditorScreen(
@@ -735,19 +699,18 @@ class MainActivity : ComponentActivity() {
                                         finish()
                                     }
                                 },
-                                // 页面转场：进栈右滑淡入（MIUI 风格），出栈反向；
-                                // 卡片入口的 LocalStorage 由 ExpandTransition 在内容层自行展开。
+                                // 页面转场：进栈右滑淡入（MIUI 风格），出栈反向。
                                 transitionSpec = {
-                                    (slideInHorizontally(tween(320)) { it } + fadeIn(tween(320))) togetherWith
-                                            (slideOutHorizontally(tween(320)) { -it / 4 } + fadeOut(tween(320)))
+                                    (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(380, easing = FastOutSlowInEasing))) togetherWith
+                                            (slideOutHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / 4 } + fadeOut(tween(380, easing = FastOutSlowInEasing)))
                                 },
                                 popTransitionSpec = {
-                                    (slideInHorizontally(tween(320)) { -it / 4 } + fadeIn(tween(320))) togetherWith
-                                            (slideOutHorizontally(tween(320)) { it } + fadeOut(tween(320)))
+                                    (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / 4 } + fadeIn(tween(380, easing = FastOutSlowInEasing))) togetherWith
+                                            (slideOutHorizontally(tween(380, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(380, easing = FastOutSlowInEasing)))
                                 },
                                 transitionEffects = NavDisplayTransitionEffects(
                                     enableCornerClip = true,
-                                    dimAmount = 0.5f,
+                                    dimAmount = 0.2f,
                                     blockInputDuringTransition = true,
                                     popDirectionFollowsSwipeEdge = false
                                 )

@@ -1,13 +1,5 @@
 package com.whyy.snapnotes.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.EaseOutExpo
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,16 +45,10 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onResetFirstSyncConfirm: () -> Unit,
     onCreateFolder: (String) -> Unit = {},
-    // 试验性功能（可选，由外层传入；未传则显示为关闭/不可用但仍展示入口）
-    experimentalPagesPreview: Boolean = false,
-    onExperimentalPagesPreviewChange: (Boolean) -> Unit = {},
-    experimentalInlineSearch: Boolean = false,
-    onExperimentalInlineSearchChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
     var showFolderDialog by remember { mutableStateOf(false) }
-    var experimentalExpanded by remember { mutableStateOf(false) }
 
     if (showFolderDialog) {
         FolderCreationDialog(
@@ -170,63 +156,6 @@ fun SettingsScreen(
                         },
                         onClick = onPickExportDir
                     )
-                }
-            }
-            // ── 试验性功能 ──
-            item {
-                SmallTitle(text = "试验性功能", modifier = Modifier.padding(top = 12.dp))
-                AppCard(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateContentSize(animationSpec = tween(220, easing = EaseOutExpo))
-                    ) {
-                        BasicComponent(
-                            title = "试验性功能",
-                            summary = if (experimentalExpanded) "收起 · 关闭后不影响任何现有流程" else "包含两项预览特性（默认关闭）",
-                            onClick = { experimentalExpanded = !experimentalExpanded },
-                            endActions = {
-                                top.yukonga.miuix.kmp.basic.Icon(
-                                    imageVector = if (experimentalExpanded) MiuixIcons.Reset else MiuixIcons.Info,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                )
-                            }
-                        )
-                        AnimatedVisibility(
-                            visible = experimentalExpanded,
-                            enter = expandVertically(tween(220, easing = EaseOutExpo)) + fadeIn(tween(160)),
-                            exit = shrinkVertically(tween(180, easing = EaseOutExpo)) + fadeOut(tween(120))
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-
-                            // 两个纯试验项：仅本地开关，后续可对接真实实现
-                            BasicComponent(
-                                title = "页面预览动效",
-                                summary = "进入详情时的共享元素/视差预览（试验，需重启生效）",
-                                endActions = {
-                                    AppToggle(
-                                        checked = experimentalPagesPreview,
-                                        onCheckedChange = onExperimentalPagesPreviewChange
-                                    )
-                                }
-                            )
-                            BasicComponent(
-                                title = "列表内联搜索",
-                                summary = "在历史/商店列表顶部常驻搜索框（试验）",
-                                endActions = {
-                                    AppToggle(
-                                        checked = experimentalInlineSearch,
-                                        onCheckedChange = onExperimentalInlineSearchChange
-                                    )
-                                }
-                            )
-                            }
-                        }
-                    }
                 }
             }
             item {

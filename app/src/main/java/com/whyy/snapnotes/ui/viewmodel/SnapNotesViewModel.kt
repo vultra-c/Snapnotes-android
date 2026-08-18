@@ -75,8 +75,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private val useBuiltinFileManagerKey = "use_builtin_file_manager"
     private val lastExportDirKey = "last_export_dir"
     private val dynamicColorKey = "dynamic_color"
-    private val experimentalPagesPreviewKey = "experimental_pages_preview"
-    private val experimentalInlineSearchKey = "experimental_inline_search"
     private val amadeusEnabledKey = "amadeus_enabled"
     private val amadeusBaseUrlKey = "amadeus_baseurl"
     private val amadeusApiKeyKey = "amadeus_api_key"
@@ -541,14 +539,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         prefs.edit().putBoolean(dynamicColorKey, enabled).apply()
         _dynamicColor.value = enabled
     }
-
-    // ── 试验性功能（默认全关，不影响原有流程） ──
-    private val _experimentalPagesPreview = MutableStateFlow(prefs.getBoolean(experimentalPagesPreviewKey, false))
-    val experimentalPagesPreview = _experimentalPagesPreview.asStateFlow()
-    private val _experimentalInlineSearch = MutableStateFlow(prefs.getBoolean(experimentalInlineSearchKey, false))
-    val experimentalInlineSearch = _experimentalInlineSearch.asStateFlow()
-    fun setExperimentalPagesPreview(v: Boolean) { prefs.edit().putBoolean(experimentalPagesPreviewKey, v).apply(); _experimentalPagesPreview.value = v }
-    fun setExperimentalInlineSearch(v: Boolean) { prefs.edit().putBoolean(experimentalInlineSearchKey, v).apply(); _experimentalInlineSearch.value = v }
 
     /* ──────────── Amadeus（手环端 AI 聊天助手）手机端配置 ────────────
      * 见根目录「手机端AI聊天适配说明.md」第五节：key/model/baseURL/代理/超时全在手机端。
