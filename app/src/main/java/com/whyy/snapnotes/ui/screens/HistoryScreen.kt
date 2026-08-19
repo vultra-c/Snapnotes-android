@@ -1,10 +1,7 @@
 package com.whyy.snapnotes.ui.screens
 
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,9 +28,10 @@ import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.AppCard
-import com.whyy.snapnotes.ui.components.AppPopupSurface
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -49,6 +47,7 @@ import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -279,79 +278,43 @@ fun HistoryScreen(
                                         onClick = null
                                     )
                                 } else {
-                                    Box {
-                                        var repushMenuShow by remember { mutableStateOf(false) }
+                                    WindowIconDropdownMenu(
+                                        entries = listOf(
+                                            DropdownEntry(
+                                                items = listOf(
+                                                    DropdownItem(
+                                                        text = "重新推送",
+                                                        icon = {
+                                                            Icon(
+                                                                imageVector = MiuixIcons.Refresh,
+                                                                contentDescription = null,
+                                                                modifier = it,
+                                                                tint = MiuixTheme.colorScheme.primary
+                                                            )
+                                                        },
+                                                        onClick = { onRepush(record) }
+                                                    ),
+                                                    DropdownItem(
+                                                        text = "删除",
+                                                        icon = {
+                                                            Icon(
+                                                                imageVector = MiuixIcons.Delete,
+                                                                contentDescription = null,
+                                                                modifier = it,
+                                                                tint = MiuixTheme.colorScheme.error
+                                                            )
+                                                        },
+                                                        onClick = { onDeleteRequest(record) }
+                                                    )
+                                                )
+                                            )
+                                        ),
+                                        collapseOnSelection = true
+                                    ) {
                                         Icon(
                                             imageVector = MiuixIcons.More,
-                                            contentDescription = "更多操作",
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .padding(2.dp)
-                                                .clickable { repushMenuShow = true },
-                                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                            contentDescription = "更多操作"
                                         )
-                                        AppPopupSurface(
-                                            visible = repushMenuShow,
-                                            onDismissRequest = { repushMenuShow = false },
-                                            shape = RoundedCornerShape(20.dp)
-                                        ) {
-                                            Column(modifier = Modifier.fillMaxWidth()) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable(
-                                                            interactionSource = null,
-                                                            indication = null,
-                                                            onClick = {
-                                                                repushMenuShow = false
-                                                                onRepush(record)
-                                                            }
-                                                        )
-                                                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = MiuixIcons.Refresh,
-                                                        contentDescription = null,
-                                                        tint = MiuixTheme.colorScheme.primary,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    Text(
-                                                        text = "重新推送",
-                                                        style = MiuixTheme.textStyles.title4,
-                                                        color = MiuixTheme.colorScheme.onSurface
-                                                    )
-                                                }
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable(
-                                                            interactionSource = null,
-                                                            indication = null,
-                                                            onClick = {
-                                                                repushMenuShow = false
-                                                                onDeleteRequest(record)
-                                                            }
-                                                        )
-                                                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                                ) {
-                                                    Icon(
-                                                        imageVector = MiuixIcons.Delete,
-                                                        contentDescription = null,
-                                                        tint = MiuixTheme.colorScheme.error,
-                                                        modifier = Modifier.size(20.dp)
-                                                    )
-                                                    Text(
-                                                        text = "删除",
-                                                        style = MiuixTheme.textStyles.title4,
-                                                        color = MiuixTheme.colorScheme.onSurface
-                                                    )
-                                                }
-                                            }
-                                        }
                                     }
                                 }
                             }

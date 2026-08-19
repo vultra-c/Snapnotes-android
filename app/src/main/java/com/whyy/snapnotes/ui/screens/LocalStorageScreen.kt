@@ -41,10 +41,12 @@ import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.components.AppDialog
-import com.whyy.snapnotes.ui.components.AppPopupSurface
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.DropdownDefaults
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -63,6 +65,7 @@ import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -461,68 +464,44 @@ private fun FolderItemCard(
             )
         }
 
-        AppPopupSurface(
-            visible = showContextMenu,
-            onDismissRequest = { showContextMenu = false },
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = {
-                                showContextMenu = false
-                                onRename()
-                            }
+        WindowDropdownPopup(
+            entries = listOf(
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = "重命名",
+                            icon = {
+                                Icon(
+                                    imageVector = MiuixIcons.Edit,
+                                    contentDescription = null,
+                                    modifier = it,
+                                    tint = MiuixTheme.colorScheme.primary
+                                )
+                            },
+                            onClick = onRename
+                        ),
+                        DropdownItem(
+                            text = "删除",
+                            icon = {
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = null,
+                                    modifier = it,
+                                    tint = MiuixTheme.colorScheme.error
+                                )
+                            },
+                            onClick = onDelete
                         )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Edit,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = "重命名",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface
-                    )
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = {
-                                showContextMenu = false
-                                onDelete()
-                            }
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "删除",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
+                )
+            ),
+            show = showContextMenu,
+            onDismiss = { showContextMenu = false },
+            onDismissFinished = {},
+            maxHeight = null,
+            dropdownColors = DropdownDefaults.dropdownColors(),
+            collapseOnSelection = true
+        )
     }
 }
 
@@ -603,68 +582,44 @@ private fun FileItemCard(
             }
         }
 
-        AppPopupSurface(
-            visible = showContextMenu,
-            onDismissRequest = { showContextMenu = false },
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = {
-                                showContextMenu = false
-                                onRename()
-                            }
+        WindowDropdownPopup(
+            entries = listOf(
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = "重命名",
+                            icon = {
+                                Icon(
+                                    imageVector = MiuixIcons.Edit,
+                                    contentDescription = null,
+                                    modifier = it,
+                                    tint = MiuixTheme.colorScheme.primary
+                                )
+                            },
+                            onClick = onRename
+                        ),
+                        DropdownItem(
+                            text = "删除",
+                            icon = {
+                                Icon(
+                                    imageVector = MiuixIcons.Delete,
+                                    contentDescription = null,
+                                    modifier = it,
+                                    tint = MiuixTheme.colorScheme.error
+                                )
+                            },
+                            onClick = onDelete
                         )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Edit,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = "重命名",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface
-                    )
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = {
-                                showContextMenu = false
-                                onDelete()
-                            }
-                        )
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Delete,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "删除",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        }
+                )
+            ),
+            show = showContextMenu,
+            onDismiss = { showContextMenu = false },
+            onDismissFinished = {},
+            maxHeight = null,
+            dropdownColors = DropdownDefaults.dropdownColors(),
+            collapseOnSelection = true
+        )
     }
 }
 
