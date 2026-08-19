@@ -639,6 +639,11 @@ class MainActivity : ComponentActivity() {
                                             chatStatus = phoneChatStatus,
                                             amadeusEnabled = amadeus.enabled,
                                             amadeusReady = amadeus.isReady,
+                                            currentModel = amadeus.model,
+                                            availableModels = amadeusModels,
+                                            modelsLoading = amadeusModelsLoading,
+                                            onModelChange = viewModel::setAmadeusModel,
+                                            onFetchModels = viewModel::fetchAvailableModels,
                                             onSendMessage = { text, fileContent ->
                                                 viewModel.sendPhoneChatMessage(text, fileContent)
                                             },

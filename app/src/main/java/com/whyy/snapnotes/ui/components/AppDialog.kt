@@ -1,19 +1,26 @@
 package com.whyy.snapnotes.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.window.WindowDialog
 
+/**
+ * 项目内对话框统一入口：直接委托给 miuix 的 [WindowDialog]。
+ *
+ * 相比此前的自定义毛玻璃弹层，[WindowDialog] 自带 HyperOS 风格的底部抽屉 +
+ * 弹簧入场/出场动画与窗口遮罩，并且即使调用方用 `if (show) Dialog(show = true)`
+ * 条件组合，首次出现时也会正常播放入场动画（不会再瞬现）。
+ */
 @Composable
 fun AppDialog(
     show: Boolean,
@@ -28,39 +35,20 @@ fun AppDialog(
     onDismiss: () -> Unit = onDismissRequest,
     content: (@Composable () -> Unit)? = null
 ) {
-    AppPopupSurface(
-        visible = show,
-        onDismissRequest = onDismissRequest,
-        modifier = modifier
+    WindowDialog(
+        show = show,
+        modifier = modifier,
+        title = title.ifBlank { null },
+        summary = summary.ifBlank { null },
+        onDismissRequest = onDismissRequest
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
-        ) {
-            if (title.isNotBlank()) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MiuixTheme.colorScheme.onSurface
-                )
-            }
-            if (summary.isNotBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = summary,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                )
-            }
+        Column(modifier = Modifier.fillMaxWidth()) {
             if (content != null) {
-                Spacer(Modifier.height(14.dp))
-                androidx.compose.foundation.layout.Box(modifier = Modifier.imePadding()) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     content()
                 }
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
             RowOfButtons(
                 dismissText = dismissText,
                 confirmText = confirmText,
@@ -80,24 +68,25 @@ private fun RowOfButtons(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (dismissText.isNotBlank()) {
-            top.yukonga.miuix.kmp.basic.TextButton(
+            TextButton(
                 text = dismissText,
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f)
             )
-            Spacer(Modifier.height(0.dp))
         }
-        top.yukonga.miuix.kmp.basic.TextButton(
-            text = confirmText,
-            enabled = confirmEnabled,
-            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.textButtonColorsPrimary(),
-            onClick = onConfirm,
-            modifier = Modifier.weight(1f)
-        )
+        if (confirmText.isNotBlank()) {
+            TextButton(
+                text = confirmText,
+                enabled = confirmEnabled,
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }

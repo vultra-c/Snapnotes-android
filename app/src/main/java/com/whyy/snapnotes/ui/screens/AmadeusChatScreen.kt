@@ -26,8 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.AmadeusChat
+import com.whyy.snapnotes.logic.ModelCatalog
 import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.components.AppDialog
+import com.whyy.snapnotes.ui.components.ModelIcon
+import com.whyy.snapnotes.ui.components.ModelPickerDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -58,6 +61,9 @@ import top.yukonga.miuix.kmp.utils.*
  * @param chatStatus 当前聊天状态（Idle/Loading/Success/Failed）。
  * @param amadeusEnabled Amadeus 是否已启用（开关状态）。
  * @param amadeusReady Amadeus 是否已就绪（已启用且 API Key/Model 均已配置）。
+ * @param currentModel 当前选中的模型 id；底部切换条展示其友好名与品牌图标。
+ * @param availableModels 服务端拉取到的模型列表（null=未获取），用于切换弹窗。
+ * @param onModelChange 在对话界面内切换模型。
  * @param onSendMessage 发送消息。参数为 (text, fileContent?)，fileContent 非空时
  *        作为文档上下文随消息一并发送。
  * @param onClearChat 清空手机端直聊历史。
@@ -71,6 +77,11 @@ fun AmadeusChatScreen(
     chatStatus: AmadeusChat.PhoneChatStatus,
     amadeusEnabled: Boolean,
     amadeusReady: Boolean,
+    currentModel: String,
+    availableModels: List<String>? = null,
+    modelsLoading: Boolean = false,
+    onModelChange: (String) -> Unit = {},
+    onFetchModels: () -> Unit = {},
     onSendMessage: (String, String?) -> Unit,
     onClearChat: () -> Unit,
     onImportJson: (String) -> Unit,
@@ -86,6 +97,7 @@ fun AmadeusChatScreen(
     var attachedFileContent by remember { mutableStateOf<String?>(null) }
     var showClearConfirm by remember { mutableStateOf(false) }
     var showFileHintDialog by remember { mutableStateOf(false) }
+    var showModelPicker by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
@@ -245,6 +257,12 @@ fun AmadeusChatScreen(
                 }
             }
 
+            // ── 模型切换条 ──
+            ModelSwitcherBar(
+                currentModel = currentModel,
+                onClick = { showModelPicker = true }
+            )
+
             // ── 底部输入区 ──
             InputArea(
                 text = inputText,
@@ -258,7 +276,7 @@ fun AmadeusChatScreen(
         }
     }
 
-    // 清空对话确认弹窗——液态玻璃风格
+    // 清空对话确认弹窗——miuix 风格
     AppDialog(
         title = "清空对话？",
         summary = "将删除所有手机端对话历史，此操作不可撤销。",
@@ -274,7 +292,7 @@ fun AmadeusChatScreen(
         }
     )
 
-    // 文件上传说明弹窗——液态玻璃风格
+    // 文件上传说明弹窗——miuix 风格
     AppDialog(
         title = "上传文件",
         summary = "选择一个文本文件，其内容将作为上下文随消息一并发送给 Amadeus。" +
@@ -289,6 +307,27 @@ fun AmadeusChatScreen(
             filePickerLauncher.launch("text/*")
         }
     )
+
+    // 模型选择对话框（与配置页共用，带品牌图标与获取/手动输入）
+    if (showModelPicker) {
+        ModelPickerDialog(
+            show = true,
+            currentModel = currentModel,
+            availableModels = availableModels,
+            loading = modelsLoading,
+            autoFetchOnOpen = amadeusReady,
+            onSelect = { model ->
+                onModelChange(model)
+                showModelPicker = false
+            },
+            onManualInput = { model ->
+                onModelChange(model)
+                showModelPicker = false
+            },
+            onRefresh = onFetchModels,
+            onDismiss = { showModelPicker = false }
+        )
+    }
 }
 
 // ────────────────────────── 子组件 ──────────────────────────
@@ -594,6 +633,44 @@ private fun EmptyChatState(modifier: Modifier = Modifier) {
             text = "可以直接聊天，也可以上传文件让它生成知识点 JSON",
             style = MiuixTheme.textStyles.footnote2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.7f)
+        )
+    }
+}
+
+/**
+ * 模型切换条：显示当前模型品牌图标 + 友好名，点击打开 [ModelPickerDialog]。
+ * 固定在输入区上方，让用户在对话中直接切换模型（Gemini 风格）。
+ */
+@Composable
+private fun ModelSwitcherBar(
+    currentModel: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val provider = if (currentModel.isBlank()) "nvidia" else ModelCatalog.providerFor(currentModel)
+    val label = if (currentModel.isBlank()) "选择模型" else ModelCatalog.displayNameFor(currentModel)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MiuixTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        ModelIcon(provider = provider, size = 22.dp)
+        Text(
+            text = label,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = MiuixIcons.ExpandMore,
+            contentDescription = "切换模型",
+            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
         )
     }
 }
