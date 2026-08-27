@@ -59,7 +59,7 @@ import com.whyy.snapnotes.ui.viewmodel.MAX_IMPORT_FILE_BYTES
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import com.whyy.snapnotes.ui.components.AppCard
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -661,54 +661,51 @@ private fun FileManagerPage(
             if (currentDir == null) {
                 item { SmallTitle(text = "快捷路径") }
                 item {
-                    AppCard(
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    Card(
+                        insideMargin = PaddingValues(0.dp)
                     ) {
-                        // AppCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            if (filteredPresets.isEmpty()) {
-                                if (availablePresets.isEmpty()) {
-                                    BasicComponent(
-                                        title = "未获取到存储权限",
-                                        summary = "当前无法读取快捷路径，你可以使用下方的系统文件选择器导入文件"
-                                    )
-                                } else {
-                                    BasicComponent(title = "未找到匹配路径")
-                                }
-                            } else {
-                                filteredPresets.forEach { (preset, file) ->
-                                    BasicComponent(
-                                        title = preset.label,
-                                        summary = file.absolutePath,
-                                        startAction = {
-                                            Icon(
-                                                imageVector = MiuixIcons.Folder,
-                                                contentDescription = "Folder",
-                                                tint = MiuixTheme.colorScheme.primary,
-                                                modifier = Modifier.padding(end = 16.dp)
-                                            )
-                                        },
-                                        onClick = {
-                                            currentDir = file
-                                        }
-                                    )
-                                }
-                            }
-                            if (pickMode == FileManagerPickMode.File) {
+                        if (filteredPresets.isEmpty()) {
+                            if (availablePresets.isEmpty()) {
                                 BasicComponent(
-                                    title = "系统文件选择器",
-                                    summary = "调用系统文件选择器导入文件",
+                                    title = "未获取到存储权限",
+                                    summary = "当前无法读取快捷路径，你可以使用下方的系统文件选择器导入文件"
+                                )
+                            } else {
+                                BasicComponent(title = "未找到匹配路径")
+                            }
+                        } else {
+                            filteredPresets.forEach { (preset, file) ->
+                                BasicComponent(
+                                    title = preset.label,
+                                    summary = file.absolutePath,
                                     startAction = {
                                         Icon(
-                                            imageVector = MiuixIcons.File,
-                                            contentDescription = "SystemFilePicker",
+                                            imageVector = MiuixIcons.Folder,
+                                            contentDescription = "Folder",
                                             tint = MiuixTheme.colorScheme.primary,
                                             modifier = Modifier.padding(end = 16.dp)
                                         )
                                     },
-                                    onClick = onOpenSystemPicker
+                                    onClick = {
+                                        currentDir = file
+                                    }
                                 )
                             }
+                        }
+                        if (pickMode == FileManagerPickMode.File) {
+                            BasicComponent(
+                                title = "系统文件选择器",
+                                summary = "调用系统文件选择器导入文件",
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.File,
+                                        contentDescription = "SystemFilePicker",
+                                        tint = MiuixTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(end = 16.dp)
+                                    )
+                                },
+                                onClick = onOpenSystemPicker
+                            )
                         }
                     }
                 }
@@ -770,17 +767,16 @@ private fun FileManagerPage(
                                 }
                                 val isSelected = selectedFile == item.file
 
-                                AppCard(
+                                Card(
                                     modifier = Modifier.clip(shape),
-                                    shape = shape,
+                                    cornerRadius = 0.dp,
                                     onClick = {
                                         if (item.isDirectory) {
                                             currentDir = item.file
                                         } else {
                                             onSelectFileChange(if (isSelected) null else item.file)
                                         }
-                                    },
-                                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                                    }
                                 ) {
                                     if (item.isDirectory) {
                                         BasicComponent(

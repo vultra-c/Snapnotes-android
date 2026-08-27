@@ -1,7 +1,9 @@
 package com.whyy.snapnotes.ui.screens
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,16 +27,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
-import com.whyy.snapnotes.ui.components.MoreMenu
-import com.whyy.snapnotes.ui.components.FolderCreationDialog
-import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
@@ -47,7 +50,8 @@ import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
+import top.yukonga.miuix.kmp.icon.extended.SelectAll
+import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -62,7 +66,6 @@ fun HistoryScreen(
     onDeleteRequest: (PushRecord) -> Unit,
     onBatchDeleteRequest: (List<PushRecord>) -> Unit,
     onEditRecord: (PushRecord) -> Unit,      // 新增：编辑历史记录
-    onCreateFolder: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
@@ -70,18 +73,6 @@ fun HistoryScreen(
 
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
-    var showFolderDialog by remember { mutableStateOf(false) }
-
-    if (showFolderDialog) {
-        FolderCreationDialog(
-            show = true,
-            onConfirm = { name ->
-                showFolderDialog = false
-                onCreateFolder(name)
-            },
-            onDismiss = { showFolderDialog = false }
-        )
-    }
 
     val selectAllState = when {
         records.isEmpty() -> ToggleableState.Off
@@ -134,9 +125,9 @@ fun HistoryScreen(
                             Icon(imageVector = MiuixIcons.Close, contentDescription = "退出多选")
                         }
                     } else {
-                        MoreMenu(
-                            onCreateFolder = { showFolderDialog = true }
-                        )
+                        IconButton(onClick = { selectionMode = true }) {
+                            Icon(imageVector = MiuixIcons.SelectAll, contentDescription = "多选")
+                        }
                     }
                 }
             )
@@ -155,11 +146,10 @@ fun HistoryScreen(
         ) {
             // 说明卡
             item {
-                AppCard(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -229,7 +219,7 @@ fun HistoryScreen(
                 }
                 items(records, key = { it.id }) { record ->
                     val isSelected = record.id in selectedIds
-                    AppCard(
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -251,8 +241,9 @@ fun HistoryScreen(
                                     selectedIds = selectedIds + record.id
                                 }
                             ),
+                        insideMargin = PaddingValues(0.dp),
                         onClick = null,
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        showIndication = false
                     ) {
                         BasicComponent(
                             title = record.fileName,
@@ -278,43 +269,64 @@ fun HistoryScreen(
                                         onClick = null
                                     )
                                 } else {
-                                    WindowIconDropdownMenu(
-                                        entries = listOf(
-                                            DropdownEntry(
-                                                items = listOf(
-                                                    DropdownItem(
+                                    Box {
+                                        var repushMenuShow by remember { mutableStateOf(false) }
+                                        Icon(
+                                            imageVector = MiuixIcons.More,
+                                            contentDescription = "更多操作",
+                                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .padding(2.dp)
+                                                .clickable { repushMenuShow = true }
+                                        )
+                                        OverlayListPopup(
+                                            show = repushMenuShow,
+                                            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
+                                            alignment = PopupPositionProvider.Align.End,
+                                            onDismissRequest = { repushMenuShow = false },
+                                        ) {
+                                            ListPopupColumn {
+                                                DropdownImpl(
+                                                    item = DropdownItem(
                                                         text = "重新推送",
-                                                        icon = {
+                                                        icon = { m ->
                                                             Icon(
                                                                 imageVector = MiuixIcons.Refresh,
                                                                 contentDescription = null,
-                                                                modifier = it,
-                                                                tint = MiuixTheme.colorScheme.primary
+                                                                modifier = m
                                                             )
-                                                        },
-                                                        onClick = { onRepush(record) }
+                                                        }
                                                     ),
-                                                    DropdownItem(
+                                                    optionSize = 2,
+                                                    isSelected = false,
+                                                    index = 0,
+                                                    onSelectedIndexChange = {
+                                                        repushMenuShow = false
+                                                        onRepush(record)
+                                                    }
+                                                )
+                                                DropdownImpl(
+                                                    item = DropdownItem(
                                                         text = "删除",
-                                                        icon = {
+                                                        icon = { m ->
                                                             Icon(
                                                                 imageVector = MiuixIcons.Delete,
                                                                 contentDescription = null,
-                                                                modifier = it,
-                                                                tint = MiuixTheme.colorScheme.error
+                                                                modifier = m
                                                             )
-                                                        },
-                                                        onClick = { onDeleteRequest(record) }
-                                                    )
+                                                        }
+                                                    ),
+                                                    optionSize = 2,
+                                                    isSelected = false,
+                                                    index = 1,
+                                                    onSelectedIndexChange = {
+                                                        repushMenuShow = false
+                                                        onDeleteRequest(record)
+                                                    }
                                                 )
-                                            )
-                                        ),
-                                        collapseOnSelection = true
-                                    ) {
-                                        Icon(
-                                            imageVector = MiuixIcons.More,
-                                            contentDescription = "更多操作"
-                                        )
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -1,26 +1,19 @@
 package com.whyy.snapnotes.ui.screens
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.components.FolderCreationDialog
-import com.whyy.snapnotes.ui.components.MoreMenu
-import com.whyy.snapnotes.ui.components.AppCard
-import com.whyy.snapnotes.ui.components.AppToggle
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -28,7 +21,6 @@ import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Reset
 import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -44,22 +36,9 @@ fun SettingsScreen(
     onPickExportDir: () -> Unit,
     onOpenAbout: () -> Unit,
     onResetFirstSyncConfirm: () -> Unit,
-    onCreateFolder: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
-    var showFolderDialog by remember { mutableStateOf(false) }
-
-    if (showFolderDialog) {
-        FolderCreationDialog(
-            show = true,
-            onConfirm = { name ->
-                showFolderDialog = false
-                onCreateFolder(name)
-            },
-            onDismiss = { showFolderDialog = false }
-        )
-    }
 
     Scaffold(
         modifier = modifier,
@@ -67,12 +46,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = "设置",
                 largeTitle = "设置",
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    MoreMenu(
-                        onCreateFolder = { showFolderDialog = true }
-                    )
-                }
+                scrollBehavior = scrollBehavior
             )
         },
         popupHost = {}
@@ -88,46 +62,44 @@ fun SettingsScreen(
         ) {
             item {
                 SmallTitle(text = "外观", modifier = Modifier.padding(top = 12.dp))
-                AppCard(
+                Card(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    insideMargin = PaddingValues(0.dp)
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        WindowDropdownPreference(
-                            title = "应用主题",
-                            summary = "选择浅色、深色或跟随系统",
-                            items = AppearanceMode.entries.map { it.label },
-                            selectedIndex = AppearanceMode.entries.indexOf(appearanceMode).coerceAtLeast(0),
-                            onSelectedIndexChange = { index ->
-                                onAppearanceModeChange(AppearanceMode.entries[index])
-                            }
-                        )
-                        BasicComponent(
-                            title = "动态取色",
-                            summary = "开启后按系统壁纸生成整套配色（Monet）",
-                            endActions = {
-                                AppToggle(
-                                    checked = dynamicColor,
-                                    onCheckedChange = onDynamicColorChange
-                                )
-                            }
-                        )
-                    }
+                    WindowDropdownPreference(
+                        title = "应用主题",
+                        summary = "选择浅色、深色或跟随系统",
+                        items = AppearanceMode.entries.map { it.label },
+                        selectedIndex = AppearanceMode.entries.indexOf(appearanceMode).coerceAtLeast(0),
+                        onSelectedIndexChange = { index ->
+                            onAppearanceModeChange(AppearanceMode.entries[index])
+                        }
+                    )
+                    BasicComponent(
+                        title = "动态取色",
+                        summary = "开启后按系统壁纸生成整套配色（Monet）",
+                        endActions = {
+                            Switch(
+                                checked = dynamicColor,
+                                onCheckedChange = { onDynamicColorChange(it) }
+                            )
+                        }
+                    )
                 }
             }
             item {
                 SmallTitle(text = "导入")
-                AppCard(
+                Card(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    insideMargin = PaddingValues(0.dp)
                 ) {
                     BasicComponent(
                         title = "使用内置文件管理器",
                         summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
                         endActions = {
-                            AppToggle(
+                            Switch(
                                 checked = useBuiltinFileManager,
-                                onCheckedChange = onUseBuiltinFileManagerChange
+                                onCheckedChange = { onUseBuiltinFileManagerChange(it) }
                             )
                         }
                     )
@@ -135,9 +107,9 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "导出")
-                AppCard(
+                Card(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    insideMargin = PaddingValues(0.dp)
                 ) {
                     BasicComponent(
                         title = "导出目录",
@@ -160,38 +132,36 @@ fun SettingsScreen(
             }
             item {
                 SmallTitle(text = "其他")
-                AppCard(
+                Card(
                     modifier = Modifier.padding(horizontal = 12.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    insideMargin = PaddingValues(0.dp)
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        BasicComponent(
-                            title = "重置首次同步确认",
-                            summary = "下次推送时重新显示 Vela 同步注意事项的倒计时确认弹窗",
-                            startAction = {
-                                top.yukonga.miuix.kmp.basic.Icon(
-                                    imageVector = MiuixIcons.Reset,
-                                    contentDescription = "重置",
-                                    tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(end = 16.dp)
-                                )
-                            },
-                            onClick = onResetFirstSyncConfirm
-                        )
-                        BasicComponent(
-                            title = "关于",
-                            summary = "开发者信息、参考项目",
-                            startAction = {
-                                top.yukonga.miuix.kmp.basic.Icon(
-                                    imageVector = MiuixIcons.Info,
-                                    contentDescription = "关于",
-                                    tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(end = 16.dp)
-                                )
-                            },
-                            onClick = onOpenAbout
-                        )
-                    }
+                    BasicComponent(
+                        title = "重置首次同步确认",
+                        summary = "下次推送时重新显示 Vela 同步注意事项的倒计时确认弹窗",
+                        startAction = {
+                            top.yukonga.miuix.kmp.basic.Icon(
+                                imageVector = MiuixIcons.Reset,
+                                contentDescription = "重置",
+                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
+                                modifier = Modifier.padding(end = 16.dp)
+                            )
+                        },
+                        onClick = onResetFirstSyncConfirm
+                    )
+                    BasicComponent(
+                        title = "关于",
+                        summary = "开发者信息、参考项目",
+                        startAction = {
+                            top.yukonga.miuix.kmp.basic.Icon(
+                                imageVector = MiuixIcons.Info,
+                                contentDescription = "关于",
+                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
+                                modifier = Modifier.padding(end = 16.dp)
+                            )
+                        },
+                        onClick = onOpenAbout
+                    )
                 }
             }
         }

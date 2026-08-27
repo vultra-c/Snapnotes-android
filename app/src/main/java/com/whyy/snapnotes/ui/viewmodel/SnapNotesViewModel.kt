@@ -22,7 +22,6 @@ import com.whyy.snapnotes.logic.AmadeusChat
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
 import com.whyy.snapnotes.logic.JsonFilePusher
-import com.whyy.snapnotes.logic.AmadeusDefaults
 import com.whyy.snapnotes.logic.RawToLatexConverter
 import com.whyy.snapnotes.notifications.ForegroundTransferService
 import com.xiaomi.xms.wearable.node.Node
@@ -86,14 +85,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
     private var pusher: JsonFilePusher? = null
     private var amadeusChat: AmadeusChat? = null
     private var pendingPushUri: Uri? = null
-
-    /* ──────────── 本地存储库 ──────────── */
-    private val _localCurrentPath = MutableStateFlow("")
-    val localCurrentPath = _localCurrentPath.asStateFlow()
-    private val _localFolders = MutableStateFlow<List<com.whyy.snapnotes.ui.screens.LocalFolder>>(emptyList())
-    val localFolders = _localFolders.asStateFlow()
-    private val _localFiles = MutableStateFlow<List<com.whyy.snapnotes.ui.screens.LocalFile>>(emptyList())
-    val localFiles = _localFiles.asStateFlow()
 
     /** 是否使用应用内文件管理器导入；关掉则回退系统文件选择器。默认开启，与参考项目一致。 */
     private val _useBuiltinFileManager =
@@ -266,10 +257,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         loadHistory()
-        // 编辑器已合并到主页：启动时检查是否有未提交的草稿，有则提示恢复。
-        _showDraftRestorePrompt.value = runCatching {
-            editorDraftFile.exists() && editorDraftFile.readText().isNotBlank()
-        }.getOrDefault(false)
         // 编辑器草稿自动保存：内容变化后防抖落盘（有内容才写，避免空草稿覆盖旧稿）。
         viewModelScope.launch {
             var saveJob: Job? = null
@@ -461,75 +448,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         _screen.value = AppScreen.History
     }
 
-    fun openStore() {
-        // 商店页是底部导航的一部分，不需要切换 AppScreen
-    }
-
-    /**
-     * 从商店导入科目知识点到编辑器并推送到手环。
-     * 将商店的 StoreSubject 转为编辑器格式，同时直接生成 JSON 推送。
-     */
-    fun importStoreSubject(subject: com.whyy.snapnotes.data.StoreSubject) {
-        viewModelScope.launch {
-            val root = org.json.JSONObject()
-            val arr = org.json.JSONArray()
-            subject.entries.forEach { entry ->
-                val obj = org.json.JSONObject()
-                obj.put("id", entry.id)
-                obj.put("title", entry.title)
-                if (entry.desc.isNotBlank()) obj.put("desc", entry.desc)
-                if (entry.raw.isNotBlank()) obj.put("raw", entry.raw)
-                if (entry.points.isNotEmpty()) {
-                    val pa = org.json.JSONArray()
-                    entry.points.forEach { pa.put(it) }
-                    obj.put("points", pa)
-                }
-                if (entry.formulas.isNotEmpty()) {
-                    val fa = org.json.JSONArray()
-                    entry.formulas.forEach { fa.put(it) }
-                    obj.put("formulas", fa)
-                }
-                arr.put(obj)
-            }
-            root.put(subject.name, arr)
-            pushFromString(root.toString(), "商店_${subject.name}.json")
-        }
-    }
-
-    /** 批量导入多个科目（合并为单个 JSON 一次推送）。 */
-    fun importStoreSubjects(subjects: List<com.whyy.snapnotes.data.StoreSubject>) {
-        if (subjects.isEmpty()) {
-            _snackbarMessage.value = "请至少选择一个科目"
-            return
-        }
-        viewModelScope.launch {
-            val root = org.json.JSONObject()
-            subjects.forEach { subject ->
-                val arr = org.json.JSONArray()
-                subject.entries.forEach { entry ->
-                    val obj = org.json.JSONObject()
-                    obj.put("id", entry.id)
-                    obj.put("title", entry.title)
-                    if (entry.desc.isNotBlank()) obj.put("desc", entry.desc)
-                    if (entry.raw.isNotBlank()) obj.put("raw", entry.raw)
-                    if (entry.points.isNotEmpty()) {
-                        val pa = org.json.JSONArray()
-                        entry.points.forEach { pa.put(it) }
-                        obj.put("points", pa)
-                    }
-                    if (entry.formulas.isNotEmpty()) {
-                        val fa = org.json.JSONArray()
-                        entry.formulas.forEach { fa.put(it) }
-                        obj.put("formulas", fa)
-                    }
-                    arr.put(obj)
-                }
-                root.put(subject.name, arr)
-            }
-            pushFromString(root.toString(), "商店_批量导入.json")
-        }
-    }
-
     fun setAppearanceMode(mode: AppearanceMode) {
         _appearanceMode.value = mode
         prefs.edit().putString(appearanceModeKey, mode.name).apply()
@@ -542,20 +460,14 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
 
     /* ──────────── Amadeus（手环端 AI 聊天助手）手机端配置 ────────────
      * 见根目录「手机端AI聊天适配说明.md」第五节：key/model/baseURL/代理/超时全在手机端。
-     * 这里只做 UI 可编辑 + SharedPreferences 持久化。
-     * 首次启动内置 NVIDIA NIM 配置（AmadeusDefaults），开箱即可在手机端直聊中发送消息；
-     * 用户在配置页覆盖后以用户值为准。
+     * 这里只做 UI 可编辑 + SharedPreferences 持久化，真正接 LLM 网络是后续任务。
+     * 默认全空、enabled=false，未配置不发起任何调用。
      */
     private fun loadAmadeusConfig(): AmadeusConfig = AmadeusConfig(
-        enabled = prefs.getBoolean(amadeusEnabledKey, true),
-        // baseUrl/apiKey/model 为空或未设置时回退到内置 NVIDIA NIM 配置：
-        // 用户只要没主动填自己的值，就能开箱直接发送；填了非空值则以用户值为准。
-        baseUrl = prefs.getString(amadeusBaseUrlKey, "").orEmpty()
-            .takeIf { it.isNotBlank() } ?: AmadeusDefaults.BASE_URL,
-        apiKey = prefs.getString(amadeusApiKeyKey, "").orEmpty()
-            .takeIf { it.isNotBlank() } ?: AmadeusDefaults.API_KEY,
-        model = prefs.getString(amadeusModelKey, "").orEmpty()
-            .takeIf { it.isNotBlank() } ?: AmadeusDefaults.MODEL,
+        enabled = prefs.getBoolean(amadeusEnabledKey, false),
+        baseUrl = prefs.getString(amadeusBaseUrlKey, "").orEmpty(),
+        apiKey = prefs.getString(amadeusApiKeyKey, "").orEmpty(),
+        model = prefs.getString(amadeusModelKey, "").orEmpty(),
         proxy = prefs.getString(amadeusProxyKey, "").orEmpty(),
         timeoutSec = runCatching { prefs.getInt(amadeusTimeoutKey, 30) }.getOrDefault(30)
     )
@@ -720,8 +632,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         amadeusChat = AmadeusChat(getApplication(), conn, pusher!!, _amadeus, viewModelScope)
         // 把 AmadeusChat.lastCall 透传给 UI（上下文页回显最近一次调用状态）。
         viewModelScope.launch { amadeusChat!!.lastCall.collect { _amadeusLastCall.value = it } }
-        // 把 AmadeusChat.phoneChatStatus 透传给 UI（手机端直聊页面观测加载/成功/失败）。
-        viewModelScope.launch { amadeusChat!!.phoneChatStatus.collect { _phoneChatStatus.value = it } }
     }
 
     /* ──────────── Amadeus 上下文管理 / 最近调用状态（联「上下文管理菜单」） ──────────── */
@@ -751,64 +661,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             ?: return null
         val detail = amadeusChat?.detail(sid) ?: return null
         return detail.messages.lastOrNull { it.first == "assistant" }?.second
-    }
-
-    /* ──────────── 手机端 Amadeus 直聊（不走 BLE，用于生成 JSON） ──────────── */
-    private val _phoneChatMessages = MutableStateFlow<List<AmadeusChat.PhoneChatMessage>>(emptyList())
-    val phoneChatMessages = _phoneChatMessages.asStateFlow()
-
-    private val _phoneChatStatus = MutableStateFlow<AmadeusChat.PhoneChatStatus>(AmadeusChat.PhoneChatStatus.Idle)
-    val phoneChatStatus = _phoneChatStatus.asStateFlow()
-
-    /** 发送手机端聊天消息。fileContent 非空时会作为上下文附给 AI。 */
-    fun sendPhoneChatMessage(text: String, fileContent: String? = null) {
-        if (text.isBlank() && fileContent.isNullOrBlank()) return
-        viewModelScope.launch {
-            amadeusChat?.sendPhoneChat(text, fileContent)
-            _phoneChatMessages.value = amadeusChat?.getPhoneChatHistory() ?: emptyList()
-        }
-    }
-
-    /** 清空手机端聊天历史。 */
-    fun clearPhoneChat() {
-        amadeusChat?.clearPhoneChat()
-        _phoneChatMessages.value = emptyList()
-    }
-
-    /** 获取当前聊天历史快照（进入页面时初始化用）。 */
-    fun getPhoneChatHistory(): List<AmadeusChat.PhoneChatMessage> =
-        amadeusChat?.getPhoneChatHistory() ?: emptyList()
-
-    /** 将 AI 回复的 JSON 导入到手环（走推送流程）。 */
-    fun importJsonFromChat(jsonString: String) {
-        val cleanJson = extractJsonObject(jsonString)
-        if (cleanJson == null) {
-            showSnackbar("未在 AI 回复中识别到有效的 JSON 对象")
-            return
-        }
-        pushFromString(cleanJson, "AI生成_${System.currentTimeMillis()}.json")
-    }
-
-    /**
-     * 从 AI 回复文本中提取 JSON 对象：去掉可能的 markdown 代码块围栏后，
-     * 截取第一个 `{` 到最后一个 `}` 之间的内容，并校验它是单一合法的 JSON 对象。
-     * 提取失败返回 null（供调用方提示用户）。
-     */
-    private fun extractJsonObject(text: String): String? {
-        var s = text.trim()
-        s = s.removePrefix("```json").removePrefix("```JSON").removePrefix("```")
-        s = s.removeSuffix("```").trim()
-        val start = s.indexOf('{')
-        val end = s.lastIndexOf('}')
-        if (start < 0 || end <= start) return null
-        val candidate = s.substring(start, end + 1)
-        return runCatching {
-            val tok = JSONTokener(candidate)
-            val root = tok.nextValue()
-            if (root !is JSONObject) return null
-            if (tok.more()) return null   // 还有多余内容，说明不是单一完整对象
-            candidate
-        }.getOrNull()
     }
 
     private var autoRetryJob: Job? = null
@@ -1134,7 +986,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
                 val subjects = parseEditorSubjects(text)
                 _editorSubjects.value = subjects
                 _editorLoadError.value = null
-                _snackbarMessage.value = "已加载 ${subjects.size} 个科目到知识点管理"
                 _screen.value = AppScreen.Editor
             } catch (e: Exception) {
                 Log.e("SnapNotesViewModel", "open editor from file fail", e)
@@ -1187,22 +1038,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             )
             openEditorFromFile(uri)   // 复用已有加载逻辑
         }
-    }
-
-    /** 从商店知识点导入到编辑器（不推送，仅加载到编辑器供用户编辑）。 */
-    fun loadEditorFromStoreSubject(subject: com.whyy.snapnotes.data.StoreSubject) {
-        val editorEntries = subject.entries.map { entry ->
-            EditorEntry(
-                id = entry.id.toString(),
-                title = entry.title,
-                desc = entry.desc,
-                raw = entry.raw,
-                points = entry.points,
-                formulas = entry.formulas
-            )
-        }
-        _editorSubjects.value = listOf(EditorSubject(name = subject.name, entries = editorEntries))
-        _screen.value = AppScreen.Editor
     }
 
     fun addSubject() {
@@ -1300,23 +1135,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
                 _screen.value = AppScreen.Result
             }
         }
-    }
-
-    /**
-     * 从本地存储库的文件直接发起推送（跳过"选择文件"步骤，直接进入文件夹选择 + 推送流程）。
-     *
-     * 与 [pushFromString] 类似，但输入是已存在的本地 [File]，不需要写缓存。
-     * 用于本地存储库页面"导入手环"按钮。
-     */
-    fun pushFromFile(file: java.io.File) {
-        val uri = Uri.fromFile(file)
-        _selectedFile.value = SelectedFileState(uri, file.name, file.length())
-        _pushState.value = PushState(
-            fileName = file.name,
-            fileSize = file.length(),
-            statusText = "等待中"
-        )
-        startPushFromUri(uri)
     }
 
     /**
@@ -1466,17 +1284,13 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             _showFirstSyncConfirm.value = true
             return
         }
-        // 直接推送到手环根目录（不再经过文件夹选择流程）
-        viewModelScope.launch { doPush(uri, null) }
+        viewModelScope.launch { doPush(uri) }
     }
 
     fun confirmFirstSync() {
         prefs.edit().putBoolean(firstSyncConfirmedKey, true).apply()
         _showFirstSyncConfirm.value = false
-        // 首次确认后直接推送
-        pendingPushUri?.let { uri ->
-            viewModelScope.launch { doPush(uri, null) }
-        }
+        pendingPushUri?.let { uri -> viewModelScope.launch { doPush(uri) } }
     }
 
     fun cancelFirstSyncConfirm() {
@@ -1544,16 +1358,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             if (plans.isEmpty()) {
                 formulaPhaseActive = false
                 pendingFormulaPlans = emptyList()
-                _pushState.update {
-                    it.copy(
-                        progress = 1.0,
-                        statusText = "传输完成",
-                        isTransferring = false,
-                        isFinished = true,
-                        isSuccess = true,
-                        errorMessage = null
-                    )
-                }
                 _screen.value = AppScreen.Result
                 return@launch
             }
@@ -1662,7 +1466,7 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    private suspend fun doPush(uri: Uri, folderId: String? = null) {
+    private suspend fun doPush(uri: Uri) {
         val fileInfo = withContext(Dispatchers.IO) { getFileInfo(uri) }
         _selectedFile.value = fileInfo
         pendingPushUri = uri
@@ -1687,7 +1491,7 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             _pushState.update { it.copy(statusText = "准备发送") }
 
             val activePusher = pusher ?: throw IllegalStateException("通信层未初始化")
-            activePusher.pushFile(bytes, fileInfo.fileName, folderId)
+            activePusher.pushFile(bytes, fileInfo.fileName)
         } catch (e: Exception) {
             val message = e.message ?: "未知错误"
             Log.e("SnapNotesViewModel", "push fail", e)
@@ -1889,182 +1693,6 @@ class SnapNotesViewModel(application: Application) : AndroidViewModel(applicatio
             out.write(buf, 0, n)
         }
         return out.toByteArray()
-    }
-
-    /* ──────────── 文件夹创建（更多菜单入口） ──────────── */
-
-    /** 应用专属知识库目录：文件夹创建的默认位置。 */
-    private val snapnotesFolderDir by lazy {
-        java.io.File(
-            getApplication<Application>().getExternalFilesDir(null)
-                ?: getApplication<Application>().filesDir,
-            "SnapNotes"
-        )
-    }
-
-    /**
-     * 在应用专属知识库目录下创建子文件夹。
-     * 已存在则提示；创建成功后通过 snackbar 反馈路径。
-     */
-    fun createFolder(folderName: String) {
-        val name = folderName.trim()
-        if (name.isBlank()) {
-            _snackbarMessage.value = "文件夹名称不能为空"
-            return
-        }
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                runCatching {
-                    if (!snapnotesFolderDir.exists()) snapnotesFolderDir.mkdirs()
-                    val folder = java.io.File(snapnotesFolderDir, name)
-                    if (folder.exists()) {
-                        "文件夹「$name」已存在"
-                    } else {
-                        folder.mkdirs()
-                        "已创建文件夹：$name"
-                    }
-                }.getOrElse { e ->
-                    "创建文件夹失败：${e.message ?: "未知错误"}"
-                }
-            }
-            _snackbarMessage.value = result
-        }
-    }
-
-    /* ──────────── 本地存储库管理方法 ──────────── */
-
-    /** 本地存储根目录：app filesDir 下的 snapnotes_local。 */
-    private val localRootDir: java.io.File by lazy {
-        java.io.File(getApplication<Application>().filesDir, "snapnotes_local").apply { mkdirs() }
-    }
-
-    /** 刷新本地存储库当前目录内容。 */
-    fun refreshLocalStorage() {
-        val path = _localCurrentPath.value.ifBlank { localRootDir.absolutePath }
-        val dir = java.io.File(path)
-        if (!dir.exists() || !dir.isDirectory) {
-            _localCurrentPath.value = localRootDir.absolutePath
-            refreshLocalStorage()
-            return
-        }
-        val folders = mutableListOf<com.whyy.snapnotes.ui.screens.LocalFolder>()
-        val files = mutableListOf<com.whyy.snapnotes.ui.screens.LocalFile>()
-        dir.listFiles()?.forEach { f ->
-            if (f.isDirectory) {
-                folders.add(com.whyy.snapnotes.ui.screens.LocalFolder(f.name, f.absolutePath))
-            } else if (f.isFile && (f.name.endsWith(".json") || f.name.endsWith(".JSON"))) {
-                files.add(com.whyy.snapnotes.ui.screens.LocalFile(
-                    name = f.name,
-                    path = f.absolutePath,
-                    size = f.length(),
-                    lastModified = f.lastModified()
-                ))
-            }
-        }
-        folders.sortBy { it.name.lowercase() }
-        files.sortBy { it.name.lowercase() }
-        _localFolders.value = folders
-        _localFiles.value = files
-    }
-
-    /** 进入指定本地文件夹（或回到根目录）。 */
-    fun navigateLocalFolder(path: String) {
-        val dir = java.io.File(path)
-        if (dir.exists() && dir.isDirectory) {
-            _localCurrentPath.value = dir.absolutePath
-            refreshLocalStorage()
-        }
-    }
-
-    /** 在当前本地目录下创建文件夹。 */
-    fun createLocalFolder(name: String) {
-        val trimmed = name.trim()
-        if (trimmed.isBlank()) {
-            _snackbarMessage.value = "文件夹名称不能为空"
-            return
-        }
-        val parent = java.io.File(_localCurrentPath.value.ifBlank { localRootDir.absolutePath })
-        val newDir = java.io.File(parent, trimmed)
-        if (newDir.exists()) {
-            _snackbarMessage.value = "文件夹已存在"
-            return
-        }
-        if (newDir.mkdirs()) {
-            _snackbarMessage.value = "已创建文件夹：$trimmed"
-            refreshLocalStorage()
-        } else {
-            _snackbarMessage.value = "创建文件夹失败"
-        }
-    }
-
-    /** 删除本地文件或文件夹。 */
-    fun deleteLocalFile(file: java.io.File) {
-        viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) {
-                if (file.isDirectory) file.deleteRecursively() else file.delete()
-            }
-            _snackbarMessage.value = if (ok) "已删除" else "删除失败"
-            refreshLocalStorage()
-        }
-    }
-
-    /** 重命名本地文件或文件夹。 */
-    fun renameLocalFile(file: java.io.File, newName: String) {
-        val trimmed = newName.trim()
-        if (trimmed.isBlank()) {
-            _snackbarMessage.value = "名称不能为空"
-            return
-        }
-        val target = java.io.File(file.parentFile, trimmed)
-        if (target.exists()) {
-            _snackbarMessage.value = "名称已存在"
-            return
-        }
-        viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) { file.renameTo(target) }
-            _snackbarMessage.value = if (ok) "已重命名" else "重命名失败"
-            refreshLocalStorage()
-        }
-    }
-
-    /* ──────────── Amadeus 模型自动获取 ──────────── */
-
-    /** 模型获取状态：null=未发起，空list=获取中，非空=可用模型列表。 */
-    private val _amadeusModels = MutableStateFlow<List<String>?>(null)
-    val amadeusModels = _amadeusModels.asStateFlow()
-
-    private val _amadeusModelsLoading = MutableStateFlow(false)
-    val amadeusModelsLoading = _amadeusModelsLoading.asStateFlow()
-
-    /**
-     * 通过当前配置的 Base URL + API Key 获取可用模型列表。
-     * 调用 OpenAI 兼容的 GET /v1/models 接口。
-     */
-    fun fetchAvailableModels() {
-        val cfg = _amadeus.value
-        if (cfg.apiKey.isBlank()) {
-            _snackbarMessage.value = "请先填写 API Key"
-            return
-        }
-        val chat = amadeusChat ?: run {
-            _snackbarMessage.value = "服务未就绪"
-            return
-        }
-        _amadeusModelsLoading.value = true
-        _amadeusModels.value = emptyList()
-        viewModelScope.launch {
-            val models = chat.fetchAvailableModels(cfg)
-            _amadeusModels.value = models
-            _amadeusModelsLoading.value = false
-            if (models.isEmpty()) {
-                _snackbarMessage.value = "未获取到可用模型，请检查配置"
-            }
-        }
-    }
-
-    fun clearAmadeusModels() {
-        _amadeusModels.value = null
-        _amadeusModelsLoading.value = false
     }
 
 }

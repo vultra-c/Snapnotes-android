@@ -164,7 +164,7 @@ class JsonFilePusher(private val conn: InterHandshake) {
         }
     }
 
-    suspend fun pushFile(jsonBytes: ByteArray, fileName: String, folderId: String? = null) = sendMutex.withLock {
+    suspend fun pushFile(jsonBytes: ByteArray, fileName: String) = sendMutex.withLock {
         if (busy) {
             // 上一次推送还没结束（或卡在 await 永久挂起、busy 没复位）。
             // 静默 return 会让 UI 永远停在 0% 且无任何日志/错误，极难排查。
@@ -189,8 +189,7 @@ class JsonFilePusher(private val conn: InterHandshake) {
             val start = FileMessagesToSend.StartTransfer(
                 filename = currentFileName,
                 totalChunks = totalChunks,
-                totalBytes = totalBytes,
-                folderId = folderId
+                totalBytes = totalBytes
             )
             runTransfer(json.encodeToString(start), statusPrefix = "")
         } catch (e: TimeoutCancellationException) {
@@ -471,8 +470,7 @@ class JsonFilePusher(private val conn: InterHandshake) {
             val stat: String = "startTransfer",
             val filename: String,
             val totalChunks: Int,
-            val totalBytes: Long,
-            val folderId: String? = null
+            val totalBytes: Long
         ) : FileMessagesToSend()
 
         @Serializable

@@ -26,36 +26,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // 统一签名（三级回退，保证任何机器构建的 APK 签名一致）：
-    // 1) 根目录 keystore.properties + 其指向的 jks（最高优先，正式渠道）
-    // 2) 本模块入库的 snapnotes.p12 项目共享签名（默认，覆盖安装不冲突的关键）
-    // 3) 以上都不存在才退回 Android 默认 debug 签名（各机器不同，仅应急）
+    // 可选签名：若根目录存在 keystore.properties 则读取并启用 release 签名；否则 debug/release 走默认签名。
     val keystorePropertiesFile = rootProject.file("keystore.properties")
-    var keyAliasProp = "snapnotes"
-    var keyPasswordProp = "snapnotes-shared-2026"
-    var storeFileProp = file("snapnotes.p12")
-    var storePasswordProp = "snapnotes-shared-2026"
-    if (keystorePropertiesFile.exists()) {
+    val hasKeystore = keystorePropertiesFile.exists()
+    if (hasKeystore) {
         val keystoreProperties = Properties().apply {
             FileInputStream(keystorePropertiesFile).use { load(it) }
         }
-        val storeFilePath = keystoreProperties.getProperty("storeFile")
-        if (storeFilePath != null && rootProject.file(storeFilePath).exists()) {
-            keyAliasProp = keystoreProperties.getProperty("keyAlias")
-            keyPasswordProp = keystoreProperties.getProperty("keyPassword")
-            storeFileProp = rootProject.file(storeFilePath)
-            storePasswordProp = keystoreProperties.getProperty("storePassword")
-        }
-    }
-
-    signingConfigs {
-        create("unified") {
-            keyAlias = keyAliasProp
-            keyPassword = keyPasswordProp
-            // 使用 rootProject.file() 确保 storeFile 路径相对于项目根目录解析，
-            // 而非 app 模块目录。CI 中 release.jks 在仓库根目录生成。
-            storeFile = storeFileProp
-            storePassword = storePasswordProp
+        signingConfigs {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
@@ -67,21 +51,20 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("unified")
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
-            signingConfig = signingConfigs.getByName("unified")
+            if (hasKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-
-    lint {
-        checkReleaseBuilds = false
-        abortOnError = false
     }
 
     packaging {

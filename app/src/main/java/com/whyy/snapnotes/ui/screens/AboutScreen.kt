@@ -36,8 +36,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.R
-import com.whyy.snapnotes.ui.components.AppCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -46,7 +47,6 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -118,9 +118,9 @@ fun AboutScreen(
                 // ── 开发者 ──
                 item {
                     SmallTitle(text = "开发者", modifier = Modifier.padding(top = 12.dp))
-                    AppCard(
+                    Card(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        insideMargin = PaddingValues(0.dp)
                     ) {
                         // 两位开发者头像 + 昵称并排居中展示，下方各自一个可复制的邮箱。
                         Row(
@@ -147,9 +147,9 @@ fun AboutScreen(
                 // ── 项目开源 ──
                 item {
                     SmallTitle(text = "项目开源")
-                    AppCard(
+                    Card(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        insideMargin = PaddingValues(0.dp)
                     ) {
                         BasicComponent(
                             title = "本项目开源地址",
@@ -161,21 +161,18 @@ fun AboutScreen(
                 // ── 参考项目 ──
                 item {
                     SmallTitle(text = "参考项目")
-                    AppCard(
+                    Card(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        insideMargin = PaddingValues(0.dp)
                     ) {
-                        // AppCard 内容为 Box 布局，多个条目必须用 Column 纵向排布，否则会重叠
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            BasicComponent(
-                                title = REF_PROJECT_NAME_ANDROID,
-                                onClick = { openUrl(REF_PROJECT_URL_ANDROID) }
-                            )
-                            BasicComponent(
-                                title = REF_PROJECT_NAME,
-                                onClick = { openUrl(REF_PROJECT_URL) }
-                            )
-                        }
+                        BasicComponent(
+                            title = REF_PROJECT_NAME_ANDROID,
+                            onClick = { openUrl(REF_PROJECT_URL_ANDROID) }
+                        )
+                        BasicComponent(
+                            title = REF_PROJECT_NAME,
+                            onClick = { openUrl(REF_PROJECT_URL) }
+                        )
                     }
                 }
                 // ── 隐藏条目（彩蛋触发点） ──
@@ -243,7 +240,7 @@ private fun DevCard(
         )
         Spacer(Modifier.height(6.dp))
         Surface(
-            color = MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
+            color = MiuixTheme.colorScheme.surfaceContainer,
             shape = RoundedCornerShape(16.dp),
             onClick = onEmailClick
         ) {

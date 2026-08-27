@@ -3,18 +3,16 @@ package com.whyy.snapnotes.ui.screens
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -26,30 +24,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.BandStorageInfoData
-import com.whyy.snapnotes.ui.components.AiPromptCard
+import com.whyy.snapnotes.ui.components.AmadeusConfigCard
 import com.whyy.snapnotes.ui.components.FormulaTutorial
-import com.whyy.snapnotes.ui.components.FolderCreationDialog
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
-import com.whyy.snapnotes.ui.components.MoreMenu
 import com.whyy.snapnotes.ui.components.StorageRingCard
-import com.whyy.snapnotes.ui.components.AppButton
-import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
 import androidx.compose.foundation.basicMarquee
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -60,15 +53,14 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Notes
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.ui.draw.rotate
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.pressable
+import androidx.compose.foundation.layout.IntrinsicSize
 
 private enum class ConnectionStage {
     Idle,
@@ -96,30 +88,13 @@ fun HomeScreen(
     onPickFile: () -> Unit,
     onStartPush: () -> Unit,
     onTroubleshoot: () -> Unit = {},
-    onOpenAmadeusChat: () -> Unit = {},
     amadeusEnabled: Boolean = false,
     amadeusReady: Boolean = false,
-    amadeusSummary: String = "",
-    onCreateFolder: (String) -> Unit = {},
-    onOpenLocalStorage: () -> Unit = {},
-    onOpenAmadeusConfig: (() -> Unit)? = null,
-    onNavigateToEditor: () -> Unit = {},
+    amadeusSummary: String = "未启用",
+    onOpenAmadeus: () -> Unit = {},
     modifier: Modifier = Modifier
-) {
-    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+) {    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
     val scrollState = rememberScrollState()
-    var showFolderDialog by remember { mutableStateOf(false) }
-
-    if (showFolderDialog) {
-        FolderCreationDialog(
-            show = true,
-            onConfirm = { name ->
-                showFolderDialog = false
-                onCreateFolder(name)
-            },
-            onDismiss = { showFolderDialog = false }
-        )
-    }
 
     Scaffold(
         modifier = modifier,
@@ -127,14 +102,7 @@ fun HomeScreen(
             TopAppBar(
                 title = "闪念小抄",
                 largeTitle = "闪念小抄",
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    MoreMenu(
-                        onCreateFolder = { showFolderDialog = true },
-                        onOpenAmadeusChat = onOpenAmadeusChat,
-                        onOpenAmadeusConfig = onOpenAmadeusConfig
-                    )
-                }
+                scrollBehavior = scrollBehavior
             )
         },
         popupHost = {}
@@ -148,22 +116,30 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Spacer(Modifier.height(4.dp))
-            // 连接状态卡片与 Amadeus 卡片并排
+            // 顶部一排：左连接手环卡片，右 Amadeus 配置入口卡片，并排各占半宽。
+            // Row 的高度取两卡中较高者，fillMaxHeight 把两卡都撑到同高——左右一高一低问题解决。
+            // 子卡内部文字一律 maxLines=1 + basicMarquee：超长滚动显示而非换行/截断。
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),   // 新增这一行
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ConnectionStatusCard(
                     connectionState = connectionState,
                     onTroubleshoot = onTroubleshoot,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
-                com.whyy.snapnotes.ui.components.AmadeusConfigCard(
+                AmadeusConfigCard(
                     enabled = amadeusEnabled,
                     ready = amadeusReady,
                     summary = amadeusSummary,
-                    onClick = onOpenAmadeusChat,
-                    modifier = Modifier.weight(1f)
+                    onClick = onOpenAmadeus,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
             }
 
@@ -174,44 +150,13 @@ fun HomeScreen(
                 isConnected = connectionState.isConnected
             )
 
-            // 本地存储库入口（全宽卡片）
-            AppCard(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onOpenLocalStorage,
-                containerColor = MiuixTheme.colorScheme.surfaceContainer
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Notes,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "本地存储库",
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "管理本地考点文件",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                    }
-                }
-            }
-
             if (selectedFile != null) {
-                    AppCard(
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
+                        insideMargin = PaddingValues(0.dp),
                         onClick = onPickFile,
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        showIndication = true,
+                        pressFeedbackType = PressFeedbackType.Tilt
                     ) {
                         BasicComponent(
                             title = selectedFile.fileName,
@@ -230,10 +175,11 @@ fun HomeScreen(
                         )
                     }
             } else {
-                AppCard(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = onPickFile,
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    showIndication = true,
+                    pressFeedbackType = PressFeedbackType.Tilt
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -263,11 +209,13 @@ fun HomeScreen(
                 }
             }
 
-            AppButton(
+            Button(
                 onClick = onStartPush,
                 enabled = selectedFile != null,
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = MiuixTheme.colorScheme.primary
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressable(interactionSource = null, indication = SinkFeedback()),
+                colors = ButtonDefaults.buttonColorsPrimary()
             ) {
                 Text(
                     text = if (selectedFile != null) "开始推送到手环" else "请先选择文件",
@@ -275,54 +223,9 @@ fun HomeScreen(
                 )
             }
 
-            AiPromptCard(modifier = Modifier.fillMaxWidth())
-
             JsonFileTutorial(modifier = Modifier.fillMaxWidth())
 
             FormulaTutorial(modifier = Modifier.fillMaxWidth())
-
-            // ── 知识点编辑器入口 ──
-            SmallTitle(text = "知识点管理", modifier = Modifier.padding(top = 8.dp))
-
-            AppCard(
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onNavigateToEditor,
-                containerColor = MiuixTheme.colorScheme.surfaceContainer
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Edit,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "打开知识点编辑器",
-                            style = MiuixTheme.textStyles.title4,
-                            fontWeight = FontWeight.Medium,
-                            color = MiuixTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "编辑科目、条目、公式，导入导出 JSON",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                    }
-                    Icon(
-                        imageVector = MiuixIcons.Back,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(18.dp)
-                            .rotate(180f),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                    )
-                }
-            }
 
             Spacer(Modifier.height(8.dp))
         }
@@ -336,10 +239,10 @@ private fun ConnectionStatusCard(
     modifier: Modifier = Modifier
 ) {
     val stage = connectionState.stage()
-    val cardColor = when (stage) {
-        ConnectionStage.Connected -> MiuixTheme.colorScheme.primaryContainer
-        ConnectionStage.Error -> MiuixTheme.colorScheme.errorContainer
-        else -> MiuixTheme.colorScheme.surfaceContainer
+    val colors = when (stage) {
+        ConnectionStage.Connected -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.primaryContainer)
+        ConnectionStage.Error -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.errorContainer)
+        else -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
     }
     val titleColor = when (stage) {
         ConnectionStage.Connected -> MiuixTheme.colorScheme.onPrimaryContainer
@@ -355,7 +258,7 @@ private fun ConnectionStatusCard(
     // 仅在失败态允许整卡点击进排查页；其它态（连接中/已连/空闲）不可点。
     val cardClick: (() -> Unit)? = if (stage == ConnectionStage.Error) onTroubleshoot else null
 
-    AppCard(
+    Card(
         modifier = modifier
             .fillMaxWidth()
             .then(
@@ -367,8 +270,9 @@ private fun ConnectionStatusCard(
                     )
                 } else Modifier
             ),
-        onClick = null,
-        containerColor = cardColor
+        colors = colors,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        showIndication = false
     ) {
         AnimatedContent(
             targetState = stage,

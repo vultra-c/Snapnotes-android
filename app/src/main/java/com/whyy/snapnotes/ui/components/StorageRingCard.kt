@@ -24,8 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.BandStorageInfoData
-import com.whyy.snapnotes.ui.components.AppCard
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -33,6 +34,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 /**
  * 主页手环存储空间圆环卡片。
@@ -71,9 +73,11 @@ fun StorageRingCard(
     val onSurface = MiuixTheme.colorScheme.onSurface
     val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
 
-    AppCard(
+    Card(
         modifier = modifier.fillMaxWidth(),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+        pressFeedbackType = PressFeedbackType.Tilt,
+        showIndication = false
     ) {
         Column(
             modifier = Modifier

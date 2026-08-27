@@ -34,8 +34,7 @@ import com.whyy.snapnotes.logic.AmadeusChat.SessionDetail
 import com.whyy.snapnotes.logic.AmadeusChat.SessionSnapshot
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import com.whyy.snapnotes.ui.components.AppCard
-import com.whyy.snapnotes.ui.components.AppDialog
+import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -50,6 +49,7 @@ import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -115,15 +115,14 @@ fun AmadeusContextScreen(
             // ① 最近一次调用
             item {
                 SmallTitle(text = "最近一次调用", modifier = Modifier.padding(top = 12.dp))
-                AppCard(
+                Card(
                     modifier = Modifier.padding(horizontal = 12.dp),
                     onClick = {
                         if (lastCall is CallStatus.Failed) {
                             copyToClipboard(context, lastCall.msg)
                             Toast.makeText(context, "错误信息已复制", Toast.LENGTH_SHORT).show()
                         }
-                    },
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
+                    }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -157,10 +156,7 @@ fun AmadeusContextScreen(
             // ③ 测试发送
             item {
                 SmallTitle(text = "测试发送", modifier = Modifier.padding(top = 12.dp))
-                AppCard(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer
-                ) {
+                Card(modifier = Modifier.padding(horizontal = 12.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         val focusRequester = remember { FocusRequester() }
                         TextField(
@@ -204,10 +200,7 @@ fun AmadeusContextScreen(
             }
             if (snapshots.isEmpty()) {
                 item {
-                    AppCard(
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
-                    ) {
+                    Card(modifier = Modifier.padding(horizontal = 12.dp)) {
                         Text(
                             "暂无会话。手环发对话或上方测试发送后会出现在这里。",
                             style = MiuixTheme.textStyles.body2,
@@ -218,10 +211,9 @@ fun AmadeusContextScreen(
                 }
             } else {
                 items(snapshots, key = { it.sessionId }) { snap ->
-                    AppCard(
+                    Card(
                         modifier = Modifier.padding(horizontal = 12.dp),
-                        onClick = { detailFor = onDetail(snap.sessionId) },
-                        containerColor = MiuixTheme.colorScheme.surfaceContainer
+                        onClick = { detailFor = onDetail(snap.sessionId) }
                     ) {
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -257,51 +249,60 @@ fun AmadeusContextScreen(
     val detail = detailFor
     if (detail != null) {
         val visible = remember(detail) { mutableStateOf(true) }
-        AppDialog(
+        OverlayDialog(
             title = sessionIdLabel(SessionSnapshot(detail.sessionId, detail.messages.size, detail.sessionId.startsWith("test_"))),
-            show = visible.value && detailFor != null,
+            show = visible.value,
             onDismissRequest = {
                 visible.value = false
                 detailFor = null
-            },
-            dismissText = "",
-            confirmText = "关闭",
-            onConfirm = { detailFor = null },
-            content = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    detail.messages.forEachIndexed { i, msg ->
-                        Text(
-                            text = if (msg.first == "user") "你" else "Amadeus",
-                            style = MiuixTheme.textStyles.footnote2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                        Text(
-                            text = msg.second,
-                            style = MiuixTheme.textStyles.body2,
-                            color = if (msg.first == "user") MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.primary
-                        )
-                        if (i < detail.messages.lastIndex) Spacer(Modifier.height(12.dp))
-                    }
-                }
             }
-        )
+        ) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                detail.messages.forEachIndexed { i, msg ->
+                    Text(
+                        text = if (msg.first == "user") "你" else "Amadeus",
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    )
+                    Text(
+                        text = msg.second,
+                        style = MiuixTheme.textStyles.body2,
+                        color = if (msg.first == "user") MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.primary
+                    )
+                    if (i < detail.messages.lastIndex) Spacer(Modifier.height(12.dp))
+                }
+                Spacer(Modifier.height(12.dp))
+                TextButton(
+                    text = "关闭",
+                    onClick = { detailFor = null },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
     }
 
-    // 清空全部确认——液态玻璃风格
-    AppDialog(
+    // 清空全部确认
+    OverlayDialog(
         title = "清空全部会话？",
         summary = "将删除所有 chat 历史，手环新对话仍会建新会话。",
         show = showClearAllConfirm,
-        onDismissRequest = { showClearAllConfirm = false },
-        dismissText = "取消",
-        confirmText = "仍然清空",
-        onDismiss = { showClearAllConfirm = false },
-        onConfirm = {
-            onClearAll()
-            showClearAllConfirm = false
-            Toast.makeText(context, "已清空全部", Toast.LENGTH_SHORT).show()
+        onDismissRequest = { showClearAllConfirm = false }
+    ) {
+        Spacer(Modifier.height(12.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextButton(text = "取消", onClick = { showClearAllConfirm = false }, modifier = Modifier.weight(1f))
+            TextButton(
+                text = "仍然清空",
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                onClick = {
+                    onClearAll()
+                    showClearAllConfirm = false
+                    Toast.makeText(context, "已清空全部", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.weight(1f)
+            )
         }
-    )
+    }
 }
 
 private fun callStatusSummary(status: CallStatus): String = when (status) {

@@ -6,7 +6,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
-import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
@@ -78,44 +77,6 @@ class AmadeusChat(
         private const val SYSTEM_PROMPT =
             "你是 Amadeus。请用纯文本回答，禁用 markdown（不要用 **加粗**、# 标题、- 列表符等）。" +
                 "回答尽量精炼，长内容请拆成若干段小短句，便于在手环小屏阅读。"
-
-        /**
-         * 手机端直聊系统提示词：内置「闪念小抄知识点 JSON 文件格式」完整规范，
-         * 让 AI 直接产出可推送到手环的 JSON，并约束 id 去重规则避免撞内置条目。
-         */
-        private const val PHONE_SYSTEM_PROMPT = """
-你是「闪念小抄」的知识点生成助手 Amadeus。请根据用户的需求（可以是直接描述，也可以是用户上传的文本/文档内容），把其中的知识点整理成一个可直接推送到手环的知识点 JSON 文件。
-
-【输出要求】
-- 只输出纯 JSON，禁止使用 markdown 代码块（不要用 ``` 包裹），禁止输出任何解释、前后缀或注释文字。
-- 必须是合法 JSON，中文直接书写，无需转义。
-
-【顶层结构】
-顶层必须是一个对象：键是科目名（字符串），值是该科目下的条目数组（数组中每个元素都是对象）。示例：
-{
-  "科目名": [
-    { "id": 1, "title": "条目标题", "desc": "简介", "raw": "原文全文", "points": ["要点1"], "formulas": ["公式"] }
-  ]
-}
-
-【条目字段】
-- title：string，必填，条目标题（缺失该条会被丢弃，这是唯一硬性要求）。
-- id：number，可选，科目内去重键；不写时手环自动用数组下标+1。
-- desc：string，可选，条目概要。
-- raw：string，可选，原文全文，可含换行。
-- points：string 数组，可选，速记要点，每条一个字符串，2~5 条为宜。
-- formulas：string 数组，可选，公式，用 LaTeX 或纯文本。
-
-【id 去重规则（非常重要）】
-- 手环内置 159 条高中知识点，科目为：语文、数学、英语、物理、化学、生物、历史、地理、政治、信息技术，这些科目的 id 占用 1~159。
-- 若科目名是上述内置科目之一（即给内置科目补充条目），id 必须用 9000 以上的大数，否则会被内置同 id 条目覆盖而丢失。
-- 若科目名是全新科目（不在上述列表内），id 在该科目内部不重复即可，从 1 开始编号即可。
-
-【生成建议】
-- 每个知识点提炼 2~5 条精炼要点放入 points，便于手环小屏阅读。
-- 数学/物理/化学等含公式的内容，把公式放入 formulas，用 LaTeX 格式（例如 "t = t_0 / \sqrt{1 - v^2/c^2}"）。
-- 没有原文就省略 raw，没有公式就省略 formulas，字段宁缺毋滥。
-"""
     }
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
@@ -123,16 +84,9 @@ class AmadeusChat(
     /** sessionId -> 历史消息（含系统提示词置顶）。 */
     private val contexts = mutableMapOf<String, MutableList<ChatMsg>>()
 
-    /** 手机端直聊上下文（与 BLE 会话 [contexts] 隔离，不走手环协议）。 */
-    private val phoneChatContext = mutableListOf<ChatMsg>()
-
     /** 最近一次 LLM 调用状态，供「上下文管理菜单」观测。 */
     private val _lastCall = MutableStateFlow<CallStatus>(CallStatus.Idle)
     val lastCall: StateFlow<CallStatus> = _lastCall.asStateFlow()
-
-    /** 手机端直聊状态，供手机端聊天 UI 观测 Loading/Success/Failed。 */
-    private val _phoneChatStatus = MutableStateFlow<PhoneChatStatus>(PhoneChatStatus.Idle)
-    val phoneChatStatus: StateFlow<PhoneChatStatus> = _phoneChatStatus.asStateFlow()
 
     /**
      * DNS 缓存：息屏 Doze 下系统 resolver 常被冻，`InetAddress.getAllByName` 直接返「No address associated
@@ -161,15 +115,6 @@ class AmadeusChat(
     private var activeNetwork: Network? = null
     @Volatile
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
-
-    /**
-     * 息屏 Doze 下 CPU 可能被冻结，导致 LLM 请求协程长时间不调度、SSE 流停摆（「息屏 AI 不可用」根因之一）。
-     * 在 LLM HTTP 调用前后 hold 一把 PARTIAL_WAKE_LOCK 保 CPU 不睡；带 60s 超时防泄漏。
-     */
-    private val wakeLock by lazy {
-        val pm = appContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SnapNotes:AmadeusChat")
-    }
 
     /** 申请一条 active internet 网络句柄。幂等：已申请则跳过。供 VM 在启用/连手环成功时调。 */
     fun requestActiveNetwork() {
@@ -232,17 +177,6 @@ class AmadeusChat(
         data class Running(val sid: String) : CallStatus()
         data class Success(val sid: String, val http: Int, val chars: Int, val ms: Long) : CallStatus()
         data class Failed(val sid: String, val msg: String, val http: Int? = null, val ms: Long = 0L) : CallStatus()
-    }
-
-    /** 手机端直聊单条消息（对外暴露，UI 列表用）。 */
-    data class PhoneChatMessage(val role: String, val content: String, val timestamp: Long = System.currentTimeMillis())
-
-    /** 手机端直聊状态：Idle 空闲；Loading 请求中；Success/Failed 终态含回复/错误与耗时。 */
-    sealed class PhoneChatStatus {
-        object Idle : PhoneChatStatus()
-        data class Loading(val sessionId: String) : PhoneChatStatus()
-        data class Success(val sessionId: String, val reply: String, val ms: Long) : PhoneChatStatus()
-        data class Failed(val sessionId: String, val msg: String, val ms: Long = 0L) : PhoneChatStatus()
     }
 
     /** 全部会话快照（主页/上下文页列表用）。 */
@@ -382,38 +316,25 @@ class AmadeusChat(
      * 夜间 Doze 很可能拦下前若干秒，靠延迟重试能在 maintenance 窗口（或用户亮屏）逮到机会。
      * 已开始切片回包（reply_start 已吐）后绝不重试 —— 重发会乱序；仅「首片未吐」安全。
      */
-    private suspend fun runLlmWithRetry(
-        cfg: AmadeusConfig,
-        sid: String,
-        hist: MutableList<ChatMsg>,
-        replyViaBle: Boolean,
-        systemPrompt: String = SYSTEM_PROMPT
-    ): String {
+    private suspend fun runLlmWithRetry(cfg: AmadeusConfig, sid: String, hist: MutableList<ChatMsg>, replyViaBle: Boolean): String {
         replyStartedThisRequest = false
         val maxRetries = if (replyViaBle) 2 else 1   // 真实路径更值得多忍一次，测试路径少等等
         var lastError: IOException? = null
-        // 息屏下 CPU 易被 Doze 冻住导致协程停摆，HTTP 调用前 hold 一把 PARTIAL_WAKE_LOCK 保 CPU 不睡；
-        // 60s 超时兜底，调用结束（含异常）在 finally 释放，防泄漏。
-        wakeLock?.takeIf { !it.isHeld }?.acquire(60_000L)
-        try {
-            repeat(maxRetries + 1) { attempt ->
-                try {
-                    return sprintRequestStream(cfg, sid, hist, replyViaBle, systemPrompt)
-                } catch (e: IOException) {
-                    lastError = e
-                    if (!isTransientNetworkError(e) || replyStartedForSid(sid)) throw e
-                    if (attempt >= maxRetries) throw e
-                    // Doze 下网络限制可能持续几秒，延迟重试逮下一个窗口。
-                    val backoffMs = if (replyViaBle) 1500L * (attempt + 1) else 800L
-                    Log.w(TAG, "LLM connect/socket fail (attempt ${attempt + 1}), retry in ${backoffMs}ms: ${e.message}")
-                    delay(backoffMs)
-                    replyStartedThisRequest = false
-                }
+        repeat(maxRetries + 1) { attempt ->
+            try {
+                return sprintRequestStream(cfg, sid, hist, replyViaBle)
+            } catch (e: IOException) {
+                lastError = e
+                if (!isTransientNetworkError(e) || replyStartedForSid(sid)) throw e
+                if (attempt >= maxRetries) throw e
+                // Doze 下网络限制可能持续几秒，延迟重试逮下一个窗口。
+                val backoffMs = if (replyViaBle) 1500L * (attempt + 1) else 800L
+                Log.w(TAG, "LLM connect/socket fail (attempt ${attempt + 1}), retry in ${backoffMs}ms: ${e.message}")
+                delay(backoffMs)
+                replyStartedThisRequest = false
             }
-            throw lastError ?: IOException("LLM retry exhausted")
-        } finally {
-            wakeLock?.takeIf { it.isHeld }?.release()
         }
+        throw lastError ?: IOException("LLM retry exhausted")
     }
 
     /** 判断是否属于「后台被掐 / 拒连 / DNS 失败」类的瞬时网络错误，值得重试一次以上。 */
@@ -493,8 +414,7 @@ class AmadeusChat(
         cfg: AmadeusConfig,
         sid: String,
         hist: List<ChatMsg>,
-        replyViaBle: Boolean,
-        systemPrompt: String = SYSTEM_PROMPT
+        replyViaBle: Boolean
     ): String = withContext(Dispatchers.IO) {
         val baseUrl = cfg.baseUrl.trimEnd('/')
         val url = if (baseUrl.isBlank()) {
@@ -503,7 +423,7 @@ class AmadeusChat(
             "$baseUrl/v1/chat/completions"
         }
         val messages = buildList {
-            add(mapOf("role" to "system", "content" to systemPrompt))
+            add(mapOf("role" to "system", "content" to SYSTEM_PROMPT))
             hist.forEach { add(mapOf("role" to it.role, "content" to it.content)) }
         }
         val body = buildJsonObject {
@@ -697,118 +617,4 @@ class AmadeusChat(
             }
         }
     )
-
-    /**
-     * 获取可用模型列表（OpenAI 兼容 GET /v1/models）。
-     *
-     * 用当前配置的 baseUrl + apiKey 调用厂商的 /v1/models 接口，
-     * 返回模型 ID 列表（按字母序）。失败返回空列表。
-     *
-     * 与 [sprintRequestStream] 共用 [buildClient] 但不共享 BLE 通道（纯 HTTP），
-     * 不需要 sendMutex（不与推书/chat 竞争 BLE）。
-     */
-    suspend fun fetchAvailableModels(cfg: AmadeusConfig): List<String> = withContext(Dispatchers.IO) {
-        val baseUrl = cfg.baseUrl.trimEnd('/')
-        val url = if (baseUrl.isBlank()) {
-            "https://api.deepseek.com/v1/models"
-        } else {
-            "$baseUrl/v1/models"
-        }
-        try {
-            val client = buildClient(cfg)
-            val request = Request.Builder()
-                .url(url)
-                .header("Authorization", "Bearer ${cfg.apiKey}")
-                .header("Accept", "application/json")
-                .get()
-                .build()
-
-            val resp = client.newCall(request).execute()
-            resp.use {
-                if (!it.isSuccessful) {
-                    val errBody = it.body?.string()?.take(300) ?: ""
-                    Log.e(TAG, "fetchAvailableModels HTTP ${it.code}: $errBody")
-                    return@use emptyList()
-                }
-                val bodyStr = it.body?.string() ?: return@use emptyList()
-                val obj = json.parseToJsonElement(bodyStr).jsonObject
-                val data = obj["data"] as? JsonArray ?: return@use emptyList()
-                val models = data.mapNotNull { item ->
-                    val itemObj = item.jsonObject
-                    itemObj["id"]?.jsonPrimitive?.contentOrNull
-                }.filter { it.isNotBlank() }.sorted()
-                Log.d(TAG, "fetchAvailableModels: ${models.size} models")
-                models
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "fetchAvailableModels fail: ${e.message}", e)
-            emptyList()
-        }
-    }
-
-    /* ──────────── 手机端直聊（不走 BLE，面向「生成知识点 JSON」等手机端场景） ──────────── */
-
-    /**
-     * 手机端直聊入口：用独立 [phoneChatContext] 与 [PHONE_SYSTEM_PROMPT]，不经过手环 BLE 协议。
-     *
-     * [fileContent] 非空时作为文档上下文拼进本轮 user 消息（用于「上传文档→生成 JSON」流程）。
-     * 串行执行：状态经 [phoneChatStatus] 暴露给 UI 观测；返回助手回复文本（失败返回空串，
-     * 失败详情见 [PhoneChatStatus.Failed]）。
-     */
-    suspend fun sendPhoneChat(text: String, fileContent: String? = null): String {
-        val cfg = configFlow.value
-        val sid = "phone_" + SystemClock.elapsedRealtime()
-        if (!cfg.isReady) {
-            _phoneChatStatus.value = PhoneChatStatus.Failed(
-                sid,
-                if (!cfg.enabled) "Amadeus 未启用" else "Amadeus 未配置 API Key / Model"
-            )
-            return ""
-        }
-        val userMessage = if (!fileContent.isNullOrBlank()) {
-            "【文档内容】\n$fileContent\n\n【用户指令】\n$text"
-        } else {
-            text
-        }
-        return runPhoneChatRequest(sid, userMessage, cfg)
-    }
-
-    /**
-     * 手机端直聊请求执行流（结构对齐 [runRequest]，但 replyViaBle=false、用 [PHONE_SYSTEM_PROMPT]、
-     * 维护 [phoneChatContext]、刷 [_phoneChatStatus]）。
-     *
-     * 成功返回助手回复文本；失败时移除本轮未答的 user 消息保持历史干净、置 Failed 并返回空串
-     * （失败详情见 [PhoneChatStatus.Failed]，由 UI 经 [phoneChatStatus] 观测）。
-     */
-    private suspend fun runPhoneChatRequest(sid: String, text: String, cfg: AmadeusConfig): String {
-        val hist = phoneChatContext
-        hist += ChatMsg("user", text)
-        val started = SystemClock.elapsedRealtime()
-        _phoneChatStatus.value = PhoneChatStatus.Loading(sid)
-        return try {
-            val assistantText = runLlmWithRetry(cfg, sid, hist, replyViaBle = false, systemPrompt = PHONE_SYSTEM_PROMPT)
-            hist += ChatMsg("assistant", assistantText)
-            _phoneChatStatus.value = PhoneChatStatus.Success(sid, assistantText, SystemClock.elapsedRealtime() - started)
-            assistantText
-        } catch (e: TimeoutCancellationException) {
-            hist.removeAt(hist.lastIndex)
-            _phoneChatStatus.value = PhoneChatStatus.Failed(sid, "调用超时", SystemClock.elapsedRealtime() - started)
-            ""
-        } catch (e: Exception) {
-            Log.e(TAG, "phone chat request fail: ${e.message}", e)
-            hist.removeAt(hist.lastIndex)
-            _phoneChatStatus.value = PhoneChatStatus.Failed(sid, e.message ?: e.javaClass.simpleName, SystemClock.elapsedRealtime() - started)
-            ""
-        }
-    }
-
-    /** 清空手机端直聊上下文并复位状态为 Idle。 */
-    fun clearPhoneChat() {
-        phoneChatContext.clear()
-        _phoneChatStatus.value = PhoneChatStatus.Idle
-    }
-
-    /** 手机端直聊历史快照（role/content/timestamp），供 UI 渲染对话列表。 */
-    fun getPhoneChatHistory(): List<PhoneChatMessage> =
-        phoneChatContext.map { PhoneChatMessage(it.role, it.content) }
 }

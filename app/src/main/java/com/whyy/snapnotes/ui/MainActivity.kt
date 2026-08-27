@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
@@ -38,14 +37,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.NavDisplayTransitionEffects
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import com.whyy.snapnotes.App
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
@@ -58,11 +49,12 @@ import com.whyy.snapnotes.ui.components.FirstSyncConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryBatchDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.VersionIncompatibleDialog
+import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
+import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
+import com.whyy.snapnotes.ui.screens.EditorScreen
 import com.whyy.snapnotes.ui.screens.BuiltinFileManagerScreen
 import com.whyy.snapnotes.ui.screens.AboutScreen
 import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
-import com.whyy.snapnotes.ui.screens.AmadeusChatScreen
-import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
 import com.whyy.snapnotes.ui.screens.HistoryScreen
 import com.whyy.snapnotes.ui.screens.HomeScreen
 import com.whyy.snapnotes.ui.screens.ProgressScreen
@@ -74,22 +66,14 @@ import com.whyy.snapnotes.ui.theme.SnapNotesTheme
 import com.whyy.snapnotes.ui.viewmodel.AppScreen
 import com.whyy.snapnotes.ui.viewmodel.SnapNotesViewModel
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.NavigationBar
+import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Home
-import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.icon.extended.File
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Store
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.whyy.snapnotes.ui.components.AppBackground
-import com.whyy.snapnotes.ui.components.AppNavTab
-import com.whyy.snapnotes.ui.components.AppNavigationBar
-import com.whyy.snapnotes.ui.screens.StoreScreen
-import com.whyy.snapnotes.ui.screens.StoreDetailScreen
-import com.whyy.snapnotes.ui.screens.LocalStorageScreen
-import com.whyy.snapnotes.ui.screens.EditorScreen
-import com.whyy.snapnotes.data.StoreSubject
-import com.whyy.snapnotes.data.StorePack
+import top.yukonga.miuix.kmp.icon.extended.VerticalSplit
 
 sealed interface Screen : NavKey {
     data object HomePager : Screen
@@ -99,11 +83,7 @@ sealed interface Screen : NavKey {
     data object About : Screen
     data object Troubleshoot : Screen
     data object AmadeusConfig : Screen
-    data object AmadeusChat : Screen
     data object AmadeusContext : Screen
-    data class StoreDetail(val pack: com.whyy.snapnotes.data.StorePack) : Screen
-    data object LocalStorage : Screen
-    data object Editor : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -226,8 +206,6 @@ class MainActivity : ComponentActivity() {
                 val troubleshootState by viewModel.troubleshootState.collectAsState()
                 val amadeus by viewModel.amadeus.collectAsState()
                 val amadeusLastCall by viewModel.amadeusLastCall.collectAsState()
-                val amadeusModels by viewModel.amadeusModels.collectAsState()
-                val amadeusModelsLoading by viewModel.amadeusModelsLoading.collectAsState()
 
                 // 「启用 Amadeus」开启 → 请求 Doze 电池优化白名单（后台/锁屏跑 LLM 网络的前提）。
                 LaunchedEffect(Unit) {
@@ -276,31 +254,10 @@ class MainActivity : ComponentActivity() {
                         backStack.add(Screen.AmadeusConfig)
                     }
                 }
-                val navigateToAmadeusChat = {
-                    if (backStack.lastOrNull() != Screen.AmadeusChat) {
-                        backStack.add(Screen.AmadeusChat)
-                    }
-                }
                 val navigateToAmadeusContext = {
                     if (backStack.lastOrNull() != Screen.AmadeusContext) {
                         backStack.add(Screen.AmadeusContext)
                     }
-                }
-                val navigateToStoreDetail = { pack: com.whyy.snapnotes.data.StorePack ->
-                    backStack.add(Screen.StoreDetail(pack))
-                    Unit
-                }
-                val navigateToLocalStorage = {
-                    if (backStack.lastOrNull() != Screen.LocalStorage) {
-                        backStack.add(Screen.LocalStorage)
-                    }
-                    Unit
-                }
-                val navigateToEditor = {
-                    if (backStack.lastOrNull() != Screen.Editor) {
-                        backStack.add(Screen.Editor)
-                    }
-                    Unit
                 }
                 // 注入给 Activity 侧的导出流程入口（已命名后用它打开选目录模式）。
                 navigateToFileManagerEntry = navigateToFileManager
@@ -314,8 +271,10 @@ class MainActivity : ComponentActivity() {
                             pagerState.animateScrollToPage(0)
                         }
                         AppScreen.Editor -> {
-                            // 编辑器独立页面：导航到编辑器页面。
-                            navigateToEditor()
+                            if (backStack.lastOrNull() !is Screen.HomePager) {
+                                navigateToHome()
+                            }
+                            pagerState.animateScrollToPage(1)
                         }
                         else -> Unit
                     }
@@ -324,47 +283,50 @@ class MainActivity : ComponentActivity() {
                 val showBottomBar = currentScreen is Screen.HomePager
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    AppBackground(
-                        backgroundColor = MiuixTheme.colorScheme.background
-                    )
                     Scaffold(
                         snackbarHost = {
                             top.yukonga.miuix.kmp.basic.SnackbarHost(state = snackbarHostState)
                         },
                         bottomBar = {
                             if (showBottomBar) {
-                                AppNavigationBar(
-                                    selectedTabIndex = { pagerState.currentPage },
-                                    onTabSelected = { index ->
-                                        when (index) {
-                                            0 -> {
-                                                viewModel.openHome()
-                                                scope.launch { pagerState.animateScrollToPage(0) }
-                                            }
-
-                                            1 -> {
-                                                viewModel.openStore()
-                                                scope.launch { pagerState.animateScrollToPage(1) }
-                                            }
-
-                                            2 -> {
-                                                viewModel.openHistory()
-                                                scope.launch { pagerState.animateScrollToPage(2) }
-                                            }
-
-                                            3 -> {
-                                                viewModel.openSettings()
-                                                scope.launch { pagerState.animateScrollToPage(3) }
-                                            }
-                                        }
-                                    },
-                                    tabs = listOf(
-                                        AppNavTab(MiuixIcons.Light.Home, "主页"),
-                                        AppNavTab(MiuixIcons.Light.Store, "商店"),
-                                        AppNavTab(MiuixIcons.Light.Recent, "历史"),
-                                        AppNavTab(MiuixIcons.Light.Settings, "设置")
-                                    ),
-                                )
+                                NavigationBar {
+                                    NavigationBarItem(
+                                        selected = pagerState.currentPage == 0,
+                                        onClick = {
+                                            viewModel.openHome()
+                                            scope.launch { pagerState.animateScrollToPage(0) }
+                                        },
+                                        icon = MiuixIcons.VerticalSplit,
+                                        label = "主页"
+                                    )
+                                    NavigationBarItem(
+                                        selected = pagerState.currentPage == 1,
+                                        onClick = {
+                                            viewModel.openEditor()
+                                            scope.launch { pagerState.animateScrollToPage(1) }
+                                        },
+                                        icon = MiuixIcons.Edit,
+                                        label = "编辑"
+                                    )
+                                    NavigationBarItem(
+                                        selected = pagerState.currentPage == 2,
+                                        onClick = {
+                                            viewModel.openHistory()
+                                            scope.launch { pagerState.animateScrollToPage(2) }
+                                        },
+                                        icon = MiuixIcons.File,
+                                        label = "历史"
+                                    )
+                                    NavigationBarItem(
+                                        selected = pagerState.currentPage == 3,
+                                        onClick = {
+                                            viewModel.openSettings()
+                                            scope.launch { pagerState.animateScrollToPage(3) }
+                                        },
+                                        icon = MiuixIcons.Settings,
+                                        label = "设置"
+                                    )
+                                }
                             }
                         } ,
                     ) { paddingValues ->
@@ -379,7 +341,7 @@ class MainActivity : ComponentActivity() {
                                         HorizontalPager(
                                             state = pagerState,
                                             modifier = Modifier.fillMaxSize(),
-                                            beyondViewportPageCount = 2,
+                                            beyondViewportPageCount = 1,
                                             key = { it }
                                         ) { page ->
                                             when (page) {
@@ -397,30 +359,43 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     onStartPush = viewModel::startPushFromSelected,
                                                     onTroubleshoot = navigateToTroubleshoot,
-                                                    onOpenAmadeusChat = navigateToAmadeusChat,
                                                     amadeusEnabled = amadeus.enabled,
                                                     amadeusReady = amadeus.isReady,
-                                                    amadeusSummary = if (!amadeus.enabled) "未启用"
-                                                        else if (amadeus.isReady) "已配置 · ${amadeus.model}"
-                                                        else "配置不完整",
-                                                    onCreateFolder = viewModel::createFolder,
-                                                    onOpenLocalStorage = navigateToLocalStorage,
-                                                    onOpenAmadeusConfig = navigateToAmadeus,
-                                                    onNavigateToEditor = {
-                                                        viewModel.openEditor()
-                                                        navigateToEditor()
+                                                    amadeusSummary = when {
+                                                        !amadeus.enabled -> "未启用"
+                                                        amadeus.isReady && amadeus.model.isNotBlank() -> "已配置 · ${amadeus.model}"
+                                                        amadeus.isReady -> "已配置"
+                                                        else -> "配置不完整"
                                                     },
+                                                    onOpenAmadeus = navigateToAmadeus,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
-                                                1 -> StoreScreen(
-                                                    onPackClick = navigateToStoreDetail,
-                                                    onCreateFolder = viewModel::createFolder,
-                                                    onImportSubject = { subject ->
-                                                        viewModel.importStoreSubject(subject)
+                                                1 -> EditorScreen(
+                                                    subjects = editorSubjects,
+                                                    formulaRenderer = editorFormulaRenderer,
+                                                    onAddSubject = viewModel::addSubject,
+                                                    onRemoveSubject = viewModel::removeSubject,
+                                                    onUpdateSubjectName = viewModel::updateSubjectName,
+                                                    onAddEntry = viewModel::addEntry,
+                                                    onRemoveEntry = viewModel::removeEntry,
+                                                    onUpdateEntry = viewModel::updateEntry,
+                                                    onLoadFile = {
+                                                        launchFilePicker(
+                                                            true,
+                                                            navigateToFileManager
+                                                        )
                                                     },
-                                                    onImportSubjects = { subjects ->
-                                                        viewModel.importStoreSubjects(subjects)
+                                                    onExportToFile = {
+                                                        // 导出到用户指定目录：先命名，再用内置文件管理器选目录写入。
+                                                        startExportFlow()
+                                                    },
+                                                    onPushFile = {
+                                                        // 推送当前编辑内容生成的 JSON，走与主页一致的主推送链路。
+                                                        viewModel.pushFromString(
+                                                            viewModel.getEditorJsonString(),
+                                                            "自定义知识点.json"
+                                                        )
                                                     },
                                                     modifier = Modifier.fillMaxSize()
                                                 )
@@ -430,11 +405,7 @@ class MainActivity : ComponentActivity() {
                                                     onRepush = viewModel::repushRecord,
                                                     onDeleteRequest = viewModel::requestHistoryDelete,
                                                     onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
-                                                    onEditRecord = { record ->
-                                                        viewModel.openEditorFromCache(record)
-                                                        navigateToEditor()
-                                                    },
-                                                    onCreateFolder = viewModel::createFolder,
+                                                    onEditRecord = viewModel::openEditorFromCache,  // 新增这一行
                                                     modifier = Modifier.fillMaxSize()
                                                 )
 
@@ -447,6 +418,7 @@ class MainActivity : ComponentActivity() {
                                                     onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
                                                     lastExportDirSummary = lastExportDirSummary,
                                                     onPickExportDir = {
+                                                        // 设置页点「导出目录」：以内置文件管理器浏览目录（选目录模式，不写文件）。
                                                         pendingFileManagerForEditor = false
                                                         pendingExportSelection = false
                                                         pendingPickDirBrowse = true
@@ -454,7 +426,6 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     onOpenAbout = navigateToAbout,
                                                     onResetFirstSyncConfirm = viewModel::resetFirstSyncConfirm,
-                                                    onCreateFolder = viewModel::createFolder,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
                                             }
@@ -521,77 +492,6 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                     }
-                                    entry<Screen.StoreDetail> { screenEntry ->
-                                        StoreDetailScreen(
-                                            pack = screenEntry.pack,
-                                            onBackClick = navigateBack,
-                                            onImportAll = {
-                                                viewModel.importStoreSubjects(screenEntry.pack.subjects)
-                                                navigateBack()
-                                            },
-                                            onImportSelected = { selected ->
-                                                viewModel.importStoreSubjects(selected)
-                                                navigateBack()
-                                            },
-                                            onImportSingle = { subject ->
-                                                viewModel.importStoreSubject(subject)
-                                            },
-                                            onEditSubject = { subject ->
-                                                viewModel.loadEditorFromStoreSubject(subject)
-                                                navigateToEditor()
-                                            },
-                                            onCreateFolder = viewModel::createFolder,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.LocalStorage> {
-                                        LaunchedEffect(Unit) { viewModel.refreshLocalStorage() }
-                                        val localFolders by viewModel.localFolders.collectAsState()
-                                        val localFiles by viewModel.localFiles.collectAsState()
-                                        val localCurrentPath by viewModel.localCurrentPath.collectAsState()
-                                        LocalStorageScreen(
-                                            currentPath = localCurrentPath,
-                                            folders = localFolders,
-                                            files = localFiles,
-                                            onBackClick = navigateBack,
-                                            onFolderClick = viewModel::navigateLocalFolder,
-                                            onCreateFolder = viewModel::createLocalFolder,
-                                            onImportToBand = { file ->
-                                                viewModel.pushFromFile(file)
-                                                navigateBack()
-                                            },
-                                            onDeleteFile = viewModel::deleteLocalFile,
-                                            onRenameFile = viewModel::renameLocalFile,
-                                            onRefresh = viewModel::refreshLocalStorage,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.Editor> {
-                                        EditorScreen(
-                                            subjects = editorSubjects,
-                                            formulaRenderer = editorFormulaRenderer,
-                                            onAddSubject = viewModel::addSubject,
-                                            onRemoveSubject = viewModel::removeSubject,
-                                            onUpdateSubjectName = viewModel::updateSubjectName,
-                                            onAddEntry = viewModel::addEntry,
-                                            onRemoveEntry = viewModel::removeEntry,
-                                            onUpdateEntry = viewModel::updateEntry,
-                                            onLoadFile = {
-                                                launchFilePicker(true, navigateToFileManager)
-                                            },
-                                            onExportToFile = {
-                                                startExportFlow()
-                                            },
-                                            onPushFile = {
-                                                viewModel.pushFromString(
-                                                    viewModel.getEditorJsonString(),
-                                                    "自定义知识点.json"
-                                                )
-                                            },
-                                            onBackClick = navigateBack,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
                                     entry<Screen.About> {
                                         AboutScreen(
                                             onBackClick = navigateBack,
@@ -625,34 +525,6 @@ class MainActivity : ComponentActivity() {
                                             onModelChange = viewModel::setAmadeusModel,
                                             onBackClick = navigateBack,
                                             onOpenContext = navigateToAmadeusContext,
-                                            availableModels = amadeusModels,
-                                            modelsLoading = amadeusModelsLoading,
-                                            onFetchModels = viewModel::fetchAvailableModels,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.AmadeusChat> {
-                                        val phoneChatMessages by viewModel.phoneChatMessages.collectAsState()
-                                        val phoneChatStatus by viewModel.phoneChatStatus.collectAsState()
-                                        AmadeusChatScreen(
-                                            messages = phoneChatMessages,
-                                            chatStatus = phoneChatStatus,
-                                            amadeusEnabled = amadeus.enabled,
-                                            amadeusReady = amadeus.isReady,
-                                            currentModel = amadeus.model,
-                                            availableModels = amadeusModels,
-                                            modelsLoading = amadeusModelsLoading,
-                                            onModelChange = viewModel::setAmadeusModel,
-                                            onFetchModels = viewModel::fetchAvailableModels,
-                                            onSendMessage = { text, fileContent ->
-                                                viewModel.sendPhoneChatMessage(text, fileContent)
-                                            },
-                                            onClearChat = viewModel::clearPhoneChat,
-                                            onImportJson = { json ->
-                                                viewModel.importJsonFromChat(json)
-                                            },
-                                            onOpenConfig = navigateToAmadeus,
-                                            onBackClick = navigateBack,
                                             modifier = Modifier.fillMaxSize()
                                         )
                                     }
@@ -703,22 +575,7 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         finish()
                                     }
-                                },
-                                // 页面转场：进栈右滑淡入（MIUI 风格），出栈反向。
-                                transitionSpec = {
-                                    (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(380, easing = FastOutSlowInEasing))) togetherWith
-                                            (slideOutHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / 4 } + fadeOut(tween(380, easing = FastOutSlowInEasing)))
-                                },
-                                popTransitionSpec = {
-                                    (slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / 4 } + fadeIn(tween(380, easing = FastOutSlowInEasing))) togetherWith
-                                            (slideOutHorizontally(tween(380, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(380, easing = FastOutSlowInEasing)))
-                                },
-                                transitionEffects = NavDisplayTransitionEffects(
-                                    enableCornerClip = true,
-                                    dimAmount = 0.2f,
-                                    blockInputDuringTransition = true,
-                                    popDirectionFollowsSwipeEdge = false
-                                )
+                                }
                             )
                         }
                         FirstSyncConfirmDialog(

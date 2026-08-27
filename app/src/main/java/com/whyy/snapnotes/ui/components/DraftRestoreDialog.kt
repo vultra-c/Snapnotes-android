@@ -1,12 +1,20 @@
 package com.whyy.snapnotes.ui.components
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.whyy.snapnotes.ui.components.AppDialog
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 
 @Composable
 fun DraftRestoreDialog(
@@ -25,29 +33,35 @@ fun DraftRestoreDialog(
             pendingAction = null
         }
     }
-    AppDialog(
+    OverlayDialog(
         show = visible,
         title = "恢复草稿",
         summary = "检测到上次编辑未保存的内容，是否恢复到编辑器？",
         onDismissRequest = { /* 必须显式选择，禁止外部关闭 */ },
-        dismissText = "丢弃",
-        confirmText = "恢复",
-        onDismiss = {
-            visible = false
-            pendingAction = onDiscard
-        },
-        onConfirm = {
-            visible = false
-            pendingAction = onRestore
-        }
-    )
-
-    // 退场动画结束后执行延迟动作（直接执行会阻塞主线程导致动画被跳过）。
-    androidx.compose.runtime.LaunchedEffect(visible) {
-        if (!visible && pendingAction != null) {
-            kotlinx.coroutines.delay(220)
+        onDismissFinished = {
             pendingAction?.let { it() }
             pendingAction = null
+        }
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            TextButton(
+                text = "丢弃",
+                onClick = {
+                    visible = false
+                    pendingAction = onDiscard
+                },
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(20.dp))
+            TextButton(
+                text = "恢复",
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                onClick = {
+                    visible = false
+                    pendingAction = onRestore
+                },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

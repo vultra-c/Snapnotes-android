@@ -42,15 +42,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.RawToLatexConverter
-import com.whyy.snapnotes.ui.components.AppCard
-import com.whyy.snapnotes.ui.components.AppDialog
 import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import com.whyy.snapnotes.ui.viewmodel.EditorSubject
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -59,9 +58,9 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Edit
@@ -84,7 +83,6 @@ fun EditorScreen(
     onLoadFile: () -> Unit,
     onExportToFile: () -> Unit,
     onPushFile: () -> Unit,
-    onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
@@ -96,12 +94,7 @@ fun EditorScreen(
             TopAppBar(
                 title = "编辑 JSON 文件",
                 largeTitle = "编辑 JSON 文件",
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    IconButton(onClick = onBackClick, modifier = Modifier.padding(start = 6.dp)) {
-                        Icon(imageVector = MiuixIcons.Back, contentDescription = "返回")
-                    }
-                }
+                scrollBehavior = scrollBehavior
             )
         },
         popupHost = {}
@@ -114,119 +107,80 @@ fun EditorScreen(
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            EditorContent(
-                subjects = subjects,
-                formulaRenderer = formulaRenderer,
-                onAddSubject = onAddSubject,
-                onRemoveSubject = onRemoveSubject,
-                onUpdateSubjectName = onUpdateSubjectName,
-                onAddEntry = onAddEntry,
-                onRemoveEntry = onRemoveEntry,
-                onUpdateEntry = onUpdateEntry,
-                onLoadFile = onLoadFile,
-                onExportToFile = onExportToFile,
-                onPushFile = onPushFile
-            )
+            Spacer(Modifier.height(4.dp))
+
+            Button(
+                onClick = onLoadFile,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressable(interactionSource = null, indication = SinkFeedback()),
+                colors = ButtonDefaults.buttonColors()
+            ) {
+                Icon(imageVector = MiuixIcons.File, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("加载现有 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
+            }
+
+            SmallTitle(text = "科目列表", modifier = Modifier.padding(top = 4.dp))
+
+            if (subjects.isEmpty()) {
+                EmptyPlaceholderCard(
+                    text = "还没有任何科目，点击下方按钮添加第一个科目",
+                    icon = MiuixIcons.Edit
+                )
+            }
+
+            subjects.forEachIndexed { subjectIndex, subject ->
+                SubjectCard(
+                    subject = subject,
+                    subjectIndex = subjectIndex,
+                    formulaRenderer = formulaRenderer,
+                    onRemoveSubject = { onRemoveSubject(subjectIndex) },
+                    onUpdateSubjectName = { onUpdateSubjectName(subjectIndex, it) },
+                    onAddEntry = { onAddEntry(subjectIndex) },
+                    onRemoveEntry = { entryIndex -> onRemoveEntry(subjectIndex, entryIndex) },
+                    onUpdateEntry = { entryIndex, entry -> onUpdateEntry(subjectIndex, entryIndex, entry) }
+                )
+            }
+
+            Button(
+                onClick = onAddSubject,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressable(interactionSource = null, indication = SinkFeedback()),
+                colors = ButtonDefaults.buttonColors()
+            ) {
+                Icon(imageVector = MiuixIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("添加科目", color = MiuixTheme.colorScheme.onSecondaryVariant)
+            }
+
+            Button(
+                onClick = onExportToFile,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressable(interactionSource = null, indication = SinkFeedback()),
+                colors = ButtonDefaults.buttonColors()
+            ) {
+                Icon(imageVector = MiuixIcons.Download, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("导出 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
+            }
+
+            Button(
+                onClick = onPushFile,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressable(interactionSource = null, indication = SinkFeedback()),
+                colors = ButtonDefaults.buttonColorsPrimary()
+            ) {
+                Icon(imageVector = MiuixIcons.Send, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("推送 JSON 文件到手环", color = MiuixTheme.colorScheme.onPrimary)
+            }
+
+            Spacer(Modifier.height(8.dp))
         }
-    }
-}
-
-/**
- * 编辑器内容区：包含加载文件、科目列表、导出、推送等操作。
- * 可独立嵌入其他页面的滚动列表中（如合并到主页）。
- */
-@Composable
-fun EditorContent(
-    subjects: List<EditorSubject>,
-    formulaRenderer: FormulaPngRenderer?,
-    onAddSubject: () -> Unit,
-    onRemoveSubject: (Int) -> Unit,
-    onUpdateSubjectName: (Int, String) -> Unit,
-    onAddEntry: (Int) -> Unit,
-    onRemoveEntry: (Int, Int) -> Unit,
-    onUpdateEntry: (Int, Int, EditorEntry) -> Unit,
-    onLoadFile: () -> Unit,
-    onExportToFile: () -> Unit,
-    onPushFile: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Spacer(Modifier.height(4.dp))
-
-        Button(
-            onClick = onLoadFile,
-            modifier = Modifier
-                .fillMaxWidth()
-                .pressable(interactionSource = null, indication = SinkFeedback()),
-            colors = ButtonDefaults.buttonColors()
-        ) {
-            Icon(imageVector = MiuixIcons.File, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("加载现有 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
-        }
-
-        SmallTitle(text = "科目列表", modifier = Modifier.padding(top = 4.dp))
-
-        if (subjects.isEmpty()) {
-            EmptyPlaceholderCard(
-                text = "还没有任何科目，点击下方按钮添加第一个科目",
-                icon = MiuixIcons.Edit
-            )
-        }
-
-        subjects.forEachIndexed { subjectIndex, subject ->
-            SubjectCard(
-                subject = subject,
-                subjectIndex = subjectIndex,
-                formulaRenderer = formulaRenderer,
-                onRemoveSubject = { onRemoveSubject(subjectIndex) },
-                onUpdateSubjectName = { onUpdateSubjectName(subjectIndex, it) },
-                onAddEntry = { onAddEntry(subjectIndex) },
-                onRemoveEntry = { entryIndex -> onRemoveEntry(subjectIndex, entryIndex) },
-                onUpdateEntry = { entryIndex, entry -> onUpdateEntry(subjectIndex, entryIndex, entry) }
-            )
-        }
-
-        Button(
-            onClick = onAddSubject,
-            modifier = Modifier
-                .fillMaxWidth()
-                .pressable(interactionSource = null, indication = SinkFeedback()),
-            colors = ButtonDefaults.buttonColors()
-        ) {
-            Icon(imageVector = MiuixIcons.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("添加科目", color = MiuixTheme.colorScheme.onSecondaryVariant)
-        }
-
-        Button(
-            onClick = onExportToFile,
-            modifier = Modifier
-                .fillMaxWidth()
-                .pressable(interactionSource = null, indication = SinkFeedback()),
-            colors = ButtonDefaults.buttonColors()
-        ) {
-            Icon(imageVector = MiuixIcons.Download, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("导出 JSON 文件", color = MiuixTheme.colorScheme.onSecondaryVariant)
-        }
-
-        Button(
-            onClick = onPushFile,
-            modifier = Modifier
-                .fillMaxWidth()
-                .pressable(interactionSource = null, indication = SinkFeedback()),
-            colors = ButtonDefaults.buttonColorsPrimary()
-        ) {
-            Icon(imageVector = MiuixIcons.Send, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("推送 JSON 文件到手环", color = MiuixTheme.colorScheme.onPrimary)
-        }
-
-        Spacer(Modifier.height(8.dp))
     }
 }
 
@@ -248,9 +202,9 @@ private fun SubjectCard(
         label = "SubjectChevron"
     )
 
-    AppCard(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -350,9 +304,9 @@ private fun EntryCard(
     )
     val e = entry
 
-    AppCard(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = MiuixTheme.colorScheme.surfaceVariant
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -386,19 +340,6 @@ private fun EntryCard(
                 )
             }
 
-            // 简介字段始终可见，方便快速编辑
-            TextField(
-                value = e.desc,
-                onValueChange = { onUpdateEntry(e.copy(desc = it)) },
-                label = "简介",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp, end = 12.dp),
-                singleLine = false,
-                minLines = 1,
-                maxLines = 3
-            )
-
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(spring(dampingRatio = Spring.DampingRatioNoBouncy)) + fadeIn(),
@@ -426,6 +367,15 @@ private fun EntryCard(
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
+                    TextField(
+                        value = e.desc,
+                        onValueChange = { onUpdateEntry(e.copy(desc = it)) },
+                        label = "简介",
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = false,
+                        minLines = 2,
+                        maxLines = 4
+                    )
                     TextField(
                         value = e.raw,
                         onValueChange = { onUpdateEntry(e.copy(raw = it)) },
@@ -526,9 +476,9 @@ private fun EntryCard(
 
 @Composable
 private fun EmptyPlaceholderCard(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    AppCard(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = MiuixTheme.colorScheme.surfaceContainer
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -687,28 +637,33 @@ fun JsonPreviewDialog(
     show: Boolean,
     onDismiss: () -> Unit
 ) {
-    AppDialog(
-        show = show,
-        title = "JSON 预览",
-        summary = "预览即将导出的 JSON 内容：",
-        confirmText = "关闭",
-        dismissText = "",
-        onConfirm = onDismiss,
-        onDismiss = onDismiss,
-        onDismissRequest = onDismiss
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(360.dp)
-                .verticalScroll(rememberScrollState())
-                .background(MiuixTheme.colorScheme.surfaceVariant)
-                .padding(12.dp)
+    if (show) {
+        OverlayDialog(
+            title = "JSON 预览",
+            summary = "预览即将导出的 JSON 内容：",
+            show = show,   // Boolean，与 SuperDialog 新版一致
+            onDismissRequest = onDismiss
         ) {
-            Text(
-                text = jsonString,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurface
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(360.dp)
+                    .verticalScroll(rememberScrollState())
+                    .background(MiuixTheme.colorScheme.surfaceVariant)
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = jsonString,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            TextButton(
+                text = "关闭",
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

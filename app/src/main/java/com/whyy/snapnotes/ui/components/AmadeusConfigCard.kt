@@ -16,9 +16,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.whyy.snapnotes.ui.components.AppCard
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 /**
  * 主页「Amadeus 配置」入口卡片，与连接状态卡并排放一行。
@@ -44,10 +46,12 @@ fun AmadeusConfigCard(
     val onSurface = MiuixTheme.colorScheme.onSurface
     val summaryColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
 
-    AppCard(
+    Card(
         modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
         onClick = onClick,
-        containerColor = MiuixTheme.colorScheme.surfaceContainer
+        pressFeedbackType = PressFeedbackType.Tilt,
+        showIndication = true
     ) {
         Column(
             modifier = Modifier
