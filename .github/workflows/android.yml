@@ -28,17 +28,13 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 从 Secrets 还原签名文件 + properties
-    - name: Setup Keystore for Signing
-      run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
-        cat > keystore.properties << 'PROPS_EOF'
-        storeFile=release.jks
-        storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-        keyAlias=${{ secrets.KEY_ALIAS }}
-        keyPassword=${{ secrets.KEY_PASSWORD }}
-        PROPS_EOF
-        ls -l release.jks keystore.properties
+    # 签名已入库（app/snapnotes.p12 项目共享签名，build.gradle.kts 三级回退默认使用），
+    # 无需再从 Secrets 还原 release.jks：CI 与本地构建的 APK 签名完全一致，
+    # 覆盖安装不再触发「签名不一致，是否先卸载」提示。
+    # 若将来需要正式渠道独立签名：在仓库根目录放置 keystore.properties 及其指向的 jks，
+    # build.gradle.kts 会自动优先使用它（三级回退第一级）。
+    - name: Verify Shared Keystore Present
+      run: ls -l app/snapnotes.p12
 
     # 构建 APK，带重试机制应对瞬时网络问题
     - name: Build Universal Release APK
@@ -64,15 +60,15 @@ jobs:
         BUILD_TIME=$(date +'%Y%m%d_%H%M')
         COMMIT_HASH=${GITHUB_SHA::7}
         mkdir -p build_output
-        
+
         APK_PATH=$(find . -path "*/outputs/apk/release/*.apk" | head -n 1)
-        
+
         if [ -z "$APK_PATH" ]; then
           echo "❌ 未找到 release APK，尝试查找所有 apk："
           find . -name "*.apk" || true
           exit 1
         fi
-        
+
         FINAL_NAME="SnapNotes_${BUILD_TIME}_${COMMIT_HASH}.apk"
         cp "$APK_PATH" "build_output/$FINAL_NAME"
         echo "✅ APK 已准备好：$FINAL_NAME"
