@@ -58,10 +58,12 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.nevoit.glasense.core.component.Text
 import com.whyy.snapnotes.App
+import com.whyy.snapnotes.R
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
 import com.whyy.snapnotes.notifications.ForegroundTransferService
 import com.whyy.snapnotes.theme.AppColors
+import com.whyy.snapnotes.ui.screens.FileManagerPickMode
 import com.whyy.snapnotes.ui.components.EditorLoadErrorDialog
 import com.whyy.snapnotes.ui.components.DraftRestoreDialog
 import com.whyy.snapnotes.ui.components.ExportNameDialog
@@ -294,9 +296,10 @@ class MainActivity : ComponentActivity() {
                         entryProvider<NavKey> {
                             entry<Screen.HomePager> {
                                 Box(modifier = Modifier.fillMaxSize()) {
+                                    val pagerBackdropColor = AppColors.pageBackground
                                     val backdrop = rememberLayerBackdrop {
                                         drawRect(
-                                            color = AppColors.pageBackground,
+                                            color = pagerBackdropColor,
                                             size = androidx.compose.ui.geometry.Size(
                                                 this.size.width * 3,
                                                 this.size.height * 3

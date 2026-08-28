@@ -38,7 +38,8 @@ fun GlasenseAlertDialog(
     modifier: Modifier = Modifier,
     content: (@Composable () -> Unit)? = null
 ) {
-    val backdrop = rememberLayerBackdrop { drawRect(AppColors.background) }
+    val alertDialogBackdropColor = AppColors.background
+    val backdrop = rememberLayerBackdrop { drawRect(alertDialogBackdropColor) }
     val dialogState = remember(show, title, message, items) {
         DialogState(
             isVisible = show,

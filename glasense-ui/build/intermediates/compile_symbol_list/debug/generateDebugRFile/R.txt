@@ -1,0 +1,2 @@
+int drawable ic_chevron_right_compact 0x0
+int drawable ic_select_indicator 0x0
