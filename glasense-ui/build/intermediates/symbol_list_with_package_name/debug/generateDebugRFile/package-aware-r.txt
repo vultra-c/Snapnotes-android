@@ -1,3 +1,0 @@
-com.nevoit.glasense
-drawable ic_chevron_right_compact
-drawable ic_select_indicator
