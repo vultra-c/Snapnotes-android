@@ -20,10 +20,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -68,7 +74,8 @@ fun GlasensePageHeader(
  * 按钮组通过 [leading]（左上）/ [trailing]（右上）提供。
  *
  * 整个 header 区域带磨砂玻璃背景：固定于页面顶部时，滚动内容经过标题区
- * 会被模糊（以大标题底部为视觉界限）。
+ * 会被模糊；磨砂层底部渐隐，与页面内容柔和过渡。
+ * [collapseProgress] 返回 0..1：1 表示列表已上滑，标题随之缩小上移（iOS 大标题收起）。
  */
 @Composable
 fun GlasenseHeroHeader(
@@ -77,31 +84,51 @@ fun GlasenseHeroHeader(
     backdrop: Backdrop,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier,
+    collapseProgress: () -> Float = { 0f },
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null
 ) {
     val frostedTint = GlasenseTheme.colors.cardBackground
+    val collapse = collapseProgress().coerceIn(0f, 1f)
 
-    val baseModifier = modifier
-        .fillMaxWidth()
-        .then(
-            if (liquidGlass) {
-                Modifier.drawPlainBackdrop(
-                    backdrop = backdrop,
-                    shape = { RectangleShape },
-                    effects = {
-                        blur(24f.dp.toPx(), TileMode.Decal)
-                    },
-                    onDrawSurface = {
-                        drawRect(frostedTint.copy(alpha = 0.35f))
-                    }
-                )
-            } else {
-                Modifier.background(frostedTint.copy(alpha = 0.9f))
-            }
+    val frostedModifier = if (liquidGlass) {
+        Modifier
+            .drawPlainBackdrop(
+                backdrop = backdrop,
+                shape = { RectangleShape },
+                effects = {
+                    blur(24f.dp.toPx(), TileMode.Decal)
+                },
+                onDrawSurface = {
+                    drawRect(frostedTint.copy(alpha = 0.35f))
+                }
+            )
+    } else {
+        Modifier.background(frostedTint.copy(alpha = 0.9f))
+    }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+        // 磨砂层独立成层并做底部渐隐 mask，与页面内容柔和过渡（标题文字不受渐隐影响）。
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                    alpha = 1f - 0.35f * collapse
+                }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            0f to Color.Black,
+                            0.7f to Color.Black,
+                            1f to Color.Transparent
+                        ),
+                        blendMode = BlendMode.DstIn
+                    )
+                }
+                .then(frostedModifier)
         )
-
-    Box(modifier = baseModifier) {
         Column(
             modifier = Modifier
                 .statusBarsPadding()
@@ -111,14 +138,25 @@ fun GlasenseHeroHeader(
             Spacer(modifier = Modifier.height(56.dp))
             Text(
                 text = title,
-                style = GlasenseTheme.type.largeTitleEmphasized
+                style = GlasenseTheme.type.largeTitleEmphasized,
+                modifier = Modifier.graphicsLayer {
+                    // 上滑时标题缩小上移（iOS 大标题收起），左下角锚点。
+                    val s = 1f - 0.34f * collapse
+                    scaleX = s
+                    scaleY = s
+                    transformOrigin = TransformOrigin(0f, 1f)
+                    translationY = -collapse * 10.dp.toPx()
+                }
             )
             if (subtitle != null) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = subtitle,
                     style = GlasenseTheme.type.subHeadline,
-                    color = GlasenseTheme.colors.contentVariant
+                    color = GlasenseTheme.colors.contentVariant,
+                    modifier = Modifier.graphicsLayer {
+                        alpha = 1f - collapse
+                    }
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -139,7 +177,10 @@ fun GlasenseHeroHeader(
                 modifier = Modifier
                     .statusBarsPadding()
                     .align(Alignment.TopEnd)
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .graphicsLayer {
+                        translationY = -collapse * 6.dp.toPx()
+                    },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 trailing()

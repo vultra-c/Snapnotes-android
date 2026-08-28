@@ -69,12 +69,12 @@ fun GlasenseButton(
     // Animate scale and alpha for press feedback.
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.04f else 1.0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (isPressed) 0.97f else 1.0f,
+        animationSpec = spring(0.85f, 900f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.14f else 0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (isPressed) 0.10f else 0f,
+        animationSpec = spring(0.85f, 900f)
     )
     Box(
         modifier = modifier
@@ -103,9 +103,8 @@ fun GlasenseButton(
                     Modifier.drawBehind {
                         drawRect(
                             size = this.size,
-                            color = Color.White,
-                            alpha = alpha,
-                            blendMode = BlendMode.Plus
+                            color = Color.Black,
+                            alpha = alpha
                         )
                     }
                 } else {
@@ -206,12 +205,12 @@ fun GlasenseButtonAdaptable(
     // Animate scale and alpha for press feedback.
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.04f else 1.0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (isPressed) 0.97f else 1.0f,
+        animationSpec = spring(0.85f, 900f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.14f else 0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (isPressed) 0.10f else 0f,
+        animationSpec = spring(0.85f, 900f)
     )
     Box(
         modifier = Modifier
@@ -244,9 +243,8 @@ fun GlasenseButtonAdaptable(
                     Modifier.drawBehind {
                         drawRect(
                             size = this.size,
-                            color = Color.White,
-                            alpha = alpha,
-                            blendMode = BlendMode.Plus
+                            color = Color.Black,
+                            alpha = alpha
                         )
                     }
                 } else {
@@ -318,12 +316,12 @@ fun GlasenseButton(
     // Animate scale and alpha for press feedback.
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.04f else 1.0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (isPressed) 0.97f else 1.0f,
+        animationSpec = spring(0.85f, 900f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.14f else 0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (isPressed) 0.10f else 0f,
+        animationSpec = spring(0.85f, 900f)
     )
     Box(
         modifier = modifier
@@ -352,9 +350,8 @@ fun GlasenseButton(
                     Modifier.drawBehind {
                         drawRect(
                             size = this.size,
-                            color = Color.White,
-                            alpha = alpha,
-                            blendMode = BlendMode.Plus
+                            color = Color.Black,
+                            alpha = alpha
                         )
                     }
                 } else {
@@ -390,12 +387,12 @@ fun GlasenseButtonToolBar(
     val pressed = isPressed && animated()
 
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 1.04f else 1.0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (pressed) 0.97f else 1.0f,
+        animationSpec = spring(0.85f, 900f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (pressed) 0.14f else 0f,
-        animationSpec = spring(0.6f, 400f)
+        targetValue = if (pressed) 0.10f else 0f,
+        animationSpec = spring(0.85f, 900f)
     )
     Box(
         modifier = Modifier
@@ -422,9 +419,8 @@ fun GlasenseButtonToolBar(
                 if (alpha > 0f) {
                     drawRect(
                         size = this.size,
-                        color = Color.White,
-                        alpha = alpha,
-                        blendMode = BlendMode.Plus
+                        color = Color.Black,
+                        alpha = alpha
                     )
                 }
             },

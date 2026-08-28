@@ -125,10 +125,13 @@ fun TutorialCard(
                     animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
                 ) + fadeOut()
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(GlasenseTheme.colors.scrimNormal)
+                        .padding(12.dp)
                 ) {
                     content()
                 }

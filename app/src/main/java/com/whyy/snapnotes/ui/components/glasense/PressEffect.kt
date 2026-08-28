@@ -10,31 +10,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 
 /**
- * 统一的按压反馈：按住时轻微放大 + 白色高光叠加（Apple 式 press flash）。
- * 长条形按钮横向缩放明显，幅度默认收敛到 1.04。
+ * 统一的按压反馈（iOS 式）：按住时轻微缩小 + 内容变暗，快速响应、立即回弹。
+ * 深浅色卡片上都清晰可感知。
  */
 fun Modifier.pressEffect(
     interactionSource: MutableInteractionSource,
-    pressedScale: Float = 1.04f,
-    pressedFlashAlpha: Float = 0.16f,
+    pressedScale: Float = 0.97f,
+    pressedDimAlpha: Float = 0.08f,
     enabled: Boolean = true
 ): Modifier = composed {
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) pressedScale else 1f,
-        animationSpec = spring(0.6f, 400f),
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 900f),
         label = "PressScale"
     )
-    val flash by animateFloatAsState(
-        targetValue = if (isPressed && enabled) pressedFlashAlpha else 0f,
-        animationSpec = spring(0.6f, 400f),
-        label = "PressFlash"
+    val dim by animateFloatAsState(
+        targetValue = if (isPressed && enabled) pressedDimAlpha else 0f,
+        animationSpec = spring(dampingRatio = 0.85f, stiffness = 900f),
+        label = "PressDim"
     )
     this
         .graphicsLayer {
@@ -44,12 +43,8 @@ fun Modifier.pressEffect(
         }
         .drawWithContent {
             drawContent()
-            if (flash > 0.001f) {
-                drawRect(
-                    color = Color.White,
-                    alpha = flash,
-                    blendMode = BlendMode.Plus
-                )
+            if (dim > 0.001f) {
+                drawRect(color = Color.Black.copy(alpha = dim))
             }
         }
 }

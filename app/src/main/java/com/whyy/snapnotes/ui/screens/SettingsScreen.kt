@@ -66,6 +66,14 @@ fun SettingsScreen(
     val density = LocalDensity.current
 
     Box(modifier = modifier.fillMaxSize()) {
+        // 大标题收起进度：列表上滑约 360px 内从 0 过渡到 1。
+        val headerCollapse = {
+            if (lazyListState.firstVisibleItemIndex > 0) {
+                1f
+            } else {
+                (lazyListState.firstVisibleItemScrollOffset / 360f).coerceIn(0f, 1f)
+            }
+        }
         PageContent(
             state = lazyListState,
             modifier = Modifier
@@ -132,6 +140,7 @@ fun SettingsScreen(
             subtitle = null,
             backdrop = pageBackdrop,
             liquidGlass = true && tabVisible,
+            collapseProgress = headerCollapse,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .onSizeChanged { headerHeightPx = it.height }

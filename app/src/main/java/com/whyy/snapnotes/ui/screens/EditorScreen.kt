@@ -105,6 +105,14 @@ fun EditorScreen(
     val totalEntries = subjects.sumOf { it.entries.size }
 
     Box(modifier = modifier.fillMaxSize()) {
+        // 大标题收起进度：列表上滑约 360px 内从 0 过渡到 1。
+        val headerCollapse = {
+            if (lazyListState.firstVisibleItemIndex > 0) {
+                1f
+            } else {
+                (lazyListState.firstVisibleItemScrollOffset / 360f).coerceIn(0f, 1f)
+            }
+        }
         PageContent(
             state = lazyListState,
             modifier = Modifier
@@ -131,7 +139,7 @@ fun EditorScreen(
                     VGap(12.dp)
                 }
             }
-            items(subjects.size) { subjectIndex ->
+            items(subjects.size, key = { it }) { subjectIndex ->
                 val subject = subjects[subjectIndex]
                 Box(modifier = Modifier.animateItem()) {
                     SubjectCard(
@@ -157,6 +165,7 @@ fun EditorScreen(
             subtitle = "自定义知识点 JSON",
             backdrop = pageBackdrop,
             liquidGlass = liquidGlass,
+            collapseProgress = headerCollapse,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .onSizeChanged { headerHeightPx = it.height }
@@ -222,13 +231,6 @@ private fun GlassBottomActionBar(
                 colors = AppButtonColors.action(),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = GlasenseTheme.colors.primary
-                )
-                Spacer(Modifier.width(8.dp))
                 Text(
                     text = "导出",
                     style = GlasenseTheme.type.bodyEmphasized,
@@ -242,12 +244,6 @@ private fun GlassBottomActionBar(
                 colors = AppButtonColors.primary(),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow_up),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
                 Text(
                     text = "推送到手环",
                     style = GlasenseTheme.type.bodyEmphasized
@@ -371,13 +367,22 @@ private fun SubjectCard(
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "SubjectChevron"
     )
+    // 首次入场动画：从底部展开 + 淡入（新建科目时可感知）。
+    var appeared by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { appeared = true }
 
-    GlasenseSurfaceCard(
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp)
+    AnimatedVisibility(
+        visible = appeared,
+        enter = expandVertically(
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+        ) + fadeIn()
     ) {
+        GlasenseSurfaceCard(
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+        ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier
@@ -471,24 +476,25 @@ private fun SubjectCard(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_add_large),
-                                contentDescription = null,
-                                tint = GlasenseTheme.colors.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "添加条目",
-                                style = GlasenseTheme.type.subHeadline,
-                                color = GlasenseTheme.colors.content
-                            )
-                        }
-                    }
-                }
-            }
-        }
+                         Row(verticalAlignment = Alignment.CenterVertically) {
+                             Icon(
+                                 painter = painterResource(R.drawable.ic_add_large),
+                                 contentDescription = null,
+                                 tint = GlasenseTheme.colors.primary,
+                                 modifier = Modifier.size(16.dp)
+                             )
+                             Spacer(Modifier.width(6.dp))
+                             Text(
+                                 text = "添加条目",
+                                 style = GlasenseTheme.type.subHeadline,
+                                 color = GlasenseTheme.colors.content
+                             )
+                         }
+                     }
+                 }
+             }
+         }
+     }
     }
 }
 
