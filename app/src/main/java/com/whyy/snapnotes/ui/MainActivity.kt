@@ -66,6 +66,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.nevoit.glasense.core.component.Text
 import com.nevoit.glasense.core.interaction.overscroll.rememberOffsetOverscrollFactory
@@ -245,9 +246,11 @@ class MainActivity : ComponentActivity() {
                 // 主界面四个页签（主页/编辑/历史/设置），点按切换（Cresto 式淡入缩放过渡）。
                 val currentTab = rememberSaveable { mutableIntStateOf(0) }
 
-                // 主层 backdrop：页面内容渲染于此，浮动玻璃控件（导航条等）采样它实现液态玻璃。
+                // 双玻璃源架构（防止 RenderNode 自引用导致 RenderThread 栈溢出）：
+                // 1) tabsBackdrop = LayerBackdrop，挂在内容层上，仅供内容层外的 LiquidBottomTabs 采样滚动内容；
+                // 2) cardBackdrop = CanvasBackdrop 纯色画布，无 RenderNode 依赖，内容层内的玻璃组件全部采样它。
                 val backdropColor = AppColors.pageBackground
-                val backdrop = rememberLayerBackdrop {
+                val tabsBackdrop = rememberLayerBackdrop {
                     drawRect(
                         color = backdropColor,
                         size = androidx.compose.ui.geometry.Size(
@@ -260,6 +263,19 @@ class MainActivity : ComponentActivity() {
                         )
                     )
                     drawContent()
+                }
+                val cardBackdrop = rememberCanvasBackdrop {
+                    drawRect(
+                        color = backdropColor,
+                        size = androidx.compose.ui.geometry.Size(
+                            this.size.width * 3,
+                            this.size.height * 3
+                        ),
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            -this.size.width,
+                            -this.size.height
+                        )
+                    )
                 }
 
                 val navigateTo = { target: Screen ->
@@ -346,7 +362,7 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .layerBackdrop(backdrop)
+                            .layerBackdrop(tabsBackdrop)
                     ) {
                     val entryProvider = remember(backStack) {
                         entryProvider<NavKey> {
@@ -378,7 +394,7 @@ class MainActivity : ComponentActivity() {
                                                     else -> "配置不完整"
                                                 },
                                                 onOpenAmadeus = navigateToAmadeus,
-                                                backdrop = backdrop,
+                                                backdrop = cardBackdrop,
                                                 liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
@@ -408,7 +424,7 @@ class MainActivity : ComponentActivity() {
                                                         "自定义知识点.json"
                                                     )
                                                 },
-                                                backdrop = backdrop,
+                                                backdrop = cardBackdrop,
                                                 liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
@@ -420,7 +436,7 @@ class MainActivity : ComponentActivity() {
                                                 onDeleteRequest = viewModel::requestHistoryDelete,
                                                 onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
                                                 onEditRecord = viewModel::openEditorFromCache,
-                                                backdrop = backdrop,
+                                                backdrop = cardBackdrop,
                                                 liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
@@ -629,7 +645,7 @@ class MainActivity : ComponentActivity() {
                                             3 -> viewModel.openSettings()
                                         }
                                     },
-                                    backdrop = backdrop,
+                                    backdrop = tabsBackdrop,
                                     tabsCount = 4
                                 ) {
                                     repeat(4) { index ->
