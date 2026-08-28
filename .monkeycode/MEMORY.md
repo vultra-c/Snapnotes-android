@@ -58,3 +58,6 @@ Entries discovered by the Agent during task execution should follow this format:
   - 本项目采用双玻璃源架构：tabsBackdrop（LayerBackdrop）挂内容层，仅供内容层外的 LiquidBottomTabs 采样滚动内容；cardBackdrop（rememberCanvasBackdrop 纯色画布）供内容层内全部玻璃组件采样，无 RenderNode 依赖故无环
   - 新增玻璃组件时：内容层内用 cardBackdrop，浮动控件（内容层外）才可用 tabsBackdrop；页面 Screen 组件的 backdrop 参数类型应为宽接口 com.kyant.backdrop.Backdrop（兼容 CanvasBackdrop），不要写死 LayerBackdrop
   - 参考架构：Cresto 列表行卡片一律纯色 background（列表挂 layerBackdrop 供外部玻璃控件采样）；上游 catalog 的列表内玻璃卡片则挂在独立叶子源（壁纸 Image）上
+  - 页面骨架（Cresto 式固定 header）：Box { PageContent(layerBackdrop(pageBackdrop), topPadding = header 实测高度) { 列表 }; 固定 header/底部操作栏（PageContent 兄弟，采样 pageBackdrop 真玻璃） }；列表内容滚过固定 header 区域被磨砂模糊
+  - tab 页玻璃源上报：LocalActivePageBackdrop（MutableState<LayerBackdrop?>）由 ManualTabVisibility 内 LocalTabVisible 控制仅可见 tab 上报；底部 LiquidBottomTabs 读它
+  - sed 批量改 MainActivity 传参后必须核对括号配平（曾删行导致大括号失衡，onCreate 之后的成员函数全变 local function）
