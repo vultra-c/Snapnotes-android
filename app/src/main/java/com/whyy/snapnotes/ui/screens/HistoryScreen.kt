@@ -34,7 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.nevoit.glasense.component.paddingItem
 import com.nevoit.glasense.core.component.Icon
 import com.nevoit.glasense.core.component.Text
@@ -76,7 +76,7 @@ fun HistoryScreen(
     onDeleteRequest: (PushRecord) -> Unit,
     onBatchDeleteRequest: (List<PushRecord>) -> Unit,
     onEditRecord: (PushRecord) -> Unit,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -361,7 +361,7 @@ private fun HistoryRecordCard(
     isSelected: Boolean,
     selectionMode: Boolean,
     liquidGlass: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onToggleSelect: () -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit,

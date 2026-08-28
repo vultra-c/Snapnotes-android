@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.effect
@@ -69,7 +69,7 @@ fun GlasensePageHeader(
 fun GlasenseHeroHeader(
     title: String,
     subtitle: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
@@ -130,7 +130,7 @@ fun GlasenseHeroHeader(
 fun GlasenseHeroIconButton(
     painter: Painter,
     contentDescription: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier,
     tint: Color = GlasenseTheme.colors.primary,
@@ -199,7 +199,7 @@ fun GlasenseHeroIconButton(
  */
 @Composable
 fun GlasenseGlassPanel(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     shape: Shape,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier,

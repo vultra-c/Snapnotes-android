@@ -45,7 +45,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.nevoit.glasense.component.paddingItem
 import com.nevoit.glasense.core.component.Icon
 import com.nevoit.glasense.core.component.Text
@@ -82,7 +82,7 @@ fun EditorScreen(
     onLoadFile: () -> Unit,
     onExportToFile: () -> Unit,
     onPushFile: () -> Unit,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -290,7 +290,7 @@ private fun DashedAddSubjectCard(onClick: () -> Unit) {
 private fun SubjectCard(
     subject: EditorSubject,
     formulaRenderer: FormulaPngRenderer?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     onRemoveSubject: () -> Unit,
     onUpdateSubjectName: (String) -> Unit,

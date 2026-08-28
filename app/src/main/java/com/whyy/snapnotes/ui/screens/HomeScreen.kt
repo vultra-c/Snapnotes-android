@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.nevoit.glasense.component.paddingItem
 import com.nevoit.glasense.core.component.Icon
 import com.nevoit.glasense.core.component.Text
@@ -66,7 +66,7 @@ fun HomeScreen(
     amadeusReady: Boolean = false,
     amadeusSummary: String = "未启用",
     onOpenAmadeus: () -> Unit = {},
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -216,7 +216,7 @@ private fun amadeusEnabled(summary: String): Boolean = summary != "未启用"
 private fun KnowledgeFileCard(
     fileName: String,
     fileSize: String,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     liquidGlass: Boolean,
     onClick: () -> Unit
 ) {

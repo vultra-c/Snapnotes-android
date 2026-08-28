@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.effect
@@ -179,7 +179,7 @@ private fun pickPlacement(
 @Composable
 fun GlasenseMenu(
     menuState: MenuState,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
