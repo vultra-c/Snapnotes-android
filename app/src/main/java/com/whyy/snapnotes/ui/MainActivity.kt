@@ -65,9 +65,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.nevoit.glasense.core.component.Text
 import com.nevoit.glasense.core.interaction.overscroll.rememberOffsetOverscrollFactory
 import com.whyy.snapnotes.App
@@ -100,6 +97,8 @@ import com.whyy.snapnotes.ui.screens.ProgressScreen
 import com.whyy.snapnotes.ui.screens.ResultScreen
 import com.whyy.snapnotes.ui.screens.SettingsScreen
 import com.whyy.snapnotes.ui.screens.TroubleshootScreen
+import com.whyy.snapnotes.ui.LocalActivePageBackdrop
+import com.whyy.snapnotes.ui.LocalTabVisible
 import com.whyy.snapnotes.ui.theme.AppearanceMode
 import com.whyy.snapnotes.ui.theme.SnapNotesTheme
 import com.whyy.snapnotes.ui.viewmodel.AppScreen
@@ -246,37 +245,11 @@ class MainActivity : ComponentActivity() {
                 // 主界面四个页签（主页/编辑/历史/设置），点按切换（Cresto 式淡入缩放过渡）。
                 val currentTab = rememberSaveable { mutableIntStateOf(0) }
 
-                // 双玻璃源架构（防止 RenderNode 自引用导致 RenderThread 栈溢出）：
-                // 1) tabsBackdrop = LayerBackdrop，挂在内容层上，仅供内容层外的 LiquidBottomTabs 采样滚动内容；
-                // 2) cardBackdrop = CanvasBackdrop 纯色画布，无 RenderNode 依赖，内容层内的玻璃组件全部采样它。
-                val backdropColor = AppColors.pageBackground
-                val tabsBackdrop = rememberLayerBackdrop {
-                    drawRect(
-                        color = backdropColor,
-                        size = androidx.compose.ui.geometry.Size(
-                            this.size.width * 3,
-                            this.size.height * 3
-                        ),
-                        topLeft = androidx.compose.ui.geometry.Offset(
-                            -this.size.width,
-                            -this.size.height
-                        )
-                    )
-                    drawContent()
-                }
-                val cardBackdrop = rememberCanvasBackdrop {
-                    drawRect(
-                        color = backdropColor,
-                        size = androidx.compose.ui.geometry.Size(
-                            this.size.width * 3,
-                            this.size.height * 3
-                        ),
-                        topLeft = androidx.compose.ui.geometry.Offset(
-                            -this.size.width,
-                            -this.size.height
-                        )
-                    )
-                }
+                // 玻璃源架构：每页 PageContent 自挂 layerBackdrop（rememberPageBackdrop），
+                // 页面固定 header / 底部操作栏 / 弹出菜单采样本页源获得真实内容模糊；
+                // 底部导航条采样当前可见页上报的源（LocalActivePageBackdrop）。
+                // 铁律：layerBackdrop 挂载节点的子孙内部不得 drawBackdrop 采样同一源，否则渲染树成环崩溃。
+                val activePageBackdrop = remember { androidx.compose.runtime.mutableStateOf<com.kyant.backdrop.backdrops.LayerBackdrop?>(null) }
 
                 val navigateTo = { target: Screen ->
                     if (backStack.lastOrNull() != target) {
@@ -358,11 +331,11 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(AppColors.pageBackground)
                 ) {
-                    // 内容层：所有页面渲染于此，玻璃控件通过 backdrop 采样背后内容。
+                    // 内容层：所有页面渲染于此。每页自挂 layerBackdrop，本层不再挂全局源。
+                    CompositionLocalProvider(LocalActivePageBackdrop provides activePageBackdrop) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .layerBackdrop(tabsBackdrop)
                     ) {
                     val entryProvider = remember(backStack) {
                         entryProvider<NavKey> {
@@ -394,8 +367,6 @@ class MainActivity : ComponentActivity() {
                                                     else -> "配置不完整"
                                                 },
                                                 onOpenAmadeus = navigateToAmadeus,
-                                                backdrop = cardBackdrop,
-                                                liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         },
@@ -424,8 +395,6 @@ class MainActivity : ComponentActivity() {
                                                         "自定义知识点.json"
                                                     )
                                                 },
-                                                backdrop = cardBackdrop,
-                                                liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         },
@@ -436,8 +405,6 @@ class MainActivity : ComponentActivity() {
                                                 onDeleteRequest = viewModel::requestHistoryDelete,
                                                 onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
                                                 onEditRecord = viewModel::openEditorFromCache,
-                                                backdrop = cardBackdrop,
-                                                liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         },
@@ -445,8 +412,6 @@ class MainActivity : ComponentActivity() {
                                             SettingsScreen(
                                                 appearanceMode = appearanceMode,
                                                 onAppearanceModeChange = viewModel::setAppearanceMode,
-                                                dynamicColor = dynamicColor,
-                                                onDynamicColorChange = viewModel::setDynamicColor,
                                                 useBuiltinFileManager = useBuiltinFileManager,
                                                 onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
                                                 lastExportDirSummary = lastExportDirSummary,
@@ -645,7 +610,8 @@ class MainActivity : ComponentActivity() {
                                             3 -> viewModel.openSettings()
                                         }
                                     },
-                                    backdrop = tabsBackdrop,
+                                    backdrop = activePageBackdrop.value
+                                        ?: com.kyant.backdrop.backdrops.emptyBackdrop(),
                                     tabsCount = 4
                                 ) {
                                     repeat(4) { index ->
@@ -887,7 +853,9 @@ private fun ManualTabVisibility(
                     scaleY = scale.value
                 }
         ) {
-            content()
+            CompositionLocalProvider(LocalTabVisible provides visible) {
+                content()
+            }
         }
      }
  }

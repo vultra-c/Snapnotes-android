@@ -2,8 +2,8 @@ package com.whyy.snapnotes.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Info
+import androidx.compose.ui.res.painterResource
+import com.whyy.snapnotes.R
 
 /**
  * 可折叠的「JSON 文件教程」，平铺在主页选择文件入口之后。
@@ -14,7 +14,7 @@ fun JsonFileTutorial(modifier: Modifier = Modifier) {
     TutorialCard(
         title = "JSON 文件教程",
         subtitle = "了解知识点 JSON 文件怎么写",
-        icon = MiuixIcons.Info,
+        icon = painterResource(R.drawable.ic_mini_info),
         modifier = modifier
     ) {
         MarkdownText(JSON_TUTORIAL_MD)

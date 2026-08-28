@@ -19,11 +19,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,18 +43,25 @@ import com.whyy.snapnotes.theme.AppButtonColors
 import com.whyy.snapnotes.ui.components.StorageRingCard
 import com.whyy.snapnotes.ui.components.FormulaTutorial
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
+import com.whyy.snapnotes.ui.LocalTabVisible
+import com.whyy.snapnotes.ui.pageContentBackdrop
+import com.whyy.snapnotes.ui.rememberPageBackdrop
 import com.whyy.snapnotes.ui.components.glasense.GlasenseButton
-import com.whyy.snapnotes.ui.components.glasense.GlasenseGlassPanel
 import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroHeader
 import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroIconButton
+import com.whyy.snapnotes.ui.components.glasense.GlasenseSurfaceCard
+import com.whyy.snapnotes.ui.components.glasense.pressEffect
+import com.whyy.snapnotes.ui.components.glasense.rememberPressInteractionSource
 import com.whyy.snapnotes.ui.components.packed.PageContent
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.ui.layout.onSizeChanged
 
 /**
- * 主页：大标题 + 连接状态副标题 + 知识库文件卡 + 虚线添加卡 + 存储卡 + 推送按钮。
- * 视觉对齐 UI 设计图（iOS 白底、玻璃长条卡片、蓝色主色）。
+ * 主页：固定磨砂大标题区（滚过内容被模糊）+ 连接状态 + 知识库文件卡 + 虚线添加卡 +
+ * 存储卡 + 推送按钮 + 教程。视觉对齐设计图 1（iOS 白底、玻璃按钮、蓝色主色）。
  */
 @Composable
 fun HomeScreen(
@@ -66,99 +77,107 @@ fun HomeScreen(
     amadeusReady: Boolean = false,
     amadeusSummary: String = "未启用",
     onOpenAmadeus: () -> Unit = {},
-    backdrop: Backdrop,
-    liquidGlass: Boolean,
     modifier: Modifier = Modifier
 ) {
     val lazyListState = rememberLazyListState()
+    val pageBackdrop = rememberPageBackdrop()
+    val tabVisible = LocalTabVisible.current
+    val liquidGlass = true
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
 
-    PageContent(
-        state = lazyListState,
-        modifier = modifier,
-        tabPadding = true,
-        bottomPadding = 120.dp
-    ) {
-        item {
-            GlasenseHeroHeader(
-                title = "闪念小抄",
-                subtitle = null,
-                backdrop = backdrop,
-                liquidGlass = liquidGlass,
-                trailing = {
-                    GlasenseHeroIconButton(
-                        painter = painterResource(R.drawable.ic_add_large),
-                        contentDescription = "选择 JSON 文件",
-                        backdrop = backdrop,
-                        liquidGlass = liquidGlass,
+    Box(modifier = modifier.fillMaxSize()) {
+        PageContent(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .pageContentBackdrop(pageBackdrop),
+            tabPadding = true,
+            topPadding = { with(density) { headerHeightPx.toDp() } },
+            bottomPadding = 120.dp
+        ) {
+            item {
+                ConnectionStatusRow(
+                    connectionState = connectionState,
+                    amadeusSummary = amadeusSummary,
+                    onTroubleshoot = onTroubleshoot
+                )
+                VGap(20.dp)
+            }
+            item {
+                Text(
+                    text = "知识库",
+                    style = GlasenseTheme.type.subHeadline,
+                    color = GlasenseTheme.colors.contentVariant,
+                    modifier = Modifier.padding(start = 16.dp, bottom = 10.dp)
+                )
+            }
+            item {
+                if (selectedFile != null) {
+                    KnowledgeFileCard(
+                        fileName = selectedFile.fileName,
+                        fileSize = selectedFile.fileSize.toReadableBytes(),
                         onClick = onPickFile
                     )
+                    VGap(12.dp)
                 }
-            )
-        }
-        item {
-            ConnectionStatusRow(
-                connectionState = connectionState,
-                amadeusSummary = amadeusSummary,
-                onTroubleshoot = onTroubleshoot
-            )
-            VGap(20.dp)
-        }
-        item {
-            Text(
-                text = "知识库",
-                style = GlasenseTheme.type.subHeadline,
-                color = GlasenseTheme.colors.contentVariant,
-                modifier = Modifier.padding(start = 16.dp, bottom = 10.dp)
-            )
-        }
-        item {
-            if (selectedFile != null) {
-                KnowledgeFileCard(
-                    fileName = selectedFile.fileName,
-                    fileSize = selectedFile.fileSize.toReadableBytes(),
-                    backdrop = backdrop,
-                    liquidGlass = liquidGlass,
-                    onClick = onPickFile
+                DashedAddCard(onClick = onPickFile)
+                VGap(20.dp)
+            }
+            item {
+                StorageRingCard(
+                    storageInfo = storageInfo,
+                    isRefreshing = storageRefreshing,
+                    onRefresh = onRefreshStorage,
+                    isConnected = connectionState.isConnected
                 )
+                VGap(20.dp)
+            }
+            item {
+                GlasenseButton(
+                    onClick = onStartPush,
+                    enabled = selectedFile != null,
+                    colors = AppButtonColors.primary(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                ) {
+                    Text(
+                        text = if (selectedFile != null) "开始推送到手环" else "请先选择文件",
+                        style = GlasenseTheme.type.bodyEmphasized,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                VGap(20.dp)
+            }
+            item {
+                JsonFileTutorial(modifier = Modifier.fillMaxWidth())
                 VGap(12.dp)
             }
-            DashedAddCard(onClick = onPickFile)
-            VGap(20.dp)
+            item {
+                FormulaTutorial(modifier = Modifier.fillMaxWidth())
+            }
+            paddingItem(lazyListState)
         }
-        item {
-            StorageRingCard(
-                storageInfo = storageInfo,
-                isRefreshing = storageRefreshing,
-                onRefresh = onRefreshStorage,
-                isConnected = connectionState.isConnected
-            )
-            VGap(20.dp)
-        }
-        item {
-            GlasenseButton(
-                onClick = onStartPush,
-                enabled = selectedFile != null,
-                colors = AppButtonColors.primary(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-            ) {
-                Text(
-                    text = if (selectedFile != null) "开始推送到手环" else "请先选择文件",
-                    style = GlasenseTheme.type.bodyEmphasized,
-                    textAlign = TextAlign.Center
+
+        GlasenseHeroHeader(
+            title = "闪念小抄",
+            subtitle = null,
+            backdrop = pageBackdrop,
+            liquidGlass = liquidGlass && tabVisible,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .onSizeChanged { headerHeightPx = it.height },
+            trailing = {
+                GlasenseHeroIconButton(
+                    painter = painterResource(R.drawable.ic_add_large),
+                    contentDescription = "选择 JSON 文件",
+                    backdrop = pageBackdrop,
+                    liquidGlass = liquidGlass && tabVisible,
+                    onClick = onPickFile
                 )
             }
-            VGap(20.dp)
-        }
-        item {
-            JsonFileTutorial(modifier = Modifier.fillMaxWidth())
-            VGap(12.dp)
-        }
-        item {
-            FormulaTutorial(modifier = Modifier.fillMaxWidth())
-        }
-        paddingItem(lazyListState)
+        )
     }
 }
 
@@ -211,27 +230,26 @@ private fun ConnectionStatusRow(
 
 private fun amadeusEnabled(summary: String): Boolean = summary != "未启用"
 
-/** 知识库文件卡：浅蓝图标容器 + 文件名/大小 + 更换箭头（玻璃长条）。 */
+/** 知识库文件卡：浅蓝图标容器 + 文件名/大小 + 更换箭头（纯色 iOS 卡 + 按压效果）。 */
 @Composable
 private fun KnowledgeFileCard(
     fileName: String,
     fileSize: String,
-    backdrop: Backdrop,
-    liquidGlass: Boolean,
     onClick: () -> Unit
 ) {
-    GlasenseGlassPanel(
-        backdrop = backdrop,
+    val interaction = rememberPressInteractionSource()
+
+    GlasenseSurfaceCard(
         shape = RoundedCornerShape(24.dp),
-        liquidGlass = liquidGlass,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
+            .pressEffect(interaction)
     ) {
         Row(
             modifier = Modifier
                 .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                    interactionSource = interaction,
                     indication = null,
                     onClick = onClick
                 )
@@ -270,18 +288,21 @@ private fun KnowledgeFileCard(
 /** 虚线边框添加卡：+ 添加 JSON 文件。 */
 @Composable
 private fun DashedAddCard(onClick: () -> Unit) {
+    val interaction = rememberPressInteractionSource()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
             .height(112.dp)
+            .pressEffect(interaction)
             .border(
                 width = 1.5.dp,
                 color = GlasenseTheme.colors.contentVariant.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(24.dp)
             )
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = null,
                 onClick = onClick
             ),

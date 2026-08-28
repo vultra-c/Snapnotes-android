@@ -21,12 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.drawPlainBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.effect
 import com.kyant.backdrop.effects.lens
@@ -64,6 +66,9 @@ fun GlasensePageHeader(
 /**
  * 设计图风格页首：顶部两侧圆形玻璃功能按钮，下方超大标题 + 灰色副标题。
  * 按钮组通过 [leading]（左上）/ [trailing]（右上）提供。
+ *
+ * 整个 header 区域带磨砂玻璃背景：固定于页面顶部时，滚动内容经过标题区
+ * 会被模糊（以大标题底部为视觉界限）。
  */
 @Composable
 fun GlasenseHeroHeader(
@@ -75,7 +80,28 @@ fun GlasenseHeroHeader(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null
 ) {
-    Box(modifier = modifier.fillMaxWidth()) {
+    val frostedTint = GlasenseTheme.colors.cardBackground
+
+    val baseModifier = modifier
+        .fillMaxWidth()
+        .then(
+            if (liquidGlass) {
+                Modifier.drawPlainBackdrop(
+                    backdrop = backdrop,
+                    shape = { RectangleShape },
+                    effects = {
+                        blur(24f.dp.toPx(), TileMode.Decal)
+                    },
+                    onDrawSurface = {
+                        drawRect(frostedTint.copy(alpha = 0.35f))
+                    }
+                )
+            } else {
+                Modifier.background(frostedTint.copy(alpha = 0.9f))
+            }
+        )
+
+    Box(modifier = baseModifier) {
         Column(
             modifier = Modifier
                 .statusBarsPadding()

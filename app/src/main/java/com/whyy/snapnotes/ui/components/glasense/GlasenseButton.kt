@@ -69,12 +69,12 @@ fun GlasenseButton(
     // Animate scale and alpha for press feedback.
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.2f else 1.0f,
-        animationSpec = spring(0.5f, 300f, 0.0001f)
+        targetValue = if (isPressed) 1.04f else 1.0f,
+        animationSpec = spring(0.6f, 400f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.2f else 0f,
-        animationSpec = spring(0.5f, 300f, 0.001f)
+        targetValue = if (isPressed) 0.14f else 0f,
+        animationSpec = spring(0.6f, 400f)
     )
     Box(
         modifier = modifier
@@ -206,12 +206,12 @@ fun GlasenseButtonAdaptable(
     // Animate scale and alpha for press feedback.
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.2f else 1.0f,
-        animationSpec = spring(0.5f, 300f, 0.0001f)
+        targetValue = if (isPressed) 1.04f else 1.0f,
+        animationSpec = spring(0.6f, 400f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.2f else 0f,
-        animationSpec = spring(0.5f, 300f, 0.001f)
+        targetValue = if (isPressed) 0.14f else 0f,
+        animationSpec = spring(0.6f, 400f)
     )
     Box(
         modifier = Modifier
@@ -318,12 +318,12 @@ fun GlasenseButton(
     // Animate scale and alpha for press feedback.
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.2f else 1.0f,
-        animationSpec = spring(0.5f, 300f, 0.0001f)
+        targetValue = if (isPressed) 1.04f else 1.0f,
+        animationSpec = spring(0.6f, 400f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.2f else 0f,
-        animationSpec = spring(0.5f, 300f, 0.001f)
+        targetValue = if (isPressed) 0.14f else 0f,
+        animationSpec = spring(0.6f, 400f)
     )
     Box(
         modifier = modifier
@@ -390,12 +390,12 @@ fun GlasenseButtonToolBar(
     val pressed = isPressed && animated()
 
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 1.2f else 1.0f,
-        animationSpec = spring(0.5f, 300f, 0.0001f)
+        targetValue = if (pressed) 1.04f else 1.0f,
+        animationSpec = spring(0.6f, 400f)
     )
     val alpha by animateFloatAsState(
-        targetValue = if (pressed) 0.2f else 0f,
-        animationSpec = spring(0.5f, 300f, 0.001f)
+        targetValue = if (pressed) 0.14f else 0f,
+        animationSpec = spring(0.6f, 400f)
     )
     Box(
         modifier = Modifier

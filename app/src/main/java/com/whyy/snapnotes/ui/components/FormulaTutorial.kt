@@ -2,8 +2,8 @@ package com.whyy.snapnotes.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Notes
+import androidx.compose.ui.res.painterResource
+import com.whyy.snapnotes.R
 
 /**
  * 可折叠的「公式教程」，公式板块从 JSON 教程里单独拎出来讲。
@@ -14,7 +14,7 @@ fun FormulaTutorial(modifier: Modifier = Modifier) {
     TutorialCard(
         title = "公式教程",
         subtitle = "formulas 怎么写、怎么自动渲染推送到手环",
-        icon = MiuixIcons.Notes,
+        icon = painterResource(R.drawable.ic_square_and_pencil),
         modifier = modifier
     ) {
         MarkdownText(FORMULA_TUTORIAL_MD)

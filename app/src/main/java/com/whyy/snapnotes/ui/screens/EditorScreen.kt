@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,12 +42,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.drawPlainBackdrop
+import com.kyant.backdrop.effects.blur
 import com.nevoit.glasense.component.paddingItem
 import com.nevoit.glasense.core.component.Icon
 import com.nevoit.glasense.core.component.Text
@@ -55,19 +63,23 @@ import com.whyy.snapnotes.R
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.RawToLatexConverter
 import com.whyy.snapnotes.theme.AppButtonColors
+import com.whyy.snapnotes.ui.LocalTabVisible
+import com.whyy.snapnotes.ui.pageContentBackdrop
+import com.whyy.snapnotes.ui.rememberPageBackdrop
 import com.whyy.snapnotes.ui.components.glasense.GlasenseButton
-import com.whyy.snapnotes.ui.components.glasense.GlasenseGlassPanel
 import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroHeader
-import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroIconButton
+import com.whyy.snapnotes.ui.components.glasense.GlasenseSurfaceCard
 import com.whyy.snapnotes.ui.components.glasense.GlasenseTextField
+import com.whyy.snapnotes.ui.components.glasense.pressEffect
+import com.whyy.snapnotes.ui.components.glasense.rememberPressInteractionSource
 import com.whyy.snapnotes.ui.components.packed.PageContent
 import com.whyy.snapnotes.ui.viewmodel.EditorEntry
 import com.whyy.snapnotes.ui.viewmodel.EditorSubject
 import kotlinx.coroutines.delay
 
 /**
- * 编辑页：大标题 + 空状态虚线卡 / 科目玻璃卡列表 + 新建科目虚线卡 + 导出/推送按钮。
- * 视觉对齐设计图 2（iOS 白底、玻璃长条、虚线添加卡、蓝色主色）。
+ * 编辑页：固定磨砂大标题 + 科目纯色卡列表 + 新建虚线卡 + 底部固定玻璃操作栏（导出/推送）。
+ * 视觉对齐设计图 2（iOS 白底、蓝色主色、按压反馈）。
  */
 @Composable
 fun EditorScreen(
@@ -82,77 +94,133 @@ fun EditorScreen(
     onLoadFile: () -> Unit,
     onExportToFile: () -> Unit,
     onPushFile: () -> Unit,
-    backdrop: Backdrop,
-    liquidGlass: Boolean,
     modifier: Modifier = Modifier
 ) {
     val lazyListState = rememberLazyListState()
+    val pageBackdrop = rememberPageBackdrop()
+    val tabVisible = LocalTabVisible.current
+    val liquidGlass = true && tabVisible
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
     val totalEntries = subjects.sumOf { it.entries.size }
 
-    PageContent(
-        state = lazyListState,
-        modifier = modifier,
-        tabPadding = true,
-        bottomPadding = 120.dp
-    ) {
-        item {
-            GlasenseHeroHeader(
-                title = "编辑",
-                subtitle = "自定义知识点 JSON",
-                backdrop = backdrop,
-                liquidGlass = liquidGlass,
-                trailing = {
-                    GlasenseHeroIconButton(
-                        painter = painterResource(R.drawable.ic_folder),
-                        contentDescription = "加载 JSON 文件",
-                        backdrop = backdrop,
-                        liquidGlass = liquidGlass,
-                        onClick = onLoadFile
+    Box(modifier = modifier.fillMaxSize()) {
+        PageContent(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .pageContentBackdrop(pageBackdrop),
+            tabPadding = false,
+            topPadding = { with(density) { headerHeightPx.toDp() } },
+            bottomPadding = 230.dp
+        ) {
+            if (subjects.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "$totalEntries 个条目 · ${subjects.size} 个科目",
+                        style = GlasenseTheme.type.subHeadline,
+                        color = GlasenseTheme.colors.contentVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    VGap(12.dp)
+                }
+            }
+            if (subjects.isEmpty()) {
+                item {
+                    EditorEmptyCard(onLoadFile = onLoadFile)
+                    VGap(12.dp)
+                }
+            }
+            items(subjects.size) { subjectIndex ->
+                val subject = subjects[subjectIndex]
+                Box(modifier = Modifier.animateItem()) {
+                    SubjectCard(
+                        subject = subject,
+                        formulaRenderer = formulaRenderer,
+                        onRemoveSubject = { onRemoveSubject(subjectIndex) },
+                        onUpdateSubjectName = { onUpdateSubjectName(subjectIndex, it) },
+                        onAddEntry = { onAddEntry(subjectIndex) },
+                        onRemoveEntry = { entryIndex -> onRemoveEntry(subjectIndex, entryIndex) },
+                        onUpdateEntry = { entryIndex, entry -> onUpdateEntry(subjectIndex, entryIndex, entry) }
                     )
                 }
-            )
-            if (subjects.isNotEmpty()) {
-                Text(
-                    text = "$totalEntries 个条目 · ${subjects.size} 个科目",
-                    style = GlasenseTheme.type.subHeadline,
-                    color = GlasenseTheme.colors.contentVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-            VGap(16.dp)
-        }
-        if (subjects.isEmpty()) {
-            item {
-                EditorEmptyCard(onLoadFile = onLoadFile)
                 VGap(12.dp)
             }
+            item {
+                DashedAddSubjectCard(onClick = onAddSubject)
+            }
+            paddingItem(lazyListState)
         }
-        items(subjects.size) { subjectIndex ->
-            val subject = subjects[subjectIndex]
-            SubjectCard(
-                subject = subject,
-                formulaRenderer = formulaRenderer,
+
+        GlasenseHeroHeader(
+            title = "编辑",
+            subtitle = "自定义知识点 JSON",
+            backdrop = pageBackdrop,
+            liquidGlass = liquidGlass,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .onSizeChanged { headerHeightPx = it.height }
+        )
+
+        // 底部固定玻璃操作栏：导出 + 推送，采样列表滚动内容（真磨砂）。
+        GlassBottomActionBar(
+            backdrop = pageBackdrop,
+            liquidGlass = liquidGlass,
+            onExport = onExportToFile,
+            onPush = onPushFile,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+/** 底部固定玻璃操作栏：导出（次要）+ 推送（主要）。 */
+@Composable
+private fun GlassBottomActionBar(
+    backdrop: Backdrop,
+    liquidGlass: Boolean,
+    onExport: () -> Unit,
+    onPush: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val frostedTint = GlasenseTheme.colors.cardBackground
+    val barShape = RoundedCornerShape(28.dp)
+
+    val barModifier = if (liquidGlass) {
+        modifier
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding()
+            .padding(bottom = 88.dp)
+            .drawPlainBackdrop(
                 backdrop = backdrop,
-                liquidGlass = liquidGlass,
-                onRemoveSubject = { onRemoveSubject(subjectIndex) },
-                onUpdateSubjectName = { onUpdateSubjectName(subjectIndex, it) },
-                onAddEntry = { onAddEntry(subjectIndex) },
-                onRemoveEntry = { entryIndex -> onRemoveEntry(subjectIndex, entryIndex) },
-                onUpdateEntry = { entryIndex, entry -> onUpdateEntry(subjectIndex, entryIndex, entry) }
+                shape = { barShape },
+                effects = {
+                    blur(20f.dp.toPx(), TileMode.Decal)
+                },
+                onDrawSurface = {
+                    drawRect(frostedTint.copy(alpha = 0.5f))
+                }
             )
-            VGap(12.dp)
-        }
-        item {
-            DashedAddSubjectCard(onClick = onAddSubject)
-            VGap(20.dp)
-        }
-        item {
+    } else {
+        modifier
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding()
+            .padding(bottom = 88.dp)
+            .clip(barShape)
+            .background(frostedTint.copy(alpha = 0.92f), barShape)
+    }
+
+    Row(
+        modifier = barModifier
+            .fillMaxWidth()
+            .padding(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
             GlasenseButton(
-                onClick = onExportToFile,
+                onClick = onExport,
                 colors = AppButtonColors.action(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_share),
@@ -162,20 +230,17 @@ fun EditorScreen(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "导出 JSON 文件",
+                    text = "导出",
                     style = GlasenseTheme.type.bodyEmphasized,
                     color = GlasenseTheme.colors.primary
                 )
             }
-            VGap(12.dp)
         }
-        item {
+        Box(modifier = Modifier.weight(1.2f)) {
             GlasenseButton(
-                onClick = onPushFile,
+                onClick = onPush,
                 colors = AppButtonColors.primary(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_arrow_up),
@@ -185,29 +250,30 @@ fun EditorScreen(
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "推送到手环",
-                    style = GlasenseTheme.type.bodyEmphasized,
-                    textAlign = TextAlign.Center
+                    style = GlasenseTheme.type.bodyEmphasized
                 )
             }
         }
-        paddingItem(lazyListState)
     }
 }
 
 /** 空状态大卡：虚线边框 + 居中说明 + 加载入口。 */
 @Composable
 private fun EditorEmptyCard(onLoadFile: () -> Unit) {
+    val interaction = rememberPressInteractionSource()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
+            .pressEffect(interaction)
             .border(
                 width = 1.5.dp,
                 color = GlasenseTheme.colors.contentVariant.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(24.dp)
             )
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = null,
                 onClick = onLoadFile
             )
@@ -239,7 +305,7 @@ private fun EditorEmptyCard(onLoadFile: () -> Unit) {
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "点击下方新建，或从文件 App 加载现有 JSON",
+                text = "点击下方新建，或点此从文件 App 加载 JSON",
                 style = GlasenseTheme.type.footnote,
                 color = GlasenseTheme.colors.contentVariant,
                 textAlign = TextAlign.Center
@@ -251,18 +317,21 @@ private fun EditorEmptyCard(onLoadFile: () -> Unit) {
 /** 虚线边框新建科目卡。 */
 @Composable
 private fun DashedAddSubjectCard(onClick: () -> Unit) {
+    val interaction = rememberPressInteractionSource()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
             .height(72.dp)
+            .pressEffect(interaction)
             .border(
                 width = 1.5.dp,
                 color = GlasenseTheme.colors.contentVariant.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(24.dp)
             )
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = null,
                 onClick = onClick
             ),
@@ -285,13 +354,11 @@ private fun DashedAddSubjectCard(onClick: () -> Unit) {
     }
 }
 
-/** 科目卡：玻璃长条容器，头部为名称输入 + 删除/展开，内容为条目列表。 */
+/** 科目卡：纯色 iOS 卡容器，头部为名称输入 + 删除/展开，内容为条目列表。 */
 @Composable
 private fun SubjectCard(
     subject: EditorSubject,
     formulaRenderer: FormulaPngRenderer?,
-    backdrop: Backdrop,
-    liquidGlass: Boolean,
     onRemoveSubject: () -> Unit,
     onUpdateSubjectName: (String) -> Unit,
     onAddEntry: () -> Unit,
@@ -305,10 +372,8 @@ private fun SubjectCard(
         label = "SubjectChevron"
     )
 
-    GlasenseGlassPanel(
-        backdrop = backdrop,
+    GlasenseSurfaceCard(
         shape = RoundedCornerShape(24.dp),
-        liquidGlass = liquidGlass,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
@@ -388,17 +453,19 @@ private fun SubjectCard(
                         )
                     }
 
+                    val addEntryInteraction = rememberPressInteractionSource()
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp)
+                            .pressEffect(addEntryInteraction)
                             .border(
                                 width = 1.5.dp,
                                 color = GlasenseTheme.colors.contentVariant.copy(alpha = 0.4f),
                                 shape = RoundedCornerShape(14.dp)
                             )
                             .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
+                                interactionSource = addEntryInteraction,
                                 indication = null,
                                 onClick = onAddEntry
                             ),

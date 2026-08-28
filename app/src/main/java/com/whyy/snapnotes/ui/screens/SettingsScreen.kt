@@ -1,34 +1,46 @@
 package com.whyy.snapnotes.ui.screens
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.nevoit.glasense.component.paddingItem
-import com.nevoit.glasense.core.component.Icon
 import com.nevoit.glasense.core.component.Text
 import com.nevoit.glasense.core.component.VGap
 import com.nevoit.glasense.theme.GlasenseTheme
 import com.whyy.snapnotes.R
 import com.whyy.snapnotes.theme.AppColors
 import com.whyy.snapnotes.theme.AppSpecs
-import com.whyy.snapnotes.ui.components.glasense.GlasensePageHeader
+import com.whyy.snapnotes.ui.LocalTabVisible
+import com.whyy.snapnotes.ui.pageContentBackdrop
+import com.whyy.snapnotes.ui.rememberPageBackdrop
+import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroHeader
 import com.whyy.snapnotes.ui.components.glasense.GlasenseSwitch
 import com.whyy.snapnotes.ui.components.packed.ConfigContainer
 import com.whyy.snapnotes.ui.components.packed.ConfigEntryItem
@@ -39,8 +51,6 @@ import com.whyy.snapnotes.ui.theme.AppearanceMode
 fun SettingsScreen(
     appearanceMode: AppearanceMode,
     onAppearanceModeChange: (AppearanceMode) -> Unit,
-    dynamicColor: Boolean,
-    onDynamicColorChange: (Boolean) -> Unit,
     useBuiltinFileManager: Boolean,
     onUseBuiltinFileManagerChange: (Boolean) -> Unit,
     lastExportDirSummary: String?,
@@ -50,79 +60,86 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val lazyListState = rememberLazyListState()
+    val pageBackdrop = rememberPageBackdrop()
+    val tabVisible = LocalTabVisible.current
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
 
-    PageContent(
-        state = lazyListState,
-        modifier = modifier,
-        tabPadding = true
-    ) {
-        item {
-            GlasensePageHeader(title = "设置")
-        }
-        item {
-            ConfigContainer(title = "外观", backgroundColor = AppColors.cardBackground) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        PageContent(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .pageContentBackdrop(pageBackdrop),
+            tabPadding = true,
+            topPadding = { with(density) { headerHeightPx.toDp() } }
+        ) {
+            item {
+                ConfigContainer(title = "外观", backgroundColor = AppColors.cardBackground) {
                     AppearanceModeRow(
                         selected = appearanceMode,
                         onSelect = onAppearanceModeChange
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                VGap()
+            }
+            item {
+                ConfigContainer(title = "导入", backgroundColor = AppColors.cardBackground) {
                     SwitchRow(
-                        title = "动态取色",
-                        summary = "开启后按系统壁纸生成整套配色（Monet）",
-                        checked = dynamicColor,
-                        onCheckedChange = onDynamicColorChange
+                        title = "使用内置文件管理器",
+                        summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
+                        checked = useBuiltinFileManager,
+                        onCheckedChange = onUseBuiltinFileManagerChange
                     )
                 }
+                VGap()
             }
-            VGap()
-        }
-        item {
-            ConfigContainer(title = "导入", backgroundColor = AppColors.cardBackground) {
-                SwitchRow(
-                    title = "使用内置文件管理器",
-                    summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
-                    checked = useBuiltinFileManager,
-                    onCheckedChange = onUseBuiltinFileManagerChange
-                )
-            }
-            VGap()
-        }
-        item {
-            ConfigContainer(title = "导出", backgroundColor = AppColors.cardBackground) {
-                ConfigEntryItem(
-                    color = AppColors.primary,
-                    icon = painterResource(R.drawable.ic_folder),
-                    title = "导出目录",
-                    onClick = onPickExportDir
-                )
-            }
-            VGap()
-        }
-        item {
-            ConfigContainer(title = "其他", backgroundColor = AppColors.cardBackground) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+            item {
+                ConfigContainer(title = "导出", backgroundColor = AppColors.cardBackground) {
                     ConfigEntryItem(
                         color = AppColors.primary,
-                        icon = painterResource(R.drawable.ic_arrow_counterclockwise),
-                        title = "重置首次同步确认",
-                        onClick = onResetFirstSyncConfirm
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ConfigEntryItem(
-                        color = AppColors.primary,
-                        icon = painterResource(R.drawable.ic_mini_info),
-                        title = "关于",
-                        onClick = onOpenAbout
+                        icon = painterResource(R.drawable.ic_square_dashed),
+                        title = "导出目录",
+                        onClick = onPickExportDir
                     )
                 }
+                VGap()
             }
+            item {
+                ConfigContainer(title = "其他", backgroundColor = AppColors.cardBackground) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        ConfigEntryItem(
+                            color = AppColors.primary,
+                            icon = painterResource(R.drawable.ic_square_dashed),
+                            title = "重置首次同步确认",
+                            onClick = onResetFirstSyncConfirm
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        ConfigEntryItem(
+                            color = AppColors.primary,
+                            icon = painterResource(R.drawable.ic_square_dashed),
+                            title = "关于",
+                            onClick = onOpenAbout
+                        )
+                    }
+                }
+            }
+            paddingItem(lazyListState)
         }
-        paddingItem(lazyListState)
+
+        GlasenseHeroHeader(
+            title = "设置",
+            subtitle = null,
+            backdrop = pageBackdrop,
+            liquidGlass = true && tabVisible,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .onSizeChanged { headerHeightPx = it.height }
+        )
     }
 }
 
-/** 主题模式选择行：标题 + 说明在上，三段式分段选择器独占一行，避免拥挤遮挡。 */
+/** 主题模式选择行：标题 + 说明在上，三段式分段选择器独占一行，指示器滑动切换。 */
 @Composable
 private fun AppearanceModeRow(
     selected: AppearanceMode,
@@ -140,38 +157,51 @@ private fun AppearanceModeRow(
             color = AppColors.contentVariant
         )
         Spacer(Modifier.height(10.dp))
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
+                .fillMaxWidth()
                 .background(AppColors.segmentedControlBackground, AppSpecs.buttonShape)
                 .padding(3.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
             val options = AppearanceMode.entries
-            options.forEach { mode ->
-                val isSelected = mode == selected
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(
-                            if (isSelected) Modifier.background(
-                                AppColors.segmentedControlIndicator,
-                                AppSpecs.buttonShape
-                            ) else Modifier
+            val itemWidth = maxWidth / options.size
+            val selectedIndex = selected.ordinal
+            val indicatorOffset by animateDpAsState(
+                targetValue = itemWidth * selectedIndex,
+                animationSpec = spring(dampingRatio = 0.9f, stiffness = 400f),
+                label = "SegmentIndicator"
+            )
+            // 滑动指示器。
+            Box(
+                modifier = Modifier
+                    .offset(x = indicatorOffset)
+                    .width(itemWidth)
+                    .height(30.dp)
+                    .background(AppColors.segmentedControlIndicator, AppSpecs.buttonShape)
+            )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                options.forEach { mode ->
+                    val isSelected = mode == selected
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(30.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onSelect(mode) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = mode.label,
+                            style = GlasenseTheme.type.footnote,
+                            color = if (isSelected) {
+                                AppColors.onSegmentedControlIndicator
+                            } else {
+                                AppColors.onSegmentedControlBackground
+                            }
                         )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onSelect(mode) }
-                        .padding(horizontal = 10.dp, vertical = 7.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = mode.label,
-                        style = GlasenseTheme.type.footnote,
-                        color = if (isSelected) AppColors.onSegmentedControlIndicator else AppColors.onSegmentedControlBackground
-                    )
+                    }
                 }
             }
         }
