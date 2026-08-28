@@ -14,22 +14,39 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -37,10 +54,14 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.nevoit.glasense.core.component.Text
 import com.whyy.snapnotes.App
 import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
 import com.whyy.snapnotes.notifications.ForegroundTransferService
+import com.whyy.snapnotes.theme.AppColors
 import com.whyy.snapnotes.ui.components.EditorLoadErrorDialog
 import com.whyy.snapnotes.ui.components.DraftRestoreDialog
 import com.whyy.snapnotes.ui.components.ExportNameDialog
@@ -49,12 +70,12 @@ import com.whyy.snapnotes.ui.components.FirstSyncConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryBatchDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.VersionIncompatibleDialog
+import com.whyy.snapnotes.ui.components.glasense.GlasenseNavigationButton
 import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
 import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
 import com.whyy.snapnotes.ui.screens.EditorScreen
 import com.whyy.snapnotes.ui.screens.BuiltinFileManagerScreen
 import com.whyy.snapnotes.ui.screens.AboutScreen
-import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
 import com.whyy.snapnotes.ui.screens.HistoryScreen
 import com.whyy.snapnotes.ui.screens.HomeScreen
 import com.whyy.snapnotes.ui.screens.ProgressScreen
@@ -66,14 +87,6 @@ import com.whyy.snapnotes.ui.theme.SnapNotesTheme
 import com.whyy.snapnotes.ui.viewmodel.AppScreen
 import com.whyy.snapnotes.ui.viewmodel.SnapNotesViewModel
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.icon.extended.File
-import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.VerticalSplit
 
 sealed interface Screen : NavKey {
     data object HomePager : Screen
@@ -95,8 +108,7 @@ class MainActivity : ComponentActivity() {
     /** 内置文件管理器当前请求来源（与 pickForEditor 同义，供 Composable 侧读取下次入口）。 */
     private var pendingFileManagerForEditor = false
 
-    /** 编辑器导出：内置文件管理器此刻是否作为「选导出目录」模式打开。
-     *  为 true 时，文件管理器以选目录模式运行，确认目录后写入待导出 JSON。 */
+    /** 编辑器导出：内置文件管理器此刻是否作为「选导出目录」模式打开。 */
     private var pendingExportSelection = false
     /** 设置页「导出目录」项打开的只是浏览模式：选目录模式，但不写文件，仅供用户查看/选择位置。 */
     private var pendingPickDirBrowse = false
@@ -105,7 +117,6 @@ class MainActivity : ComponentActivity() {
 
     /** 启动编辑器导出流程：先命名，再用内置文件管理器选目录写入。 */
     private fun startExportFlow() {
-        // 触发命名对话框（Composable 侧读取 showExportName state）。
         showExportName.value = true
     }
 
@@ -113,7 +124,7 @@ class MainActivity : ComponentActivity() {
     private fun launchExportDirPicker(json: String, fileName: String) {
         pendingExportJson = json
         pendingExportFileName = fileName
-        pendingFileManagerForEditor = false   // 导出模式与「加载进编辑器」互斥
+        pendingFileManagerForEditor = false
         pendingExportSelection = true
         navigateToFileManagerEntry?.invoke()
     }
@@ -123,7 +134,7 @@ class MainActivity : ComponentActivity() {
     private var showExportName = androidx.compose.runtime.mutableStateOf(false)
 
     /** 编辑页公式预览渲染器（与推送共用同一实例，复用 WebView 保持输入流畅）。 */
-    private var editorFormulaRenderer: com.whyy.snapnotes.logic.FormulaPngRenderer? = null
+    private var editorFormulaRenderer: FormulaPngRenderer? = null
 
     private val filePickerLauncher =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -138,7 +149,6 @@ class MainActivity : ComponentActivity() {
         pickForEditor = forEditor
         pendingFileManagerForEditor = forEditor
         if (viewModel.useBuiltinFileManager.value) {
-            // 应用内文件浏览器：作为页面入栈，走 NavDisplay 默认切换（与参考项目一致）。
             navigateToFileManager()
         } else {
             filePickerLauncher.launch("application/json")
@@ -173,14 +183,7 @@ class MainActivity : ComponentActivity() {
             val appearanceMode by viewModel.appearanceMode.collectAsState()
             val dynamicColor by viewModel.dynamicColor.collectAsState()
 
-            val snackbarHostState = androidx.compose.runtime.remember { top.yukonga.miuix.kmp.basic.SnackbarHostState() }
             val snackbarMessage by viewModel.snackbarMessage.collectAsState()
-            val scope = rememberCoroutineScope()
-            androidx.compose.runtime.LaunchedEffect(snackbarMessage) {
-                val msg = snackbarMessage ?: return@LaunchedEffect
-                snackbarHostState.showSnackbar(msg)
-                viewModel.dismissSnackbar()
-            }
 
             SnapNotesTheme(
                 appearanceMode = appearanceMode,
@@ -282,355 +285,350 @@ class MainActivity : ComponentActivity() {
 
                 val showBottomBar = currentScreen is Screen.HomePager
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Scaffold(
-                        snackbarHost = {
-                            top.yukonga.miuix.kmp.basic.SnackbarHost(state = snackbarHostState)
-                        },
-                        bottomBar = {
-                            if (showBottomBar) {
-                                NavigationBar {
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 0,
-                                        onClick = {
-                                            viewModel.openHome()
-                                            scope.launch { pagerState.animateScrollToPage(0) }
-                                        },
-                                        icon = MiuixIcons.VerticalSplit,
-                                        label = "主页"
-                                    )
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 1,
-                                        onClick = {
-                                            viewModel.openEditor()
-                                            scope.launch { pagerState.animateScrollToPage(1) }
-                                        },
-                                        icon = MiuixIcons.Edit,
-                                        label = "编辑"
-                                    )
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 2,
-                                        onClick = {
-                                            viewModel.openHistory()
-                                            scope.launch { pagerState.animateScrollToPage(2) }
-                                        },
-                                        icon = MiuixIcons.File,
-                                        label = "历史"
-                                    )
-                                    NavigationBarItem(
-                                        selected = pagerState.currentPage == 3,
-                                        onClick = {
-                                            viewModel.openSettings()
-                                            scope.launch { pagerState.animateScrollToPage(3) }
-                                        },
-                                        icon = MiuixIcons.Settings,
-                                        label = "设置"
-                                    )
-                                }
-                            }
-                        } ,
-                    ) { paddingValues ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(bottom = if (showBottomBar) paddingValues.calculateBottomPadding() else 0.dp)
-                        ) {
-                            val entryProvider = remember(backStack) {
-                                entryProvider<NavKey> {
-                                    entry<Screen.HomePager> {
-                                        HorizontalPager(
-                                            state = pagerState,
-                                            modifier = Modifier.fillMaxSize(),
-                                            beyondViewportPageCount = 1,
-                                            key = { it }
-                                        ) { page ->
-                                            when (page) {
-                                                0 -> HomeScreen(
-                                                    connectionState = connectionState,
-                                                    selectedFile = selectedFile,
-                                                    storageInfo = storageInfo,
-                                                    storageRefreshing = storageRefreshing,
-                                                    onRefreshStorage = viewModel::refreshStorageInfo,
-                                                    onPickFile = {
-                                                        launchFilePicker(
-                                                            false,
-                                                            navigateToFileManager
-                                                        )
-                                                    },
-                                                    onStartPush = viewModel::startPushFromSelected,
-                                                    onTroubleshoot = navigateToTroubleshoot,
-                                                    amadeusEnabled = amadeus.enabled,
-                                                    amadeusReady = amadeus.isReady,
-                                                    amadeusSummary = when {
-                                                        !amadeus.enabled -> "未启用"
-                                                        amadeus.isReady && amadeus.model.isNotBlank() -> "已配置 · ${amadeus.model}"
-                                                        amadeus.isReady -> "已配置"
-                                                        else -> "配置不完整"
-                                                    },
-                                                    onOpenAmadeus = navigateToAmadeus,
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(AppColors.pageBackground)
+                ) {
+                    val entryProvider = remember(backStack) {
+                        entryProvider<NavKey> {
+                            entry<Screen.HomePager> {
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    val backdrop = rememberLayerBackdrop {
+                                        drawRect(
+                                            color = AppColors.pageBackground,
+                                            size = androidx.compose.ui.geometry.Size(
+                                                this.size.width * 3,
+                                                this.size.height * 3
+                                            ),
+                                            topLeft = androidx.compose.ui.geometry.Offset(
+                                                -this.size.width,
+                                                -this.size.height
+                                            )
+                                        )
+                                        drawContent()
+                                    }
+                                    HorizontalPager(
+                                        state = pagerState,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .layerBackdrop(backdrop),
+                                        beyondViewportPageCount = 1,
+                                        key = { it }
+                                    ) { page ->
+                                        when (page) {
+                                            0 -> HomeScreen(
+                                                connectionState = connectionState,
+                                                selectedFile = selectedFile,
+                                                storageInfo = storageInfo,
+                                                storageRefreshing = storageRefreshing,
+                                                onRefreshStorage = viewModel::refreshStorageInfo,
+                                                onPickFile = {
+                                                    launchFilePicker(
+                                                        false,
+                                                        navigateToFileManager
+                                                    )
+                                                },
+                                                onStartPush = viewModel::startPushFromSelected,
+                                                onTroubleshoot = navigateToTroubleshoot,
+                                                amadeusEnabled = amadeus.enabled,
+                                                amadeusReady = amadeus.isReady,
+                                                amadeusSummary = when {
+                                                    !amadeus.enabled -> "未启用"
+                                                    amadeus.isReady && amadeus.model.isNotBlank() -> "已配置 · ${amadeus.model}"
+                                                    amadeus.isReady -> "已配置"
+                                                    else -> "配置不完整"
+                                                },
+                                                onOpenAmadeus = navigateToAmadeus,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
 
-                                                1 -> EditorScreen(
-                                                    subjects = editorSubjects,
-                                                    formulaRenderer = editorFormulaRenderer,
-                                                    onAddSubject = viewModel::addSubject,
-                                                    onRemoveSubject = viewModel::removeSubject,
-                                                    onUpdateSubjectName = viewModel::updateSubjectName,
-                                                    onAddEntry = viewModel::addEntry,
-                                                    onRemoveEntry = viewModel::removeEntry,
-                                                    onUpdateEntry = viewModel::updateEntry,
-                                                    onLoadFile = {
-                                                        launchFilePicker(
-                                                            true,
-                                                            navigateToFileManager
-                                                        )
-                                                    },
-                                                    onExportToFile = {
-                                                        // 导出到用户指定目录：先命名，再用内置文件管理器选目录写入。
-                                                        startExportFlow()
-                                                    },
-                                                    onPushFile = {
-                                                        // 推送当前编辑内容生成的 JSON，走与主页一致的主推送链路。
-                                                        viewModel.pushFromString(
-                                                            viewModel.getEditorJsonString(),
-                                                            "自定义知识点.json"
-                                                        )
-                                                    },
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
+                                            1 -> EditorScreen(
+                                                subjects = editorSubjects,
+                                                formulaRenderer = editorFormulaRenderer,
+                                                onAddSubject = viewModel::addSubject,
+                                                onRemoveSubject = viewModel::removeSubject,
+                                                onUpdateSubjectName = viewModel::updateSubjectName,
+                                                onAddEntry = viewModel::addEntry,
+                                                onRemoveEntry = viewModel::removeEntry,
+                                                onUpdateEntry = viewModel::updateEntry,
+                                                onLoadFile = {
+                                                    launchFilePicker(
+                                                        true,
+                                                        navigateToFileManager
+                                                    )
+                                                },
+                                                onExportToFile = {
+                                                    startExportFlow()
+                                                },
+                                                onPushFile = {
+                                                    viewModel.pushFromString(
+                                                        viewModel.getEditorJsonString(),
+                                                        "自定义知识点.json"
+                                                    )
+                                                },
+                                                modifier = Modifier.fillMaxSize()
+                                            )
 
-                                                2 -> HistoryScreen(
-                                                    records = pushHistory,
-                                                    onRepush = viewModel::repushRecord,
-                                                    onDeleteRequest = viewModel::requestHistoryDelete,
-                                                    onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
-                                                    onEditRecord = viewModel::openEditorFromCache,  // 新增这一行
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
+                                            2 -> HistoryScreen(
+                                                records = pushHistory,
+                                                onRepush = viewModel::repushRecord,
+                                                onDeleteRequest = viewModel::requestHistoryDelete,
+                                                onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
+                                                onEditRecord = viewModel::openEditorFromCache,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
 
-                                                3 -> SettingsScreen(
-                                                    appearanceMode = appearanceMode,
-                                                    onAppearanceModeChange = viewModel::setAppearanceMode,
-                                                    dynamicColor = dynamicColor,
-                                                    onDynamicColorChange = viewModel::setDynamicColor,
-                                                    useBuiltinFileManager = useBuiltinFileManager,
-                                                    onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
-                                                    lastExportDirSummary = lastExportDirSummary,
-                                                    onPickExportDir = {
-                                                        // 设置页点「导出目录」：以内置文件管理器浏览目录（选目录模式，不写文件）。
-                                                        pendingFileManagerForEditor = false
-                                                        pendingExportSelection = false
-                                                        pendingPickDirBrowse = true
-                                                        navigateToFileManager()
-                                                    },
-                                                    onOpenAbout = navigateToAbout,
-                                                    onResetFirstSyncConfirm = viewModel::resetFirstSyncConfirm,
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
+                                            3 -> SettingsScreen(
+                                                appearanceMode = appearanceMode,
+                                                onAppearanceModeChange = viewModel::setAppearanceMode,
+                                                dynamicColor = dynamicColor,
+                                                onDynamicColorChange = viewModel::setDynamicColor,
+                                                useBuiltinFileManager = useBuiltinFileManager,
+                                                onUseBuiltinFileManagerChange = viewModel::setUseBuiltinFileManager,
+                                                lastExportDirSummary = lastExportDirSummary,
+                                                onPickExportDir = {
+                                                    pendingFileManagerForEditor = false
+                                                    pendingExportSelection = false
+                                                    pendingPickDirBrowse = true
+                                                    navigateToFileManager()
+                                                },
+                                                onOpenAbout = navigateToAbout,
+                                                onResetFirstSyncConfirm = viewModel::resetFirstSyncConfirm,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        }
+                                    }
+
+                                    // 底部浮动玻璃导航条
+                                    AnimatedVisibility(
+                                        visible = showBottomBar,
+                                        enter = fadeIn() + slideInVertically { it / 2 },
+                                        exit = fadeOut() + slideOutVertically { it / 2 },
+                                        modifier = Modifier.align(Alignment.BottomCenter)
+                                    ) {
+                                        MainNavigationBar(
+                                            pagerState = pagerState,
+                                            backdrop = backdrop,
+                                            onPageSelect = { page ->
+                                                when (page) {
+                                                    0 -> viewModel.openHome()
+                                                    1 -> viewModel.openEditor()
+                                                    2 -> viewModel.openHistory()
+                                                    3 -> viewModel.openSettings()
+                                                }
+                                                scope.launch { pagerState.animateScrollToPage(page) }
                                             }
-                                        }
-                                    }
-                                    entry<Screen.Progress> {
-                                        ProgressScreen(
-                                            pushState = pushState,
-                                            onCancel = viewModel::cancelPush,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.Result> {
-                                        ResultScreen(
-                                            pushState = pushState,
-                                            onBackHome = viewModel::backHome,
-                                            onRetry = viewModel::retry,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.FileManager> {
-                                        val dirMode = pendingExportSelection || pendingPickDirBrowse
-                                        if (dirMode) {
-                                            BuiltinFileManagerScreen(
-                                                onBackClick = {
-                                                    pendingExportSelection = false
-                                                    pendingPickDirBrowse = false
-                                                    navigateBack()
-                                                },
-                                                onPick = { /* 选目录模式下不会触发文件选择 */ },
-                                                pickMode = com.whyy.snapnotes.ui.screens.FileManagerPickMode.Directory,
-                                                onPickDir = { dir ->
-                                                    val json = pendingExportJson
-                                                    pendingExportSelection = false
-                                                    pendingPickDirBrowse = false
-                                                    if (json != null) {
-                                                        viewModel.exportEditorJsonToDir(dir, json, pendingExportFileName)
-                                                    } else {
-                                                        // 设置页浏览模式：仅记录为最近导出目录并返回。
-                                                        viewModel.rememberExportDir(dir)
-                                                    }
-                                                    pendingExportJson = null
-                                                    navigateBack()
-                                                },
-                                                onPickDirTitle = if (pendingExportSelection) "保存到此目录" else "导出目录",
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        } else {
-                                            BuiltinFileManagerScreen(
-                                                onBackClick = {
-                                                    pendingFileManagerForEditor = false
-                                                    navigateBack()
-                                                },
-                                                onPick = { file ->
-                                                    if (pendingFileManagerForEditor) {
-                                                        viewModel.onBuiltinFilePickedForEditor(file)
-                                                    } else {
-                                                        viewModel.onBuiltinFilePicked(file)
-                                                    }
-                                                    pendingFileManagerForEditor = false
-                                                    navigateBack()
-                                                },
-                                                modifier = Modifier.fillMaxSize()
-                                            )
-                                        }
-                                    }
-                                    entry<Screen.About> {
-                                        AboutScreen(
-                                            onBackClick = navigateBack,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.Troubleshoot> {
-                                        // 进页面起三项监控；离开页面停轮询/解注册广播。
-                                        LaunchedEffect(Unit) { viewModel.startTroubleshoot() }
-                                        DisposableEffect(Unit) {
-                                            onDispose { viewModel.stopTroubleshoot() }
-                                        }
-                                        TroubleshootScreen(
-                                            state = troubleshootState,
-                                            isConnected = connectionState.isConnected,
-                                            onBackClick = navigateBack,
-                                            onRequestBluetooth = {
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                                    bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
-                                                }
-                                            },
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.AmadeusConfig> {
-                                        AmadeusConfigScreen(
-                                            config = amadeus,
-                                            onEnabledChange = viewModel::setAmadeusEnabled,
-                                            onBaseUrlChange = viewModel::setAmadeusBaseUrl,
-                                            onApiKeyChange = viewModel::setAmadeusApiKey,
-                                            onModelChange = viewModel::setAmadeusModel,
-                                            onBackClick = navigateBack,
-                                            onOpenContext = navigateToAmadeusContext,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    }
-                                    entry<Screen.AmadeusContext> {
-                                        // 进页面拉一次快照（会话列表非 StateFlow，入页刷新即可）。
-                                        var snapshots by remember { mutableStateOf(viewModel.amadeusSnapshots()) }
-                                        LaunchedEffect(Unit) { snapshots = viewModel.amadeusSnapshots() }
-                                        // lastCall 进入终态（Success/Failed）时新建/更新 test_ 会话，刷一次列表。
-                                        LaunchedEffect(amadeusLastCall) { snapshots = viewModel.amadeusSnapshots() }
-                                        AmadeusContextScreen(
-                                            lastCall = amadeusLastCall,
-                                            snapshots = snapshots,
-                                            onDetail = { id ->
-                                                viewModel.amadeusDetail(id).also {
-                                                    // 详情返回后再刷一次快照（清空操作会改变列表）。
-                                                    snapshots = viewModel.amadeusSnapshots()
-                                                }
-                                            },
-                                            onClearSession = { id ->
-                                                viewModel.clearAmadeusSession(id)
-                                                snapshots = viewModel.amadeusSnapshots()
-                                            },
-                                            onClearAll = {
-                                                viewModel.clearAllAmadeus()
-                                                snapshots = viewModel.amadeusSnapshots()
-                                            },
-                                            onTestSend = { text ->
-                                                viewModel.testSendAmadeus(text)
-                                            },
-                                            onExportLastReply = { viewModel.exportLastAmadeusReply() },
-                                            onBackClick = navigateBack,
-                                            modifier = Modifier.fillMaxSize()
                                         )
                                     }
                                 }
                             }
-
-                            NavDisplay(
-                                backStack = backStack,
-                                entryProvider = entryProvider,
-                                onBack = {
-                                    if (backStack.size > 1) {
-                                        when (backStack.last()) {
-                                            is Screen.Progress -> viewModel.cancelPush()
-                                            else -> Unit
-                                        }
-                                        backStack.removeAt(backStack.size - 1)
-                                    } else {
-                                        finish()
-                                    }
-                                }
-                            )
-                        }
-                        FirstSyncConfirmDialog(
-                            show = showFirstSyncConfirm,
-                            onConfirm = viewModel::confirmFirstSync,
-                            onCancel = viewModel::cancelFirstSyncConfirm
-                        )
-
-                        DraftRestoreDialog(
-                            show = showDraftRestorePrompt,
-                            onRestore = viewModel::restoreEditorDraft,
-                            onDiscard = viewModel::discardEditorDraft
-                        )
-
-                        HistoryDeleteConfirmDialog(
-                            record = pendingHistoryDelete,
-                            onConfirm = viewModel::confirmHistoryDelete,
-                            onDismiss = viewModel::cancelHistoryDelete
-                        )
-
-                        HistoryBatchDeleteConfirmDialog(
-                            records = pendingHistoryBatchDelete,
-                            onConfirm = viewModel::confirmHistoryBatchDelete,
-                            onDismiss = viewModel::cancelHistoryBatchDelete
-                        )
-
-                        VersionIncompatibleDialog(
-                            state = versionIncompatible,
-                            onDismiss = viewModel::dismissVersionIncompatible
-                        )
-
-                        EditorLoadErrorDialog(
-                            message = editorLoadError,
-                            onDismiss = viewModel::dismissEditorLoadError
-                        )
-
-                        ExportResultDialog(
-                            result = exportResult,
-                            onDismiss = viewModel::dismissExportResult
-                        )
-
-                        ExportNameDialog(
-                            show = showExportName.value,
-                            defaultName = "自定义知识点",
-                            onDismiss = { showExportName.value = false },
-                            onConfirm = { fileName ->
-                                showExportName.value = false
-                                launchExportDirPicker(
-                                    viewModel.getEditorJsonString(),
-                                    fileName
+                            entry<Screen.Progress> {
+                                ProgressScreen(
+                                    pushState = pushState,
+                                    onCancel = viewModel::cancelPush,
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
-                        )
+                            entry<Screen.Result> {
+                                ResultScreen(
+                                    pushState = pushState,
+                                    onBackHome = viewModel::backHome,
+                                    onRetry = viewModel::retry,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            entry<Screen.FileManager> {
+                                val dirMode = pendingExportSelection || pendingPickDirBrowse
+                                if (dirMode) {
+                                    BuiltinFileManagerScreen(
+                                        onBackClick = {
+                                            pendingExportSelection = false
+                                            pendingPickDirBrowse = false
+                                            navigateBack()
+                                        },
+                                        onPick = { /* 选目录模式下不会触发文件选择 */ },
+                                        pickMode = FileManagerPickMode.Directory,
+                                        onPickDir = { dir ->
+                                            val json = pendingExportJson
+                                            pendingExportSelection = false
+                                            pendingPickDirBrowse = false
+                                            if (json != null) {
+                                                viewModel.exportEditorJsonToDir(dir, json, pendingExportFileName)
+                                            } else {
+                                                viewModel.rememberExportDir(dir)
+                                            }
+                                            pendingExportJson = null
+                                            navigateBack()
+                                        },
+                                        onPickDirTitle = if (pendingExportSelection) "保存到此目录" else "导出目录",
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    BuiltinFileManagerScreen(
+                                        onBackClick = {
+                                            pendingFileManagerForEditor = false
+                                            navigateBack()
+                                        },
+                                        onPick = { file ->
+                                            if (pendingFileManagerForEditor) {
+                                                viewModel.onBuiltinFilePickedForEditor(file)
+                                            } else {
+                                                viewModel.onBuiltinFilePicked(file)
+                                            }
+                                            pendingFileManagerForEditor = false
+                                            navigateBack()
+                                        },
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                            entry<Screen.About> {
+                                AboutScreen(
+                                    onBackClick = navigateBack,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            entry<Screen.Troubleshoot> {
+                                // 进页面起三项监控；离开页面停轮询/解注册广播。
+                                LaunchedEffect(Unit) { viewModel.startTroubleshoot() }
+                                DisposableEffect(Unit) {
+                                    onDispose { viewModel.stopTroubleshoot() }
+                                }
+                                TroubleshootScreen(
+                                    state = troubleshootState,
+                                    isConnected = connectionState.isConnected,
+                                    onBackClick = navigateBack,
+                                    onRequestBluetooth = {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                            bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            entry<Screen.AmadeusConfig> {
+                                AmadeusConfigScreen(
+                                    config = amadeus,
+                                    onEnabledChange = viewModel::setAmadeusEnabled,
+                                    onBaseUrlChange = viewModel::setAmadeusBaseUrl,
+                                    onApiKeyChange = viewModel::setAmadeusApiKey,
+                                    onModelChange = viewModel::setAmadeusModel,
+                                    onBackClick = navigateBack,
+                                    onOpenContext = navigateToAmadeusContext,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            entry<Screen.AmadeusContext> {
+                                // 进页面拉一次快照（会话列表非 StateFlow，入页刷新即可）。
+                                var snapshots by remember { mutableStateOf(viewModel.amadeusSnapshots()) }
+                                LaunchedEffect(Unit) { snapshots = viewModel.amadeusSnapshots() }
+                                // lastCall 进入终态（Success/Failed）时新建/更新 test_ 会话，刷一次列表。
+                                LaunchedEffect(amadeusLastCall) { snapshots = viewModel.amadeusSnapshots() }
+                                AmadeusContextScreen(
+                                    lastCall = amadeusLastCall,
+                                    snapshots = snapshots,
+                                    onDetail = { id ->
+                                        viewModel.amadeusDetail(id).also {
+                                            snapshots = viewModel.amadeusSnapshots()
+                                        }
+                                    },
+                                    onClearSession = { id ->
+                                        viewModel.clearAmadeusSession(id)
+                                        snapshots = viewModel.amadeusSnapshots()
+                                    },
+                                    onClearAll = {
+                                        viewModel.clearAllAmadeus()
+                                        snapshots = viewModel.amadeusSnapshots()
+                                    },
+                                    onTestSend = { text ->
+                                        viewModel.testSendAmadeus(text)
+                                    },
+                                    onExportLastReply = { viewModel.exportLastAmadeusReply() },
+                                    onBackClick = navigateBack,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
                     }
-                } // Box 结束（Scaffold + 对话框）
+
+                    NavDisplay(
+                        backStack = backStack,
+                        entryProvider = entryProvider,
+                        onBack = {
+                            if (backStack.size > 1) {
+                                when (backStack.last()) {
+                                    is Screen.Progress -> viewModel.cancelPush()
+                                    else -> Unit
+                                }
+                                backStack.removeAt(backStack.size - 1)
+                            } else {
+                                finish()
+                            }
+                        }
+                    )
+
+                    // Glasense 风格轻量 snackbar：浮在底部导航上方。
+                    SnapNotesSnackbar(
+                        message = snackbarMessage,
+                        onDismiss = viewModel::dismissSnackbar,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 96.dp)
+                    )
+
+                    FirstSyncConfirmDialog(
+                        show = showFirstSyncConfirm,
+                        onConfirm = viewModel::confirmFirstSync,
+                        onCancel = viewModel::cancelFirstSyncConfirm
+                    )
+
+                    DraftRestoreDialog(
+                        show = showDraftRestorePrompt,
+                        onRestore = viewModel::restoreEditorDraft,
+                        onDiscard = viewModel::discardEditorDraft
+                    )
+
+                    HistoryDeleteConfirmDialog(
+                        record = pendingHistoryDelete,
+                        onConfirm = viewModel::confirmHistoryDelete,
+                        onDismiss = viewModel::cancelHistoryDelete
+                    )
+
+                    HistoryBatchDeleteConfirmDialog(
+                        records = pendingHistoryBatchDelete,
+                        onConfirm = viewModel::confirmHistoryBatchDelete,
+                        onDismiss = viewModel::cancelHistoryBatchDelete
+                    )
+
+                    VersionIncompatibleDialog(
+                        state = versionIncompatible,
+                        onDismiss = viewModel::dismissVersionIncompatible
+                    )
+
+                    EditorLoadErrorDialog(
+                        message = editorLoadError,
+                        onDismiss = viewModel::dismissEditorLoadError
+                    )
+
+                    ExportResultDialog(
+                        result = exportResult,
+                        onDismiss = viewModel::dismissExportResult
+                    )
+
+                    ExportNameDialog(
+                        show = showExportName.value,
+                        defaultName = "自定义知识点",
+                        onDismiss = { showExportName.value = false },
+                        onConfirm = { fileName ->
+                            showExportName.value = false
+                            launchExportDirPicker(
+                                viewModel.getEditorJsonString(),
+                                fileName
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -656,8 +654,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 请求加入 Doze 电池优化白名单。已在白名单则直接返回，否则弹系统授权框。
-     *  Amadeus 启用时由 ViewModel 事件触发；后台/锁屏跑 LLM 网络的前提。 */
+    /** 请求加入 Doze 电池优化白名单。已在白名单则直接返回，否则弹系统授权框。 */
     private fun requestIgnoreBatteryOptimizationsIfNeeded() {
         val pm = getSystemService(POWER_SERVICE) as? PowerManager ?: return
         if (pm.isIgnoringBatteryOptimizations(packageName)) return
@@ -685,8 +682,6 @@ class MainActivity : ComponentActivity() {
                         )
                     } else {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                        // 不再无条件停服务：传输结束后若 Amadeus 待命该启用，
-                        // 切回待命通知（同 id 覆盖传输通知）；否则停。
                         viewModel.applyForegroundServiceAfterTransfer()
                     }
                 }
@@ -708,6 +703,81 @@ class MainActivity : ComponentActivity() {
         } else {
             @Suppress("DEPRECATION")
             intent.getParcelableExtra(Intent.EXTRA_STREAM)
+        }
+    }
+}
+
+/** 底部浮动玻璃导航条：四页主界面共用的页签入口。 */
+@androidx.compose.runtime.Composable
+private fun MainNavigationBar(
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    backdrop: com.kyant.backdrop.backdrops.LayerBackdrop,
+    onPageSelect: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+            .height(56.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        val items = listOf(
+            Triple(0, R.drawable.ic_list, "主页"),
+            Triple(1, R.drawable.ic_square_and_pencil, "编辑"),
+            Triple(2, R.drawable.ic_time_line, "历史"),
+            Triple(3, R.drawable.ic_gear, "设置")
+        )
+        items.forEach { (page, iconRes, label) ->
+            GlasenseNavigationButton(
+                modifier = Modifier.weight(1f),
+                isActive = pagerState.currentPage == page,
+                onClick = { onPageSelect(page) },
+                backdrop = backdrop
+            ) {
+                com.nevoit.glasense.core.component.Icon(
+                    painter = androidx.compose.ui.res.painterResource(iconRes),
+                    contentDescription = label
+                )
+            }
+        }
+    }
+}
+
+/** 轻量 snackbar：底部浮出的内容胶囊，几秒后自动消失。 */
+@androidx.compose.runtime.Composable
+private fun SnapNotesSnackbar(
+    message: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(message) {
+        if (message != null) {
+            kotlinx.coroutines.delay(2500)
+            onDismiss()
+        }
+    }
+    AnimatedVisibility(
+        visible = message != null,
+        enter = fadeIn() + slideInVertically { it },
+        exit = fadeOut() + slideOutVertically { it },
+        modifier = modifier
+    ) {
+        val text = message ?: ""
+        Box(
+            modifier = Modifier
+                .graphicsLayer { alpha = 0.95f }
+                .background(
+                    color = Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        ) {
+            Text(
+                text = text,
+                style = com.nevoit.glasense.theme.GlasenseTheme.type.subHeadline,
+                color = Color.White
+            )
         }
     }
 }

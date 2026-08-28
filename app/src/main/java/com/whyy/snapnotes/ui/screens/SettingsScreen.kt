@@ -1,28 +1,38 @@
 package com.whyy.snapnotes.ui.screens
 
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.nevoit.glasense.component.paddingItem
+import com.nevoit.glasense.core.component.Icon
+import com.nevoit.glasense.core.component.Text
+import com.nevoit.glasense.core.component.VGap
+import com.nevoit.glasense.theme.GlasenseTheme
+import com.whyy.snapnotes.R
+import com.whyy.snapnotes.theme.AppColors
+import com.whyy.snapnotes.theme.AppSpecs
+import com.whyy.snapnotes.ui.components.glasense.GlasensePageHeader
+import com.whyy.snapnotes.ui.components.glasense.GlasenseSwitch
+import com.whyy.snapnotes.ui.components.packed.ConfigContainer
+import com.whyy.snapnotes.ui.components.packed.ConfigEntryItem
+import com.whyy.snapnotes.ui.components.packed.PageContent
 import com.whyy.snapnotes.ui.theme.AppearanceMode
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Folder
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Reset
-import top.yukonga.miuix.kmp.preference.WindowDropdownPreference
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun SettingsScreen(
@@ -38,132 +48,175 @@ fun SettingsScreen(
     onResetFirstSyncConfirm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+    val lazyListState = rememberLazyListState()
 
-    Scaffold(
+    PageContent(
+        state = lazyListState,
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = "设置",
-                largeTitle = "设置",
-                scrollBehavior = scrollBehavior
-            )
-        },
-        popupHost = {}
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .overScrollVertical()
-                .scrollEndHaptic(),
-            contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = 40.dp
-            )
-        ) {
-            item {
-                SmallTitle(text = "外观", modifier = Modifier.padding(top = 12.dp))
-                Card(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
-                ) {
-                    WindowDropdownPreference(
-                        title = "应用主题",
-                        summary = "选择浅色、深色或跟随系统",
-                        items = AppearanceMode.entries.map { it.label },
-                        selectedIndex = AppearanceMode.entries.indexOf(appearanceMode).coerceAtLeast(0),
-                        onSelectedIndexChange = { index ->
-                            onAppearanceModeChange(AppearanceMode.entries[index])
-                        }
+        tabPadding = true
+    ) {
+        item {
+            GlasensePageHeader(title = "设置")
+        }
+        item {
+            ConfigContainer(title = "外观", backgroundColor = AppColors.cardBackground) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    AppearanceModeRow(
+                        selected = appearanceMode,
+                        onSelect = onAppearanceModeChange
                     )
-                    BasicComponent(
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SwitchRow(
                         title = "动态取色",
                         summary = "开启后按系统壁纸生成整套配色（Monet）",
-                        endActions = {
-                            Switch(
-                                checked = dynamicColor,
-                                onCheckedChange = { onDynamicColorChange(it) }
-                            )
-                        }
+                        checked = dynamicColor,
+                        onCheckedChange = onDynamicColorChange
                     )
                 }
             }
-            item {
-                SmallTitle(text = "导入")
-                Card(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
-                ) {
-                    BasicComponent(
-                        title = "使用内置文件管理器",
-                        summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
-                        endActions = {
-                            Switch(
-                                checked = useBuiltinFileManager,
-                                onCheckedChange = { onUseBuiltinFileManagerChange(it) }
-                            )
-                        }
-                    )
-                }
+            VGap()
+        }
+        item {
+            ConfigContainer(title = "导入", backgroundColor = AppColors.cardBackground) {
+                SwitchRow(
+                    title = "使用内置文件管理器",
+                    summary = "开启后用应用内文件浏览器选择 JSON；关闭后调用系统文件选择器",
+                    checked = useBuiltinFileManager,
+                    onCheckedChange = onUseBuiltinFileManagerChange
+                )
             }
-            item {
-                SmallTitle(text = "导出")
-                Card(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
-                ) {
-                    BasicComponent(
-                        title = "导出目录",
-                        summary = if (lastExportDirSummary != null) {
-                            "最近导出到：$lastExportDirSummary"
-                        } else {
-                            "未导出过；在编辑器点击「导出 JSON 文件」可选择目录"
-                        },
-                        startAction = {
-                            top.yukonga.miuix.kmp.basic.Icon(
-                                imageVector = MiuixIcons.Folder,
-                                contentDescription = "导出目录",
-                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
-                        },
-                        onClick = onPickExportDir
-                    )
-                }
+            VGap()
+        }
+        item {
+            ConfigContainer(title = "导出", backgroundColor = AppColors.cardBackground) {
+                ConfigEntryItem(
+                    color = AppColors.primary,
+                    icon = painterResource(R.drawable.ic_folder),
+                    title = "导出目录",
+                    summary = if (lastExportDirSummary != null) {
+                        "最近导出到：$lastExportDirSummary"
+                    } else {
+                        "未导出过；在编辑器点击「导出 JSON 文件」可选择目录"
+                    },
+                    onClick = onPickExportDir
+                )
             }
-            item {
-                SmallTitle(text = "其他")
-                Card(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    insideMargin = PaddingValues(0.dp)
-                ) {
-                    BasicComponent(
+            VGap()
+        }
+        item {
+            ConfigContainer(title = "其他", backgroundColor = AppColors.cardBackground) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    ConfigEntryItem(
+                        color = AppColors.primary,
+                        icon = painterResource(R.drawable.ic_arrow_counterclockwise),
                         title = "重置首次同步确认",
                         summary = "下次推送时重新显示 Vela 同步注意事项的倒计时确认弹窗",
-                        startAction = {
-                            top.yukonga.miuix.kmp.basic.Icon(
-                                imageVector = MiuixIcons.Reset,
-                                contentDescription = "重置",
-                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
-                        },
                         onClick = onResetFirstSyncConfirm
                     )
-                    BasicComponent(
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ConfigEntryItem(
+                        color = AppColors.primary,
+                        icon = painterResource(R.drawable.ic_mini_info),
                         title = "关于",
                         summary = "开发者信息、参考项目",
-                        startAction = {
-                            top.yukonga.miuix.kmp.basic.Icon(
-                                imageVector = MiuixIcons.Info,
-                                contentDescription = "关于",
-                                tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                                modifier = Modifier.padding(end = 16.dp)
-                            )
-                        },
                         onClick = onOpenAbout
                     )
                 }
             }
         }
+        paddingItem(lazyListState)
+    }
+}
+
+/** 主题模式选择行：标题 + 右侧三段式选择（跟随系统 / 浅色 / 深色）。 */
+@Composable
+private fun AppearanceModeRow(
+    selected: AppearanceMode,
+    onSelect: (AppearanceMode) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "应用主题",
+                style = GlasenseTheme.type.body,
+                color = AppColors.content
+            )
+            Text(
+                text = "选择浅色、深色或跟随系统",
+                style = GlasenseTheme.type.footnote,
+                color = AppColors.contentVariant
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Row(
+            modifier = Modifier
+                .background(AppColors.segmentedControlBackground, AppSpecs.buttonShape)
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val options = AppearanceMode.entries
+            options.forEach { mode ->
+                val isSelected = mode == selected
+                Box(
+                    modifier = Modifier
+                        .then(
+                            if (isSelected) Modifier.background(
+                                AppColors.segmentedControlIndicator,
+                                AppSpecs.buttonShape
+                            ) else Modifier
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onSelect(mode) }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = mode.label,
+                        style = GlasenseTheme.type.footnote,
+                        color = if (isSelected) AppColors.onSegmentedControlIndicator else AppColors.onSegmentedControlBackground
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 通用开关行：标题 + 说明 + 右侧 Glasense 开关。 */
+@Composable
+private fun SwitchRow(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = GlasenseTheme.type.body,
+                color = AppColors.content
+            )
+            Text(
+                text = summary,
+                style = GlasenseTheme.type.footnote,
+                color = AppColors.contentVariant
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        GlasenseSwitch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.size(width = 48.dp, height = 28.dp)
+        )
     }
 }

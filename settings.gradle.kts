@@ -1,10 +1,14 @@
 pluginManagement {
     repositories {
+        // 国内镜像优先：原仓库在当前网络环境受限（403）
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/central") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }
+        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/gradle-plugins/") }
         google()
         mavenCentral()
         gradlePluginPortal()
-        // 添加 Kotlin 插件仓库
-        maven { url = uri("https://plugins.gradle.org/m2/") }
     }
 }
 
@@ -15,8 +19,8 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
         maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/central") }
         maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }
         google()
         mavenCentral()
@@ -25,3 +29,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SnapNotes"
 include(":app")
+include(":glasense-ui")

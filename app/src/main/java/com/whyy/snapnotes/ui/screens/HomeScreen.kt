@@ -7,12 +7,13 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -21,46 +22,36 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nevoit.glasense.core.component.Icon
+import com.nevoit.glasense.core.component.Text
+import com.nevoit.glasense.core.component.VGap
+import com.nevoit.glasense.component.paddingItem
+import com.nevoit.glasense.theme.GlasenseTheme
+import com.whyy.snapnotes.R
 import com.whyy.snapnotes.logic.BandStorageInfoData
+import com.whyy.snapnotes.theme.AppButtonColors
+import com.whyy.snapnotes.theme.AppColors
+import com.whyy.snapnotes.theme.AppSpecs
 import com.whyy.snapnotes.ui.components.AmadeusConfigCard
 import com.whyy.snapnotes.ui.components.FormulaTutorial
 import com.whyy.snapnotes.ui.components.JsonFileTutorial
 import com.whyy.snapnotes.ui.components.StorageRingCard
+import com.whyy.snapnotes.ui.components.glasense.GlasenseButton
+import com.whyy.snapnotes.ui.components.glasense.GlasensePageHeader
+import com.whyy.snapnotes.ui.components.packed.PageContent
 import com.whyy.snapnotes.ui.viewmodel.ConnectionState
-import androidx.compose.foundation.basicMarquee
 import com.whyy.snapnotes.ui.viewmodel.SelectedFileState
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
-import top.yukonga.miuix.kmp.utils.SinkFeedback
-import top.yukonga.miuix.kmp.utils.pressable
-import androidx.compose.foundation.layout.IntrinsicSize
 
 private enum class ConnectionStage {
     Idle,
@@ -93,36 +84,24 @@ fun HomeScreen(
     amadeusSummary: String = "未启用",
     onOpenAmadeus: () -> Unit = {},
     modifier: Modifier = Modifier
-) {    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
-    val scrollState = rememberScrollState()
+) {
+    val lazyListState = rememberLazyListState()
 
-    Scaffold(
+    PageContent(
+        state = lazyListState,
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = "闪念小抄",
-                largeTitle = "闪念小抄",
-                scrollBehavior = scrollBehavior
-            )
-        },
-        popupHost = {}
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(paddingValues)
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Spacer(Modifier.height(4.dp))
+        tabPadding = true,
+        bottomPadding = 120.dp
+    ) {
+        item {
+            GlasensePageHeader(title = "闪念小抄")
+        }
+        item {
             // 顶部一排：左连接手环卡片，右 Amadeus 配置入口卡片，并排各占半宽。
-            // Row 的高度取两卡中较高者，fillMaxHeight 把两卡都撑到同高——左右一高一低问题解决。
-            // 子卡内部文字一律 maxLines=1 + basicMarquee：超长滚动显示而非换行/截断。
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(IntrinsicSize.Max),   // 新增这一行
+                    .height(IntrinsicSize.Max),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ConnectionStatusCard(
@@ -142,92 +121,126 @@ fun HomeScreen(
                         .fillMaxHeight()
                 )
             }
-
+            VGap(12.dp)
+        }
+        item {
             StorageRingCard(
                 storageInfo = storageInfo,
                 isRefreshing = storageRefreshing,
                 onRefresh = onRefreshStorage,
                 isConnected = connectionState.isConnected
             )
-
+            VGap(12.dp)
+        }
+        item {
             if (selectedFile != null) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(0.dp),
-                        onClick = onPickFile,
-                        showIndication = true,
-                        pressFeedbackType = PressFeedbackType.Tilt
-                    ) {
-                        BasicComponent(
-                            title = selectedFile.fileName,
-                            summary = selectedFile.fileSize.toReadableBytes(),
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Ok,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(end = 16.dp)
-                                )
-                            },
-                            endActions = {
-                                TextButton(text = "更换", onClick = onPickFile)
-                            }
-                        )
-                    }
+                SelectedFileCard(
+                    fileName = selectedFile.fileName,
+                    fileSize = selectedFile.fileSize.toReadableBytes(),
+                    onClick = onPickFile
+                )
             } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = onPickFile,
-                    showIndication = true,
-                    pressFeedbackType = PressFeedbackType.Tilt
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "选择 JSON 知识点文件",
-                                style = MiuixTheme.textStyles.title4,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "支持 { \"科目名\": [条目...] } 结构的 JSON",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            )
-                        }
-                    }
-                }
+                PickFileCard(onClick = onPickFile)
             }
-
-            Button(
+            VGap(12.dp)
+        }
+        item {
+            GlasenseButton(
                 onClick = onStartPush,
                 enabled = selectedFile != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable(interactionSource = null, indication = SinkFeedback()),
-                colors = ButtonDefaults.buttonColorsPrimary()
+                colors = AppButtonColors.primary(),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = if (selectedFile != null) "开始推送到手环" else "请先选择文件",
-                    color = MiuixTheme.colorScheme.onPrimary
+                    style = GlasenseTheme.type.bodyEmphasized,
+                    textAlign = TextAlign.Center
                 )
             }
-
+            VGap(12.dp)
+        }
+        item {
             JsonFileTutorial(modifier = Modifier.fillMaxWidth())
-
+            VGap(12.dp)
+        }
+        item {
             FormulaTutorial(modifier = Modifier.fillMaxWidth())
+        }
+        paddingItem(lazyListState)
+    }
+}
 
-            Spacer(Modifier.height(8.dp))
+@Composable
+private fun SelectedFileCard(
+    fileName: String,
+    fileSize: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.cardBackground, AppSpecs.cardShape)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_checkmark_circle),
+            contentDescription = null,
+            tint = AppColors.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = fileName,
+                style = GlasenseTheme.type.bodyEmphasized,
+                color = AppColors.content,
+                maxLines = 1,
+                modifier = Modifier.basicMarquee()
+            )
+            Text(
+                text = fileSize,
+                style = GlasenseTheme.type.footnote,
+                color = AppColors.contentVariant
+            )
+        }
+        Text(
+            text = "更换",
+            style = GlasenseTheme.type.subHeadline,
+            color = AppColors.primary
+        )
+    }
+}
+
+@Composable
+private fun PickFileCard(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.cardBackground, AppSpecs.cardShape)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_add),
+            contentDescription = null,
+            tint = AppColors.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "选择 JSON 知识点文件",
+                style = GlasenseTheme.type.bodyEmphasized,
+                color = AppColors.content
+            )
+            Text(
+                text = "支持 { \"科目名\": [条目...] } 结构的 JSON",
+                style = GlasenseTheme.type.footnote,
+                color = AppColors.contentVariant
+            )
         }
     }
 }
@@ -239,81 +252,88 @@ private fun ConnectionStatusCard(
     modifier: Modifier = Modifier
 ) {
     val stage = connectionState.stage()
-    val colors = when (stage) {
-        ConnectionStage.Connected -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.primaryContainer)
-        ConnectionStage.Error -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.errorContainer)
-        else -> CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer)
+    val containerColor = when (stage) {
+        ConnectionStage.Connected -> AppColors.primary
+        ConnectionStage.Error -> AppColors.error
+        else -> AppColors.cardBackground
     }
     val titleColor = when (stage) {
-        ConnectionStage.Connected -> MiuixTheme.colorScheme.onPrimaryContainer
-        ConnectionStage.Error -> MiuixTheme.colorScheme.onErrorContainer
-        else -> MiuixTheme.colorScheme.onSurface
+        ConnectionStage.Connected -> AppColors.onPrimary
+        ConnectionStage.Error -> AppColors.onError
+        else -> AppColors.content
     }
     val summaryColor = when (stage) {
-        ConnectionStage.Connected -> MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-        ConnectionStage.Error -> MiuixTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-        else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        ConnectionStage.Connected -> AppColors.onPrimary.copy(alpha = 0.8f)
+        ConnectionStage.Error -> AppColors.onError.copy(alpha = 0.8f)
+        else -> AppColors.contentVariant
     }
 
     // 仅在失败态允许整卡点击进排查页；其它态（连接中/已连/空闲）不可点。
     val cardClick: (() -> Unit)? = if (stage == ConnectionStage.Error) onTroubleshoot else null
 
-    Card(
+    AnimatedContent(
+        targetState = stage,
+        transitionSpec = {
+            fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) togetherWith
+                    fadeOut(spring(stiffness = Spring.StiffnessMediumLow))
+        },
+        label = "ConnectionStatus",
         modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (cardClick != null) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                        onClick = cardClick
-                    )
-                } else Modifier
-            ),
-        colors = colors,
-        pressFeedbackType = PressFeedbackType.Tilt,
-        showIndication = false
-    ) {
-        AnimatedContent(
-            targetState = stage,
-            transitionSpec = {
-                fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) togetherWith
-                        fadeOut(spring(stiffness = Spring.StiffnessMediumLow))
-            },
-            label = "ConnectionStatus"
-        ) { currentStage ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .animateContentSize()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                when (currentStage) {
-                    ConnectionStage.Connecting -> CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    ConnectionStage.Connected -> Icon(MiuixIcons.Ok, contentDescription = null, tint = titleColor, modifier = Modifier.size(24.dp))
-                    ConnectionStage.Error -> Icon(MiuixIcons.Close, contentDescription = null, tint = titleColor, modifier = Modifier.size(24.dp))
-                    ConnectionStage.Idle -> Icon(MiuixIcons.Info, contentDescription = null, tint = titleColor, modifier = Modifier.size(24.dp))
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = connectionState.statusText,
-                        style = MiuixTheme.textStyles.title3,
-                        fontWeight = FontWeight.SemiBold,
-                        color = titleColor,
-                        maxLines = 1,
-                        modifier = Modifier.basicMarquee()
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = connectionState.descriptionText,
-                        style = MiuixTheme.textStyles.body2,
-                        color = summaryColor,
-                        maxLines = 1,
-                        modifier = Modifier.basicMarquee()
-                    )
-                }
+    ) { currentStage ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+                .background(containerColor, AppSpecs.cardShape)
+                .then(
+                    if (cardClick != null) {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = cardClick
+                        )
+                    } else Modifier
+                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            when (currentStage) {
+                ConnectionStage.Connected -> Icon(
+                    painter = painterResource(R.drawable.ic_checkmark),
+                    contentDescription = null,
+                    tint = titleColor,
+                    modifier = Modifier.size(24.dp)
+                )
+                ConnectionStage.Error -> Icon(
+                    painter = painterResource(R.drawable.ic_xmark_bold),
+                    contentDescription = null,
+                    tint = titleColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                else -> Icon(
+                    painter = painterResource(R.drawable.ic_mini_info),
+                    contentDescription = null,
+                    tint = titleColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = connectionState.statusText,
+                    style = GlasenseTheme.type.subHeadlineEmphasized,
+                    color = titleColor,
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee()
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = connectionState.descriptionText,
+                    style = GlasenseTheme.type.footnote,
+                    color = summaryColor,
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee()
+                )
             }
         }
     }

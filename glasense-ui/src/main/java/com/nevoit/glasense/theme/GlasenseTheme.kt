@@ -1,0 +1,38 @@
+package com.nevoit.glasense.theme
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+
+object GlasenseTheme {
+    val colors: GlasenseColors
+        @Composable get() = LocalGlasenseColors.current
+
+    val specs: GlasenseSpecs
+        @Composable get() = LocalGlasenseSpecs.current
+
+    val type: GlasenseType
+        @Composable get() = LocalGlasenseType.current
+
+    val darkTheme: Boolean
+        @Composable get() = LocalDarkTheme.current
+
+    @Composable
+    operator fun invoke(
+        darkTheme: Boolean,
+        colors: GlasenseColors = if (darkTheme) GlasenseDarkPalette else GlasenseLightPalette,
+        specs: GlasenseSpecs = GlasenseSpecsStandard,
+        type: GlasenseType = GlasenseTypeStandard,
+        content: @Composable () -> Unit
+    ) {
+        CompositionLocalProvider(
+            LocalGlasenseColors provides colors,
+            LocalGlasenseSpecs provides specs,
+            LocalGlasenseType provides type,
+            LocalGlasenseTextStyle provides type.body,
+            LocalGlasenseContentColor provides colors.content,
+            LocalDarkTheme provides darkTheme
+        ) {
+            content()
+        }
+    }
+}

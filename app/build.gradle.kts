@@ -26,20 +26,34 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // 可选签名：若根目录存在 keystore.properties 则读取并启用 release 签名；否则 debug/release 走默认签名。
+    // 统一签名（三级回退，保证任何机器构建的 APK 签名一致）：
+    // 1) 根目录 keystore.properties + 其指向的 jks（最高优先，正式渠道）
+    // 2) 本模块入库的 snapnotes.p12 项目共享签名（默认，覆盖安装不冲突的关键）
+    // 3) 以上都不存在才退回 Android 默认 debug 签名（各机器不同，仅应急）
     val keystorePropertiesFile = rootProject.file("keystore.properties")
-    val hasKeystore = keystorePropertiesFile.exists()
-    if (hasKeystore) {
+    var keyAliasProp = "snapnotes"
+    var keyPasswordProp = "snapnotes-shared-2026"
+    var storeFileProp = file("snapnotes.p12")
+    var storePasswordProp = "snapnotes-shared-2026"
+    if (keystorePropertiesFile.exists()) {
         val keystoreProperties = Properties().apply {
             FileInputStream(keystorePropertiesFile).use { load(it) }
         }
-        signingConfigs {
-            create("release") {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
+        val storeFilePath = keystoreProperties.getProperty("storeFile")
+        if (storeFilePath != null && rootProject.file(storeFilePath).exists()) {
+            keyAliasProp = keystoreProperties.getProperty("keyAlias")
+            keyPasswordProp = keystoreProperties.getProperty("keyPassword")
+            storeFileProp = rootProject.file(storeFilePath)
+            storePasswordProp = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
+    signingConfigs {
+        create("unified") {
+            keyAlias = keyAliasProp
+            keyPassword = keyPasswordProp
+            storeFile = storeFileProp
+            storePassword = storePasswordProp
         }
     }
 
@@ -51,14 +65,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (hasKeystore) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("unified")
         }
         debug {
-            if (hasKeystore) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("unified")
         }
     }
 
@@ -91,6 +101,11 @@ dependencies {
     // 小米穿戴第三方 SDK v1.4 (本地 aar, BLE 通信底层)
     implementation(files("./libs/xms-wearable-lib_1.4_release.aar"))
     implementation(libs.androidx.compose.ui)
+
+    implementation(project(":glasense-ui"))
+    implementation(libs.backdrop)
+    implementation(libs.shapes)
+    implementation(libs.material.color.utilities)
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
