@@ -18,7 +18,7 @@ android {
 
     defaultConfig {
         applicationId = "com.whyy.snapnotes"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 35
         versionCode = 2
         versionName = "1.0.1"
