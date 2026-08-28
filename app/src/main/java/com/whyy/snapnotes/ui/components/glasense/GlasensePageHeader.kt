@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.effect
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.highlight.HighlightStyle
@@ -136,6 +137,7 @@ fun GlasenseHeroIconButton(
     onClick: () -> Unit
 ) {
     val materialEffect = rememberMaterialRenderEffectOrNull(MaterialRecipes.appBar())
+    val heroSurfaceTint = GlasenseTheme.colors.cardBackground
 
     Box(
         modifier = modifier
@@ -159,7 +161,7 @@ fun GlasenseHeroIconButton(
                                 lens(16f.dp.toPx(), 48f.dp.toPx())
                             },
                             onDrawSurface = {
-                                drawRect(GlasenseTheme.colors.cardBackground.copy(alpha = 0.3f))
+                                drawRect(heroSurfaceTint.copy(alpha = 0.3f))
                             }
                         )
                         .clickable(
@@ -233,7 +235,9 @@ fun GlasenseGlassPanel(
             .background(surfaceColor.copy(alpha = 0.9f), shape)
     }
 
-    Box(modifier = panelModifier, content = content)
+    Box(modifier = panelModifier) {
+        content()
+    }
 }
 
 @Composable
