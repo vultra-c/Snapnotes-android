@@ -3,6 +3,7 @@ package com.whyy.snapnotes.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,11 +94,6 @@ fun SettingsScreen(
                     color = AppColors.primary,
                     icon = painterResource(R.drawable.ic_folder),
                     title = "导出目录",
-                    summary = if (lastExportDirSummary != null) {
-                        "最近导出到：$lastExportDirSummary"
-                    } else {
-                        "未导出过；在编辑器点击「导出 JSON 文件」可选择目录"
-                    },
                     onClick = onPickExportDir
                 )
             }
@@ -110,7 +106,6 @@ fun SettingsScreen(
                         color = AppColors.primary,
                         icon = painterResource(R.drawable.ic_arrow_counterclockwise),
                         title = "重置首次同步确认",
-                        summary = "下次推送时重新显示 Vela 同步注意事项的倒计时确认弹窗",
                         onClick = onResetFirstSyncConfirm
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -118,7 +113,6 @@ fun SettingsScreen(
                         color = AppColors.primary,
                         icon = painterResource(R.drawable.ic_mini_info),
                         title = "关于",
-                        summary = "开发者信息、参考项目",
                         onClick = onOpenAbout
                     )
                 }
@@ -214,9 +208,9 @@ private fun SwitchRow(
         }
         Spacer(Modifier.width(12.dp))
         GlasenseSwitch(
+            backgroundColor = AppColors.inactiveTrack,
             checked = checked,
-            onCheckedChange = onCheckedChange,
-            modifier = Modifier.size(width = 48.dp, height = 28.dp)
+            onCheckedChange = onCheckedChange
         )
     }
 }
