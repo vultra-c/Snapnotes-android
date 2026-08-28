@@ -61,3 +61,6 @@ Entries discovered by the Agent during task execution should follow this format:
   - 页面骨架（Cresto 式固定 header）：Box { PageContent(layerBackdrop(pageBackdrop), topPadding = header 实测高度) { 列表 }; 固定 header/底部操作栏（PageContent 兄弟，采样 pageBackdrop 真玻璃） }；列表内容滚过固定 header 区域被磨砂模糊
   - tab 页玻璃源上报：LocalActivePageBackdrop（MutableState<LayerBackdrop?>）由 ManualTabVisibility 内 LocalTabVisible 控制仅可见 tab 上报；底部 LiquidBottomTabs 读它
   - sed 批量改 MainActivity 传参后必须核对括号配平（曾删行导致大括号失衡，onCreate 之后的成员函数全变 local function）
+  - 按压反馈标准（用户验收过的规格）：pressEffect = 缩小 0.97 + 黑色压暗 0.08，spring(0.85f, 900f) 快速响应；放大+白闪（Plus 混合）在浅色卡片上不可见，用户反馈"没反应"，已废弃
+  - 固定 header 磨砂与内容的柔和过渡：磨砂层独立 Box + graphicsLayer(CompositingStrategy.Offscreen) + drawWithContent 内 BlendMode.DstIn 垂直渐隐（0.7→1.0 渐变），标题文字放磨砂层外不受渐隐影响
+  - 大标题收起：GlasenseHeroHeader(collapseProgress)，页面用 lazyListState.firstVisibleItemScrollOffset/360f 计算进度；列表内 items 必须给稳定 key（items(count, key = { it })）否则 animateItem 新增动画不生效
