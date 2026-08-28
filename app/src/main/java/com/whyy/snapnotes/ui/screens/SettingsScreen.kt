@@ -122,35 +122,29 @@ fun SettingsScreen(
     }
 }
 
-/** 主题模式选择行：标题 + 右侧三段式选择（跟随系统 / 浅色 / 深色）。 */
+/** 主题模式选择行：标题 + 说明在上，三段式分段选择器独占一行，避免拥挤遮挡。 */
 @Composable
 private fun AppearanceModeRow(
     selected: AppearanceMode,
     onSelect: (AppearanceMode) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(40.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "应用主题",
-                style = GlasenseTheme.type.body,
-                color = AppColors.content
-            )
-            Text(
-                text = "选择浅色、深色或跟随系统",
-                style = GlasenseTheme.type.footnote,
-                color = AppColors.contentVariant
-            )
-        }
-        Spacer(Modifier.width(12.dp))
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "应用主题",
+            style = GlasenseTheme.type.body,
+            color = AppColors.content
+        )
+        Text(
+            text = "选择浅色、深色或跟随系统",
+            style = GlasenseTheme.type.footnote,
+            color = AppColors.contentVariant
+        )
+        Spacer(Modifier.height(10.dp))
         Row(
             modifier = Modifier
                 .background(AppColors.segmentedControlBackground, AppSpecs.buttonShape)
-                .padding(3.dp),
+                .padding(3.dp)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -159,6 +153,7 @@ private fun AppearanceModeRow(
                 val isSelected = mode == selected
                 Box(
                     modifier = Modifier
+                        .weight(1f)
                         .then(
                             if (isSelected) Modifier.background(
                                 AppColors.segmentedControlIndicator,
@@ -169,7 +164,8 @@ private fun AppearanceModeRow(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
                         ) { onSelect(mode) }
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = mode.label,

@@ -1,11 +1,12 @@
 package com.whyy.snapnotes.ui.screens
 
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,318 +25,546 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.nevoit.glasense.component.paddingItem
+import com.nevoit.glasense.core.component.Icon
+import com.nevoit.glasense.core.component.Text
+import com.nevoit.glasense.core.component.VGap
+import com.nevoit.glasense.theme.GlasenseTheme
+import com.whyy.snapnotes.R
+import com.whyy.snapnotes.theme.AppColors
+import com.whyy.snapnotes.ui.components.glasense.GlasenseGlassPanel
+import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroHeader
+import com.whyy.snapnotes.ui.components.glasense.GlasenseHeroIconButton
+import com.whyy.snapnotes.ui.components.glasense.GlasenseMenu
+import com.whyy.snapnotes.ui.components.glasense.MenuDivider
+import com.whyy.snapnotes.ui.components.glasense.MenuItemData
+import com.whyy.snapnotes.ui.components.glasense.MenuState
+import com.whyy.snapnotes.ui.components.packed.PageContent
 import com.whyy.snapnotes.ui.viewmodel.PushRecord
 import com.whyy.snapnotes.ui.viewmodel.toReadableBytes
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.ListPopupDefaults
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.basic.rememberTopAppBarState
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.File
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.SelectAll
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+/** 历史记录时间过滤范围。 */
+private enum class HistoryFilter(val label: String) {
+    All("全部"),
+    Today("今天"),
+    Week("7 天"),
+    Earlier("更早")
+}
+
+/**
+ * 历史页：大标题 + 时间分段过滤 + 状态点记录卡（玻璃长条）+ 多选删除。
+ * 视觉对齐设计图 3（iOS 白底、胶囊过滤器、绿/蓝/灰状态点）。
+ */
 @Composable
 fun HistoryScreen(
     records: List<PushRecord>,
     onRepush: (PushRecord) -> Unit,
     onDeleteRequest: (PushRecord) -> Unit,
     onBatchDeleteRequest: (List<PushRecord>) -> Unit,
-    onEditRecord: (PushRecord) -> Unit,      // 新增：编辑历史记录
+    onEditRecord: (PushRecord) -> Unit,
+    backdrop: LayerBackdrop,
+    liquidGlass: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val scrollBehavior = MiuixScrollBehavior(rememberTopAppBarState())
+    val lazyListState = rememberLazyListState()
     val timeFmt = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
+    var filter by remember { mutableStateOf(HistoryFilter.All) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<String>()) }
+    var menuTargetRecord by remember { mutableStateOf<PushRecord?>(null) }
+    var menuAnchorBounds by remember { mutableStateOf(Rect.Zero) }
 
-    val selectAllState = when {
-        records.isEmpty() -> ToggleableState.Off
-        selectedIds.size == records.size -> ToggleableState.On
-        selectedIds.isEmpty() -> ToggleableState.Off
-        else -> ToggleableState.Indeterminate
-    }
-
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = if (selectionMode) "已选 ${selectedIds.size} 条" else "推送历史",
-                largeTitle = if (selectionMode) "已选 ${selectedIds.size} 条" else "推送历史",
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    if (selectionMode) {
-                        Checkbox(
-                            state = selectAllState,
-                            onClick = {
-                                selectedIds = if (selectAllState == ToggleableState.On) {
-                                    emptySet()
-                                } else {
-                                    records.map { it.id }.toSet()
-                                }
-                            }
-                        )
-                        IconButton(
-                            onClick = {
-                                val selected = records.filter { it.id in selectedIds }
-                                if (selected.isNotEmpty()) onBatchDeleteRequest(selected)
-                            }
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Delete,
-                                contentDescription = "批量删除",
-                                tint = if (selectedIds.isEmpty()) {
-                                    MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                } else {
-                                    MiuixTheme.colorScheme.primary
-                                }
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                selectionMode = false
-                                selectedIds = emptySet()
-                            }
-                        ) {
-                            Icon(imageVector = MiuixIcons.Close, contentDescription = "退出多选")
-                        }
-                    } else {
-                        IconButton(onClick = { selectionMode = true }) {
-                            Icon(imageVector = MiuixIcons.SelectAll, contentDescription = "多选")
-                        }
-                    }
-                }
-            )
-        },
-        popupHost = {}
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .overScrollVertical()
-                .scrollEndHaptic(),
-            contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = 40.dp
-            )
-        ) {
-            // 说明卡
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Info,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Column {
-                            Text(
-                                text = "以下是本机记录的推送历史",
-                                style = MiuixTheme.textStyles.title4,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurface
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = "手环会把所有知识点合并成单一仓库按科目名+编号增量合并" +
-                                        "（同编号不覆盖，无法单独删除条目）。这里的删除只清掉本机缓存与记录，" +
-                                        "不会删除手环上已导入的内容；点击卡片可加载到编辑器。",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (records.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 80.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.File,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
-                            modifier = Modifier.size(56.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            text = "还没有推送过的文件",
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = "推送成功的文件会在这里留一份，便于重新编辑或推送",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        )
-                    }
-                }
-            } else {
-                item {
-                    SmallTitle(
-                        text = "共 ${records.size} 条记录",
-                        modifier = Modifier.padding(start = 24.dp)
-                    )
-                }
-                items(records, key = { it.id }) { record ->
-                    val isSelected = record.id in selectedIds
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                            .combinedClickable(
-                                onClick = {
-                                    if (selectionMode) {
-                                        selectedIds = if (isSelected) {
-                                            selectedIds - record.id
-                                        } else {
-                                            selectedIds + record.id
-                                        }
-                                    } else {
-                                        onEditRecord(record)
-                                    }
-                                },
-                                onLongClick = {
-                                    // 长按直接进入多选并选中这条记录。
-                                    selectionMode = true
-                                    selectedIds = selectedIds + record.id
-                                }
-                            ),
-                        insideMargin = PaddingValues(0.dp),
-                        onClick = null,
-                        showIndication = false
-                    ) {
-                        BasicComponent(
-                            title = record.fileName,
-                            summary = run {
-                                val subj = record.subjects.joinToString("、").let {
-                                    if (it.length > 24) it.take(24) + "…" else it
-                                }
-                                val subjLine = if (subj.isNotBlank()) "科目：$subj" else "科目：未知"
-                                "$subjLine\n大小：${record.fileSize.toReadableBytes()}\n时间：${timeFmt.format(Date(record.pushedAt))}"
-                            },
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.File,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(end = 16.dp)
-                                )
-                            },
-                            endActions = {
-                                if (selectionMode) {
-                                    Checkbox(
-                                        state = ToggleableState(isSelected),
-                                        onClick = null
-                                    )
-                                } else {
-                                    Box {
-                                        var repushMenuShow by remember { mutableStateOf(false) }
-                                        Icon(
-                                            imageVector = MiuixIcons.More,
-                                            contentDescription = "更多操作",
-                                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .padding(2.dp)
-                                                .clickable { repushMenuShow = true }
-                                        )
-                                        OverlayListPopup(
-                                            show = repushMenuShow,
-                                            popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
-                                            alignment = PopupPositionProvider.Align.End,
-                                            onDismissRequest = { repushMenuShow = false },
-                                        ) {
-                                            ListPopupColumn {
-                                                DropdownImpl(
-                                                    item = DropdownItem(
-                                                        text = "重新推送",
-                                                        icon = { m ->
-                                                            Icon(
-                                                                imageVector = MiuixIcons.Refresh,
-                                                                contentDescription = null,
-                                                                modifier = m
-                                                            )
-                                                        }
-                                                    ),
-                                                    optionSize = 2,
-                                                    isSelected = false,
-                                                    index = 0,
-                                                    onSelectedIndexChange = {
-                                                        repushMenuShow = false
-                                                        onRepush(record)
-                                                    }
-                                                )
-                                                DropdownImpl(
-                                                    item = DropdownItem(
-                                                        text = "删除",
-                                                        icon = { m ->
-                                                            Icon(
-                                                                imageVector = MiuixIcons.Delete,
-                                                                contentDescription = null,
-                                                                modifier = m
-                                                            )
-                                                        }
-                                                    ),
-                                                    optionSize = 2,
-                                                    isSelected = false,
-                                                    index = 1,
-                                                    onSelectedIndexChange = {
-                                                        repushMenuShow = false
-                                                        onDeleteRequest(record)
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
+    val filteredRecords = remember(records, filter) {
+        val startOfToday = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val weekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+        records.filter { record ->
+            when (filter) {
+                HistoryFilter.All -> true
+                HistoryFilter.Today -> record.pushedAt >= startOfToday
+                HistoryFilter.Week -> record.pushedAt in weekAgo until startOfToday
+                HistoryFilter.Earlier -> record.pushedAt < weekAgo
             }
         }
+    }
+
+    val allSelected = filteredRecords.isNotEmpty() && filteredRecords.all { it.id in selectedIds }
+
+    fun exitSelection() {
+        selectionMode = false
+        selectedIds = emptySet()
+    }
+
+    PageContent(
+        state = lazyListState,
+        modifier = modifier,
+        tabPadding = true,
+        bottomPadding = 120.dp
+    ) {
+        item {
+            GlasenseHeroHeader(
+                title = if (selectionMode) "已选 ${selectedIds.size} 条" else "历史",
+                subtitle = if (selectionMode) null else "本机推送记录",
+                backdrop = backdrop,
+                liquidGlass = liquidGlass,
+                trailing = {
+                    if (selectionMode) {
+                        GlasenseHeroIconButton(
+                            painter = painterResource(R.drawable.ic_trash),
+                            contentDescription = "删除所选",
+                            backdrop = backdrop,
+                            liquidGlass = liquidGlass,
+                            tint = if (selectedIds.isEmpty()) {
+                                GlasenseTheme.colors.contentVariant
+                            } else {
+                                GlasenseTheme.colors.error
+                            },
+                            onClick = {
+                                val selected = filteredRecords.filter { it.id in selectedIds }
+                                if (selected.isNotEmpty()) onBatchDeleteRequest(selected)
+                            }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        GlasenseHeroIconButton(
+                            painter = painterResource(R.drawable.ic_cross),
+                            contentDescription = "退出多选",
+                            backdrop = backdrop,
+                            liquidGlass = liquidGlass,
+                            tint = GlasenseTheme.colors.content,
+                            onClick = { exitSelection() }
+                        )
+                    } else {
+                        GlasenseHeroIconButton(
+                            painter = painterResource(R.drawable.ic_checklist),
+                            contentDescription = "多选",
+                            backdrop = backdrop,
+                            liquidGlass = liquidGlass,
+                            onClick = { selectionMode = true }
+                        )
+                    }
+                }
+            )
+            VGap(12.dp)
+        }
+        if (selectionMode && filteredRecords.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (allSelected) "取消全选" else "全选",
+                        style = GlasenseTheme.type.subHeadline,
+                        color = GlasenseTheme.colors.primary,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            selectedIds = if (allSelected) emptySet() else filteredRecords.map { it.id }.toSet()
+                        }
+                    )
+                }
+                VGap(8.dp)
+            }
+        }
+        item {
+            HistoryFilterBar(
+                selected = filter,
+                onSelect = { filter = it },
+                counts = remember(records) {
+                    HistoryFilter.entries.associateWith { f ->
+                        records.count { record ->
+                            val startOfToday = Calendar.getInstance().apply {
+                                set(Calendar.HOUR_OF_DAY, 0)
+                                set(Calendar.MINUTE, 0)
+                                set(Calendar.SECOND, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }.timeInMillis
+                            val weekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+                            when (f) {
+                                HistoryFilter.All -> true
+                                HistoryFilter.Today -> record.pushedAt >= startOfToday
+                                HistoryFilter.Week -> record.pushedAt in weekAgo until startOfToday
+                                HistoryFilter.Earlier -> record.pushedAt < weekAgo
+                            }
+                        }
+                    }
+                }
+            )
+            VGap(16.dp)
+        }
+        if (filteredRecords.isEmpty()) {
+            item {
+                HistoryEmptyCard(filter = filter)
+                VGap(12.dp)
+            }
+        } else {
+            items(filteredRecords.size, key = { filteredRecords[it].id }) { index ->
+                val record = filteredRecords[index]
+                val isSelected = record.id in selectedIds
+                HistoryRecordCard(
+                    record = record,
+                    timeText = timeFmt.format(Date(record.pushedAt)),
+                    isSelected = isSelected,
+                    selectionMode = selectionMode,
+                    liquidGlass = liquidGlass,
+                    backdrop = backdrop,
+                    onToggleSelect = {
+                        selectedIds = if (isSelected) {
+                            selectedIds - record.id
+                        } else {
+                            selectedIds + record.id
+                        }
+                    },
+                    onClick = {
+                        if (selectionMode) {
+                            selectedIds = if (isSelected) {
+                                selectedIds - record.id
+                            } else {
+                                selectedIds + record.id
+                            }
+                        } else {
+                            onEditRecord(record)
+                        }
+                    },
+                    onLongClick = {
+                        selectionMode = true
+                        selectedIds = selectedIds + record.id
+                    },
+                    onMenuRequest = { anchorBounds ->
+                        menuTargetRecord = record
+                        menuAnchorBounds = anchorBounds
+                    }
+                )
+                VGap(12.dp)
+            }
+        }
+        paddingItem(lazyListState)
+    }
+
+    val menuRecord = menuTargetRecord
+    if (menuRecord != null) {
+        GlasenseMenu(
+            menuState = MenuState(
+                isVisible = true,
+                anchorBounds = menuAnchorBounds,
+                items = listOf(
+                    MenuItemData(
+                        text = "编辑",
+                        icon = painterResource(R.drawable.ic_square_and_pencil),
+                        onClick = {
+                            menuTargetRecord = null
+                            onEditRecord(menuRecord)
+                        }
+                    ),
+                    MenuItemData(
+                        text = "重新推送",
+                        icon = painterResource(R.drawable.ic_arrow_counterclockwise),
+                        onClick = {
+                            menuTargetRecord = null
+                            onRepush(menuRecord)
+                        }
+                    ),
+                    MenuDivider,
+                    MenuItemData(
+                        text = "删除",
+                        icon = painterResource(R.drawable.ic_trash),
+                        isDestructive = true,
+                        onClick = {
+                            menuTargetRecord = null
+                            onDeleteRequest(menuRecord)
+                        }
+                    )
+                )
+            ),
+            backdrop = backdrop,
+            onDismiss = { menuTargetRecord = null }
+        )
+    }
+}
+
+/** 胶囊分段过滤器：全部 / 今天 / 7 天 / 更早，选中为浅蓝胶囊。 */
+@Composable
+private fun HistoryFilterBar(
+    selected: HistoryFilter,
+    onSelect: (HistoryFilter) -> Unit,
+    counts: Map<HistoryFilter, Int>
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        HistoryFilter.entries.forEach { option ->
+            val isSelected = option == selected
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) {
+                            GlasenseTheme.colors.primary.copy(alpha = 0.14f)
+                        } else {
+                            GlasenseTheme.colors.scrimNormal
+                        },
+                        CircleShape
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onSelect(option) }
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = buildString {
+                        append(option.label)
+                        counts[option]?.let { if (option != HistoryFilter.All) append(" $it") }
+                    },
+                    style = GlasenseTheme.type.subHeadline,
+                    color = if (isSelected) {
+                        GlasenseTheme.colors.primary
+                    } else {
+                        GlasenseTheme.colors.contentVariant
+                    }
+                )
+            }
+        }
+    }
+}
+
+/** 记录卡：状态点 + 文件名/摘要 + 更多菜单入口。 */
+@Composable
+private fun HistoryRecordCard(
+    record: PushRecord,
+    timeText: String,
+    isSelected: Boolean,
+    selectionMode: Boolean,
+    liquidGlass: Boolean,
+    backdrop: LayerBackdrop,
+    onToggleSelect: () -> Unit,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onMenuRequest: (Rect) -> Unit
+) {
+    val statusColor = recordStatusColor(record)
+    val subjects = record.subjects.joinToString("、")
+        .let { if (it.length > 24) it.take(24) + "…" else it }
+    var menuBounds by remember { mutableStateOf(Rect.Zero) }
+
+    GlasenseGlassPanel(
+        backdrop = backdrop,
+        shape = RoundedCornerShape(24.dp),
+        liquidGlass = liquidGlass,
+        surfaceColor = if (isSelected) {
+            GlasenseTheme.colors.primary.copy(alpha = 0.10f)
+        } else {
+            GlasenseTheme.colors.cardBackground
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (selectionMode) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isSelected) {
+                                GlasenseTheme.colors.primary
+                            } else {
+                                Color.Transparent
+                            },
+                            CircleShape
+                        )
+                        .then(
+                            if (isSelected) {
+                                Modifier
+                            } else {
+                                Modifier.background(
+                                    GlasenseTheme.colors.contentVariant.copy(alpha = 0.4f),
+                                    CircleShape
+                                )
+                            }
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onToggleSelect
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_checkmark),
+                            contentDescription = null,
+                            tint = GlasenseTheme.colors.onPrimary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+            } else {
+                // 状态点：今天=绿，7 天=蓝，更早=灰。
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(statusColor, CircleShape)
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            FileIconBadge()
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = record.fileName,
+                    style = GlasenseTheme.type.bodyEmphasized,
+                    color = GlasenseTheme.colors.content,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = buildString {
+                        if (subjects.isNotBlank()) append("科目：$subjects")
+                        else append("科目：未知")
+                        append("\n${record.fileSize.toReadableBytes()} · $timeText")
+                    },
+                    style = GlasenseTheme.type.footnote,
+                    color = GlasenseTheme.colors.contentVariant
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .onGloballyPositioned { menuBounds = it.boundsInWindow() }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onMenuRequest(menuBounds) }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_ellipsis),
+                    contentDescription = "更多操作",
+                    tint = GlasenseTheme.colors.contentVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+/** 记录状态点颜色：今天绿、7 天内蓝、更早灰。 */
+@Composable
+private fun recordStatusColor(record: PushRecord): Color {
+    val startOfToday = remember(record.pushedAt) {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+    val weekAgo = remember(record.pushedAt) {
+        System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+    }
+    return when {
+        record.pushedAt >= startOfToday -> Color(0xFF34C759)
+        record.pushedAt >= weekAgo -> GlasenseTheme.colors.primary
+        else -> GlasenseTheme.colors.contentVariant
+    }
+}
+
+/** 浅蓝圆角方块内的文件图标徽章。 */
+@Composable
+private fun FileIconBadge() {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(13.dp))
+            .background(GlasenseTheme.colors.primary.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_document),
+            contentDescription = null,
+            tint = GlasenseTheme.colors.primary,
+            modifier = Modifier.size(22.dp)
+        )
+    }
+}
+
+/** 空状态：居中图标 + 说明。 */
+@Composable
+private fun HistoryEmptyCard(filter: HistoryFilter) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(GlasenseTheme.colors.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_time_line),
+                contentDescription = null,
+                tint = GlasenseTheme.colors.primary,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+        Text(
+            text = when (filter) {
+                HistoryFilter.All -> "还没有推送过的文件"
+                else -> "该时间段没有推送记录"
+            },
+            style = GlasenseTheme.type.headline,
+            color = GlasenseTheme.colors.content,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "推送成功的文件会在这里留一份，便于重新编辑或推送",
+            style = GlasenseTheme.type.footnote,
+            color = GlasenseTheme.colors.contentVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }

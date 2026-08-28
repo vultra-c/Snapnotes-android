@@ -86,6 +86,8 @@ import com.whyy.snapnotes.ui.components.HistoryBatchDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.HistoryDeleteConfirmDialog
 import com.whyy.snapnotes.ui.components.VersionIncompatibleDialog
 import com.whyy.snapnotes.ui.components.glasense.GlasenseNavigationButton
+import com.whyy.snapnotes.ui.components.liquid.LiquidBottomTab
+import com.whyy.snapnotes.ui.components.liquid.LiquidBottomTabs
 import com.whyy.snapnotes.ui.screens.AmadeusConfigScreen
 import com.whyy.snapnotes.ui.screens.AmadeusContextScreen
 import com.whyy.snapnotes.ui.screens.EditorScreen
@@ -376,6 +378,8 @@ class MainActivity : ComponentActivity() {
                                                     else -> "配置不完整"
                                                 },
                                                 onOpenAmadeus = navigateToAmadeus,
+                                                backdrop = backdrop,
+                                                liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         },
@@ -404,6 +408,8 @@ class MainActivity : ComponentActivity() {
                                                         "自定义知识点.json"
                                                     )
                                                 },
+                                                backdrop = backdrop,
+                                                liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         },
@@ -414,6 +420,8 @@ class MainActivity : ComponentActivity() {
                                                 onDeleteRequest = viewModel::requestHistoryDelete,
                                                 onBatchDeleteRequest = viewModel::requestHistoryBatchDelete,
                                                 onEditRecord = viewModel::openEditorFromCache,
+                                                backdrop = backdrop,
+                                                liquidGlass = true,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         },
@@ -586,7 +594,7 @@ class MainActivity : ComponentActivity() {
                     )
                     }
 
-                    // 底部渐变遮罩区：托起浮动玻璃导航条（Cresto 同款排版）。
+                    // 底部渐变遮罩区：托起液态玻璃导航条（AndroidLiquidGlass LiquidBottomTabs）。
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -605,18 +613,61 @@ class MainActivity : ComponentActivity() {
                             exit = fadeOut(animationSpec = tween(200)),
                             modifier = Modifier.align(Alignment.BottomCenter)
                         ) {
-                            MainNavigationBar(
-                                currentTab = currentTab.intValue,
-                                backdrop = backdrop,
-                                onTabSelect = { page ->
-                                    when (page) {
-                                        0 -> viewModel.openHome()
-                                        1 -> viewModel.openEditor()
-                                        2 -> viewModel.openHistory()
-                                        3 -> viewModel.openSettings()
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .navigationBarsPadding()
+                                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                            ) {
+                                LiquidBottomTabs(
+                                    selectedTabIndex = { currentTab.intValue },
+                                    onTabSelected = { page ->
+                                        when (page) {
+                                            0 -> viewModel.openHome()
+                                            1 -> viewModel.openEditor()
+                                            2 -> viewModel.openHistory()
+                                            3 -> viewModel.openSettings()
+                                        }
+                                    },
+                                    backdrop = backdrop,
+                                    tabsCount = 4
+                                ) {
+                                    repeat(4) { index ->
+                                        LiquidBottomTab(onClick = {
+                                            when (index) {
+                                                0 -> viewModel.openHome()
+                                                1 -> viewModel.openEditor()
+                                                2 -> viewModel.openHistory()
+                                                3 -> viewModel.openSettings()
+                                            }
+                                        }) {
+                                            // 占位图标：正式图标资源待替换。
+                                            com.nevoit.glasense.core.component.Icon(
+                                                painter = androidx.compose.ui.res.painterResource(
+                                                    R.drawable.ic_square_dashed
+                                                ),
+                                                contentDescription = when (index) {
+                                                    0 -> "主页"
+                                                    1 -> "编辑"
+                                                    2 -> "历史"
+                                                    else -> "设置"
+                                                },
+                                                tint = AppColors.content
+                                            )
+                                            com.nevoit.glasense.core.component.Text(
+                                                text = when (index) {
+                                                    0 -> "首页"
+                                                    1 -> "编辑"
+                                                    2 -> "历史"
+                                                    else -> "设置"
+                                                },
+                                                style = com.nevoit.glasense.theme.GlasenseTheme.type.footnote,
+                                                color = AppColors.content
+                                            )
+                                        }
                                     }
                                 }
-                            )
+                            }
                         }
                     }
 
@@ -822,50 +873,8 @@ private fun ManualTabVisibility(
         ) {
             content()
         }
-    }
-}
-
-/**
- * 底部浮动玻璃导航条：四页主界面共用的页签入口。
- * 图标暂用 ic_square_dashed 占位，待替换为正式图标资源。
- */
-@androidx.compose.runtime.Composable
-private fun MainNavigationBar(
-    currentTab: Int,
-    backdrop: com.kyant.backdrop.backdrops.LayerBackdrop,
-    onTabSelect: (Int) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-            .height(56.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // 占位图标：主页/编辑/历史/设置四个页签统一用空方块，正式图标待替换。
-        val items = listOf(
-            Triple(0, R.drawable.ic_square_dashed, "主页"),
-            Triple(1, R.drawable.ic_square_dashed, "编辑"),
-            Triple(2, R.drawable.ic_square_dashed, "历史"),
-            Triple(3, R.drawable.ic_square_dashed, "设置")
-        )
-        items.forEach { (page, iconRes, label) ->
-            GlasenseNavigationButton(
-                modifier = Modifier.weight(1f),
-                isActive = currentTab == page,
-                onClick = { onTabSelect(page) },
-                backdrop = backdrop,
-                liquidGlass = true
-            ) {
-                com.nevoit.glasense.core.component.Icon(
-                    painter = androidx.compose.ui.res.painterResource(iconRes),
-                    contentDescription = label
-                )
-            }
-        }
-    }
-}
+     }
+ }
 
 /** 轻量 snackbar：底部浮出的内容胶囊，几秒后自动消失。 */
 @androidx.compose.runtime.Composable
