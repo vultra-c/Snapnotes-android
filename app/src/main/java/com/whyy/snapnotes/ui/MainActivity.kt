@@ -15,32 +15,42 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.EaseOutExpo
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +67,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.nevoit.glasense.core.component.Text
+import com.nevoit.glasense.core.interaction.overscroll.rememberOffsetOverscrollFactory
 import com.whyy.snapnotes.App
 import com.whyy.snapnotes.R
 import com.whyy.snapnotes.logic.FormulaPngRenderer
@@ -88,6 +99,7 @@ import com.whyy.snapnotes.ui.theme.AppearanceMode
 import com.whyy.snapnotes.ui.theme.SnapNotesTheme
 import com.whyy.snapnotes.ui.viewmodel.AppScreen
 import com.whyy.snapnotes.ui.viewmodel.SnapNotesViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 sealed interface Screen : NavKey {
@@ -191,6 +203,10 @@ class MainActivity : ComponentActivity() {
                 appearanceMode = appearanceMode,
                 dynamicColor = dynamicColor
             ) {
+                // Glasense 弹性过滚动效果：全部列表共享同一 overscroll 工厂（Cresto 同款）。
+                val overscrollFactory = rememberOffsetOverscrollFactory()
+
+                CompositionLocalProvider(LocalOverscrollFactory provides overscrollFactory) {
                 val screen by viewModel.screen.collectAsState()
                 val connectionState by viewModel.connectionState.collectAsState()
                 val selectedFile by viewModel.selectedFile.collectAsState()
@@ -222,10 +238,25 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 val backStack = remember { mutableStateListOf<NavKey>(Screen.HomePager) }
                 val currentScreen = backStack.lastOrNull() ?: Screen.HomePager
-                val pagerState = rememberPagerState(
-                    pageCount = { 4 },
-                    initialPage = 0
-                )
+                // 主界面四个页签（主页/编辑/历史/设置），点按切换（Cresto 式淡入缩放过渡）。
+                val currentTab = rememberSaveable { mutableIntStateOf(0) }
+
+                // 主层 backdrop：页面内容渲染于此，浮动玻璃控件（导航条等）采样它实现液态玻璃。
+                val backdropColor = AppColors.pageBackground
+                val backdrop = rememberLayerBackdrop {
+                    drawRect(
+                        color = backdropColor,
+                        size = androidx.compose.ui.geometry.Size(
+                            this.size.width * 3,
+                            this.size.height * 3
+                        ),
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            -this.size.width,
+                            -this.size.height
+                        )
+                    )
+                    drawContent()
+                }
 
                 val navigateTo = { target: Screen ->
                     if (backStack.lastOrNull() != target) {
@@ -273,54 +304,54 @@ class MainActivity : ComponentActivity() {
                         AppScreen.Result -> navigateTo(Screen.Result)
                         AppScreen.Home -> {
                             navigateToHome()
-                            pagerState.animateScrollToPage(0)
+                            currentTab.intValue = 0
                         }
                         AppScreen.Editor -> {
                             if (backStack.lastOrNull() !is Screen.HomePager) {
                                 navigateToHome()
                             }
-                            pagerState.animateScrollToPage(1)
+                            currentTab.intValue = 1
+                        }
+                        AppScreen.History -> {
+                            if (backStack.lastOrNull() !is Screen.HomePager) {
+                                navigateToHome()
+                            }
+                            currentTab.intValue = 2
+                        }
+                        AppScreen.Settings -> {
+                            if (backStack.lastOrNull() !is Screen.HomePager) {
+                                navigateToHome()
+                            }
+                            currentTab.intValue = 3
                         }
                         else -> Unit
                     }
                 }
 
                 val showBottomBar = currentScreen is Screen.HomePager
+                val navigationBarHeight = WindowInsets.navigationBars
+                    .asPaddingValues()
+                    .calculateBottomPadding()
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(AppColors.pageBackground)
                 ) {
+                    // 内容层：所有页面渲染于此，玻璃控件通过 backdrop 采样背后内容。
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .layerBackdrop(backdrop)
+                    ) {
                     val entryProvider = remember(backStack) {
                         entryProvider<NavKey> {
                             entry<Screen.HomePager> {
-                                Box(modifier = Modifier.fillMaxSize()) {
-                                    val pagerBackdropColor = AppColors.pageBackground
-                                    val backdrop = rememberLayerBackdrop {
-                                        drawRect(
-                                            color = pagerBackdropColor,
-                                            size = androidx.compose.ui.geometry.Size(
-                                                this.size.width * 3,
-                                                this.size.height * 3
-                                            ),
-                                            topLeft = androidx.compose.ui.geometry.Offset(
-                                                -this.size.width,
-                                                -this.size.height
-                                            )
-                                        )
-                                        drawContent()
-                                    }
-                                    HorizontalPager(
-                                        state = pagerState,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .layerBackdrop(backdrop),
-                                        beyondViewportPageCount = 1,
-                                        key = { it }
-                                    ) { page ->
-                                        when (page) {
-                                            0 -> HomeScreen(
+                                MainTabScreen(
+                                    currentTab = currentTab.intValue,
+                                    tabs = listOf(
+                                        {
+                                            HomeScreen(
                                                 connectionState = connectionState,
                                                 selectedFile = selectedFile,
                                                 storageInfo = storageInfo,
@@ -345,8 +376,9 @@ class MainActivity : ComponentActivity() {
                                                 onOpenAmadeus = navigateToAmadeus,
                                                 modifier = Modifier.fillMaxSize()
                                             )
-
-                                            1 -> EditorScreen(
+                                        },
+                                        {
+                                            EditorScreen(
                                                 subjects = editorSubjects,
                                                 formulaRenderer = editorFormulaRenderer,
                                                 onAddSubject = viewModel::addSubject,
@@ -372,8 +404,9 @@ class MainActivity : ComponentActivity() {
                                                 },
                                                 modifier = Modifier.fillMaxSize()
                                             )
-
-                                            2 -> HistoryScreen(
+                                        },
+                                        {
+                                            HistoryScreen(
                                                 records = pushHistory,
                                                 onRepush = viewModel::repushRecord,
                                                 onDeleteRequest = viewModel::requestHistoryDelete,
@@ -381,8 +414,9 @@ class MainActivity : ComponentActivity() {
                                                 onEditRecord = viewModel::openEditorFromCache,
                                                 modifier = Modifier.fillMaxSize()
                                             )
-
-                                            3 -> SettingsScreen(
+                                        },
+                                        {
+                                            SettingsScreen(
                                                 appearanceMode = appearanceMode,
                                                 onAppearanceModeChange = viewModel::setAppearanceMode,
                                                 dynamicColor = dynamicColor,
@@ -401,30 +435,8 @@ class MainActivity : ComponentActivity() {
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         }
-                                    }
-
-                                    // 底部浮动玻璃导航条
-                                    AnimatedVisibility(
-                                        visible = showBottomBar,
-                                        enter = fadeIn() + slideInVertically { it / 2 },
-                                        exit = fadeOut() + slideOutVertically { it / 2 },
-                                        modifier = Modifier.align(Alignment.BottomCenter)
-                                    ) {
-                                        MainNavigationBar(
-                                            pagerState = pagerState,
-                                            backdrop = backdrop,
-                                            onPageSelect = { page ->
-                                                when (page) {
-                                                    0 -> viewModel.openHome()
-                                                    1 -> viewModel.openEditor()
-                                                    2 -> viewModel.openHistory()
-                                                    3 -> viewModel.openSettings()
-                                                }
-                                                scope.launch { pagerState.animateScrollToPage(page) }
-                                            }
-                                        )
-                                    }
-                                }
+                                    )
+                                )
                             }
                             entry<Screen.Progress> {
                                 ProgressScreen(
@@ -570,6 +582,41 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+                    }
+
+                    // 底部渐变遮罩区：托起浮动玻璃导航条（Cresto 同款排版）。
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp + navigationBarHeight)
+                            .align(Alignment.BottomCenter)
+                            .smoothGradientMask(
+                                AppColors.pageBackground,
+                                0f,
+                                0.5f,
+                                0.7f
+                            )
+                    ) {
+                        AnimatedVisibility(
+                            visible = showBottomBar,
+                            enter = fadeIn(animationSpec = tween(200)),
+                            exit = fadeOut(animationSpec = tween(200)),
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        ) {
+                            MainNavigationBar(
+                                currentTab = currentTab.intValue,
+                                backdrop = backdrop,
+                                onTabSelect = { page ->
+                                    when (page) {
+                                        0 -> viewModel.openHome()
+                                        1 -> viewModel.openEditor()
+                                        2 -> viewModel.openHistory()
+                                        3 -> viewModel.openSettings()
+                                    }
+                                }
+                            )
+                        }
+                    }
 
                     // Glasense 风格轻量 snackbar：浮在底部导航上方。
                     SnapNotesSnackbar(
@@ -631,6 +678,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     )
+                }
                 }
             }
         }
@@ -710,12 +758,80 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** 底部浮动玻璃导航条：四页主界面共用的页签入口。 */
+/**
+ * 主界面四个页签容器：全部常驻组合，通过 alpha + scale 切换（Cresto NavContainer 同款）。
+ * 切入：延迟 100ms 后淡入并从 0.95 放大回 1；切出：淡出并缩回 0.95（页面向后退隐）。
+ * 页面状态由 SaveableStateHolder 保留。
+ */
+@Composable
+private fun MainTabScreen(
+    currentTab: Int,
+    tabs: List<@Composable () -> Unit>
+) {
+    val saveableStateHolder = rememberSaveableStateHolder()
+    tabs.forEachIndexed { index, tabContent ->
+        ManualTabVisibility(visible = currentTab == index) {
+            saveableStateHolder.SaveableStateProvider(key = index) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    tabContent()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ManualTabVisibility(
+    visible: Boolean,
+    content: @Composable () -> Unit
+) {
+    val alpha = remember { Animatable(if (visible) 1f else 0f) }
+    val scale = remember { Animatable(if (visible) 1f else 0.95f) }
+
+    LaunchedEffect(visible) {
+        if (visible) {
+            launch {
+                delay(100)
+                alpha.animateTo(1f, tween(200))
+            }
+            launch {
+                delay(100)
+                scale.animateTo(1f, tween(400, easing = EaseOutExpo))
+            }
+        } else {
+            launch {
+                alpha.animateTo(0f, tween(200))
+            }
+            launch {
+                scale.animateTo(0.95f, tween(600, easing = CubicBezierEasing(.2f, .2f, .0f, 1f)))
+            }
+        }
+    }
+
+    if (visible || alpha.value > 0f) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    this.alpha = alpha.value
+                    scaleX = scale.value
+                    scaleY = scale.value
+                }
+        ) {
+            content()
+        }
+    }
+}
+
+/**
+ * 底部浮动玻璃导航条：四页主界面共用的页签入口。
+ * 图标暂用 ic_square_dashed 占位，待替换为正式图标资源。
+ */
 @androidx.compose.runtime.Composable
 private fun MainNavigationBar(
-    pagerState: androidx.compose.foundation.pager.PagerState,
+    currentTab: Int,
     backdrop: com.kyant.backdrop.backdrops.LayerBackdrop,
-    onPageSelect: (Int) -> Unit
+    onTabSelect: (Int) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -725,18 +841,20 @@ private fun MainNavigationBar(
             .height(56.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // 占位图标：主页/编辑/历史/设置四个页签统一用空方块，正式图标待替换。
         val items = listOf(
-            Triple(0, R.drawable.ic_list, "主页"),
-            Triple(1, R.drawable.ic_square_and_pencil, "编辑"),
-            Triple(2, R.drawable.ic_time_line, "历史"),
-            Triple(3, R.drawable.ic_gear, "设置")
+            Triple(0, R.drawable.ic_square_dashed, "主页"),
+            Triple(1, R.drawable.ic_square_dashed, "编辑"),
+            Triple(2, R.drawable.ic_square_dashed, "历史"),
+            Triple(3, R.drawable.ic_square_dashed, "设置")
         )
         items.forEach { (page, iconRes, label) ->
             GlasenseNavigationButton(
                 modifier = Modifier.weight(1f),
-                isActive = pagerState.currentPage == page,
-                onClick = { onPageSelect(page) },
-                backdrop = backdrop
+                isActive = currentTab == page,
+                onClick = { onTabSelect(page) },
+                backdrop = backdrop,
+                liquidGlass = true
             ) {
                 com.nevoit.glasense.core.component.Icon(
                     painter = androidx.compose.ui.res.painterResource(iconRes),
