@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +75,7 @@ import com.whyy.snapnotes.logic.FormulaPngRenderer
 import com.whyy.snapnotes.logic.InterHandshake
 import com.whyy.snapnotes.notifications.ForegroundTransferService
 import com.whyy.snapnotes.theme.AppColors
+import com.whyy.snapnotes.toolkit.gaussiangradient.smoothGradientMask
 import com.whyy.snapnotes.ui.screens.FileManagerPickMode
 import com.whyy.snapnotes.ui.components.EditorLoadErrorDialog
 import com.whyy.snapnotes.ui.components.DraftRestoreDialog
@@ -349,7 +351,7 @@ class MainActivity : ComponentActivity() {
                             entry<Screen.HomePager> {
                                 MainTabScreen(
                                     currentTab = currentTab.intValue,
-                                    tabs = listOf(
+                                    tabs = listOf<@Composable () -> Unit>(
                                         {
                                             HomeScreen(
                                                 connectionState = connectionState,
