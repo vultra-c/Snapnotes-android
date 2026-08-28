@@ -48,3 +48,13 @@ Entries discovered by the Agent during task execution should follow this format:
   - drawBackdrop 的 effects 块里用 `effect(it)` 需显式 import `com.kyant.backdrop.effects.effect`
   - 上游 AndroidLiquidGlass 的 `awaitFrame()` 是 expect/actual；Android 端实现为 `kotlinx.coroutines.android.awaitFrame`（注意是 android 子包），移植时直接内联该实现
   - Box 的 content 参数类型是 @Composable BoxScope.() -> Unit；传入 () -> Unit 形参时用 trailing lambda 包一层 `{ content() }`
+
+[Project Knowledge Summary]
+- Date: 2026-08-28
+- Context: 真机崩溃排查：一打开即 SIGSEGV（RenderThread stack overflow，512 帧全为 hwui RenderNode::prepareTreeImpl 递归）
+- Category: Troubleshooting & Debugging
+- Instructions:
+  - 铁律：layerBackdrop 挂载节点（内容层）内部绝不允许任何组件 drawBackdrop 采样同一个 backdrop，否则 RenderNode 树成环，hwui prepareTree 无限递归直接 SIGSEGV
+  - 本项目采用双玻璃源架构：tabsBackdrop（LayerBackdrop）挂内容层，仅供内容层外的 LiquidBottomTabs 采样滚动内容；cardBackdrop（rememberCanvasBackdrop 纯色画布）供内容层内全部玻璃组件采样，无 RenderNode 依赖故无环
+  - 新增玻璃组件时：内容层内用 cardBackdrop，浮动控件（内容层外）才可用 tabsBackdrop；页面 Screen 组件的 backdrop 参数类型应为宽接口 com.kyant.backdrop.Backdrop（兼容 CanvasBackdrop），不要写死 LayerBackdrop
+  - 参考架构：Cresto 列表行卡片一律纯色 background（列表挂 layerBackdrop 供外部玻璃控件采样）；上游 catalog 的列表内玻璃卡片则挂在独立叶子源（壁纸 Image）上
